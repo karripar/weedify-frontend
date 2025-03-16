@@ -1,8 +1,8 @@
-*Weedify Frontend Repository*
+# Weedify Frontend Repository
 
 ---
 
-**Installation**
+## Installation
 
 1. Clone the repository using `git clone <repository url>` on your terminal
 
@@ -12,7 +12,7 @@ Make sure you have node.js installed and run: <br>
 
 ---
 
-Links: <br>
+## Links: <br>
 **[Backend Repository](https://github.com/karripar/weedify-backend)** <br>
 **[Hybrid TypeScript Types](https://github.com/karripar/weedify-types)** <br>
 
