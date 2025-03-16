@@ -4,7 +4,7 @@
 
 ## Installation
 
-1. Clone the repository using `git clone <repository url>` on your terminal
+1. Clone the repository using `git clone <repository url>` in your terminal (eg. Git Bash or whatever)
 
 2. Install the required packages: <br>
 Make sure you have node.js installed and run: <br>
