@@ -1,0 +1,38 @@
+{
+  "name": "weedify-frontend",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-navigation/bottom-tabs": "^7.2.1",
+    "@react-navigation/native": "^7.0.15",
+    "@react-navigation/native-stack": "^7.2.1",
+    "@rneui/base": "^4.0.0-rc.7",
+    "@rneui/themed": "^4.0.0-rc.8",
+    "expo": "~52.0.38",
+    "expo-status-bar": "~2.0.1",
+    "lucide-react-native": "^0.482.0",
+    "react": "18.3.1",
+    "react-hook-form": "^7.54.2",
+    "react-native": "0.76.7",
+    "react-native-safe-area-context": "^4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-star-rating-widget": "^1.9.2",
+    "expo-image-picker": "~16.0.6",
+    "expo-file-system": "~18.0.11"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~18.3.12",
+    "eslint-config-prettier": "^10.1.1",
+    "prettier": "^3.5.3",
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
