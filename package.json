@@ -18,6 +18,7 @@
     "expo": "~52.0.38",
     "expo-file-system": "~18.0.11",
     "expo-image-picker": "~16.0.6",
+    "expo-linear-gradient": "^14.0.2",
     "expo-status-bar": "~2.0.1",
     "lucide-react-native": "^0.482.0",
     "nativewind": "^4.1.23",
