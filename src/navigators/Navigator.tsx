@@ -8,11 +8,14 @@ import Home from '../views/Home';
 import Newpost from '../views/Newpost';
 import Favorites from '../views/Favorites';
 import {HexColors} from '../utils/colors';
+import {useUserContext} from '../hooks/contextHooks';
+import Login from '../views/Login';
 
 const Tab = createBottomTabNavigator<NavigatorType>();
 const Stack = createNativeStackNavigator<NavigatorType>();
 
 const TabScreen = () => {
+  const {user} = useUserContext();
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
@@ -26,6 +29,8 @@ const TabScreen = () => {
           } else if (route.name === 'Favorites') {
             iconName = focused ? 'bookmark' : 'bookmark-outline';
           } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'Weedify') {
             iconName = focused ? 'person' : 'person-outline';
           }
 
@@ -41,36 +46,42 @@ const TabScreen = () => {
       <Tab.Screen
         name="Home"
         component={Home}
-        options={{
-          headerStyle: {backgroundColor: HexColors['medium-green']},
-          headerTintColor: HexColors['light-purple'],
-        }}
-        //options={{headerShown: false}}
+        options={{headerShown: false}}
       />
-      <Tab.Screen
-        name="Post"
-        component={Newpost}
-        options={{
-          headerStyle: {backgroundColor: HexColors['medium-green']},
-          headerTintColor: HexColors['light-purple'],
-        }}
-      />
-      <Tab.Screen
-        name="Favorites"
-        component={Favorites}
-        options={{
-          headerStyle: {backgroundColor: HexColors['medium-green']},
-          headerTintColor: HexColors['light-purple'],
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={Profile}
-        options={{
-          headerStyle: {backgroundColor: HexColors['medium-green']},
-          headerTintColor: HexColors['light-purple'],
-        }}
-      />
+      {user ? (
+        <>
+          <Tab.Screen
+            name="Post"
+            component={Newpost}
+            options={{
+              headerStyle: {backgroundColor: HexColors['medium-green']},
+              headerTintColor: HexColors['light-purple'],
+            }}
+          />
+          <Tab.Screen
+            name="Favorites"
+            component={Favorites}
+            options={{
+              headerStyle: {backgroundColor: HexColors['medium-green']},
+              headerTintColor: HexColors['light-purple'],
+            }}
+          />
+          <Tab.Screen
+            name="Profile"
+            component={Profile}
+            options={{
+              headerStyle: {backgroundColor: HexColors['medium-green']},
+              headerTintColor: HexColors['light-purple'],
+            }}
+          />
+        </>
+      ) : (
+        <Tab.Screen
+          name="Weedify"
+          component={Login}
+          options={{headerShown: false}}
+        />
+      )}
     </Tab.Navigator>
   );
 };
