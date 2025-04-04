@@ -2,15 +2,14 @@ import {Controller, useForm} from 'react-hook-form';
 import {useUserContext} from '../hooks/contextHooks';
 import {Button, Card, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
-import {Credentials} from 'hybrid-types/DBTypes';
+
 import {HexColors, HexGradients} from '../utils/colors';
 import {StyleSheet} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import {AlignCenter} from 'lucide-react-native';
+import { Credentials } from 'hybrid-types/DBTypes';
 
 const LoginForm = () => {
   const {handleLogin} = useUserContext();
-  const initValues: Credentials = {username: '', password: ''};
+  const initValues: Credentials = {email: '', password: ''};
   const {
     control,
     handleSubmit,
@@ -27,7 +26,7 @@ const LoginForm = () => {
     <>
       <Text style={styles.header}>Weedify</Text>
       <Card containerStyle={styles.card}>
-        <Text style={styles.text}>Username</Text>
+        <Text style={styles.text}>Email</Text>
         <Controller
           control={control}
           rules={{
@@ -43,10 +42,10 @@ const LoginForm = () => {
               onChangeText={onChange}
               value={value}
               autoCapitalize="none"
-              errorMessage={errors.username?.message}
+              errorMessage={errors.email?.message}
             />
           )}
-          name="username"
+          name="email"
         />
 
         <Text style={styles.text}>Password</Text>
