@@ -112,7 +112,7 @@ const useRecipes = (user_id?: number) => {
   const [recipeArray, setRecipeArray] = useState<RecipeWithOwner[]>([]);
   const [loading, setLoading] = useState(false);
   const {update} = useUpdateContext();
-  const url = user_id ? '/recipes/byuser/' + user_id : '/recipes';
+  const url = user_id ? '/recipes/byuser/byuserid/' + user_id : '/recipes';
 
   useEffect(() => {
     // get all or a singular recipe by user id
@@ -125,7 +125,7 @@ const useRecipes = (user_id?: number) => {
         const recipeWithOwner: RecipeWithOwner[] = await Promise.all(
           recipes.map(async (recipe) => {
             const owner = await fetchData<UserWithNoPassword>(
-              process.env.EXPO_PUBLIC_AUTH_API + '/users/' + recipe.user_id,
+              process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + recipe.user_id,
             );
 
             const recipeItem: RecipeWithOwner = {
