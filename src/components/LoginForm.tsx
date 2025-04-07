@@ -10,7 +10,7 @@ import {AlignCenter} from 'lucide-react-native';
 
 const LoginForm = () => {
   const {handleLogin} = useUserContext();
-  const initValues: Credentials = {username: '', password: ''};
+  const initValues: Credentials = {email: '', password: ''};
   const {
     control,
     handleSubmit,
@@ -27,7 +27,7 @@ const LoginForm = () => {
     <>
       <Text style={styles.header}>Weedify</Text>
       <Card containerStyle={styles.card}>
-        <Text style={styles.text}>Username</Text>
+        <Text style={styles.text}>Email</Text>
         <Controller
           control={control}
           rules={{
@@ -43,10 +43,10 @@ const LoginForm = () => {
               onChangeText={onChange}
               value={value}
               autoCapitalize="none"
-              errorMessage={errors.username?.message}
+              errorMessage={errors.email?.message}
             />
           )}
-          name="username"
+          name="email"
         />
 
         <Text style={styles.text}>Password</Text>

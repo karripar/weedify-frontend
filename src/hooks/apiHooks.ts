@@ -56,6 +56,8 @@ const useUser = () => {
       body: JSON.stringify(credentials),
       headers: {'Content-Type': 'application/json'},
     };
+    console.log('Auth API: ', process.env.EXPO_PUBLIC_AUTH_API);
+    console.log('Media API: ', process.env.EXPO_PUBLIC_MEDIA_API);
     try {
       // return created user without password
       return await fetchData<UserResponse>(
