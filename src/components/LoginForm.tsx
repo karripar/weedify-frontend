@@ -2,11 +2,10 @@ import {Controller, useForm} from 'react-hook-form';
 import {useUserContext} from '../hooks/contextHooks';
 import {Button, Card, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
-import {Credentials} from 'hybrid-types/DBTypes';
+
 import {HexColors, HexGradients} from '../utils/colors';
 import {StyleSheet} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import {AlignCenter} from 'lucide-react-native';
+import { Credentials } from 'hybrid-types/DBTypes';
 
 const LoginForm = () => {
   const {handleLogin} = useUserContext();

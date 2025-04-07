@@ -4,6 +4,7 @@ import Navigator from './navigators/Navigator';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {UserProvider} from './contexts/UserContext';
 import {useFonts} from 'expo-font';
+import {UpdateProvider} from './contexts/updateContext';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -17,7 +18,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <UserProvider>
-        <Navigator></Navigator>
+        <UpdateProvider>
+          <Navigator></Navigator>
+        </UpdateProvider>
       </UserProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>

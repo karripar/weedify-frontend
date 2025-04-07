@@ -19,4 +19,24 @@ type NavigatorType = {
   Weedify: undefined;
 };
 
-export type {AuthContextType, NavigatorType};
+type RecipeIngredient = {
+  name: string;
+  amount: number;
+  unit: string;
+};
+
+// data to post in a recipe
+type PostRecipeData = {
+  title: string;
+  instructions: string;
+  cooking_time: number;
+  media_type: string;
+  filename: string;
+  filesize: number;
+  difficulty_level_id: number;
+  ingredients: RecipeIngredient[];
+  dietary_info: number[];
+};
+
+
+export type {AuthContextType, NavigatorType, PostRecipeData};

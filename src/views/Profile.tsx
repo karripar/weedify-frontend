@@ -9,7 +9,7 @@ const Profile = () => {
       colors={[
         HexColors['medium-green'],
         HexColors['light-grey'],
-        HexColors.grey
+        HexColors.grey,
       ]}
       style={styles.container}
       start={{x: 0, y: 0}}
