@@ -10,6 +10,7 @@ import Favorites from '../views/Favorites';
 import {HexColors} from '../utils/colors';
 import {useUserContext} from '../hooks/contextHooks';
 import Login from '../views/Login';
+import EditProfileForm from '../components/EditProfileForm';
 
 const Tab = createBottomTabNavigator<NavigatorType>();
 const Stack = createNativeStackNavigator<NavigatorType>();
@@ -31,7 +32,7 @@ const TabScreen = () => {
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else if (route.name === 'Weedify') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = focused ? 'log-in' : 'log-in-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -95,6 +96,7 @@ const StackScreen = () => {
           component={TabScreen}
           options={{headerShown: false}}
         />
+        <Stack.Screen name="Edit Profile" component={EditProfileForm} />
       </>
     </Stack.Navigator>
   );

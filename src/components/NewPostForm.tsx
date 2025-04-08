@@ -221,9 +221,14 @@ const Post = () => {
             source={{
               uri:
                 image?.assets![0].uri ||
-                'https://placehol.co/500x200@2x/gray/white/png?text=Choose+File',
+                process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
             }}
-            style={styles.image}
+            style={[
+              styles.image,
+              {
+                objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+              },
+            ]}
             onPress={pickImage}
           />
         )}
@@ -484,7 +489,6 @@ const styles = StyleSheet.create({
     height: 200,
     margin: 10,
     borderRadius: 10,
-    backgroundColor: HexColors['almost-white'],
     borderWidth: 1,
     borderColor: HexColors['light-grey'],
   },

@@ -1,7 +1,11 @@
-import {Credentials, UserWithNoPassword} from 'hybrid-types/DBTypes';
+import {
+  Credentials,
+  RecipeWithOwner,
+  UserWithProfilePicture,
+} from 'hybrid-types/DBTypes';
 
 type AuthContextType = {
-  user: UserWithNoPassword | null;
+  user: UserWithProfilePicture | null;
   handleLogin: (credentials: Credentials) => void;
   handleLogout: () => void;
   handleAutoLogin: () => void;
@@ -14,15 +18,21 @@ type NavigatorType = {
   Favorites: undefined;
   Profile: undefined;
   Upload: undefined;
+  Weedify: undefined;
   // stack screen
   Back: undefined;
-  Weedify: undefined;
+  'Edit Profile': undefined;
 };
 
 type RecipeIngredient = {
   name: string;
   amount: number;
   unit: string;
+};
+
+// recipe with profile image
+type RecipeWithProfileImage = RecipeWithOwner & {
+  profile_picture: string;
 };
 
 // data to post in a recipe
@@ -38,5 +48,21 @@ type PostRecipeData = {
   dietary_info: number[];
 };
 
+// data to update the user
+type UpdateUserData = {
+  username: string | null;
+  email: string | null;
+  bio: string | null;
+  dietary_info: number[] | null;
+  media_type: string | null;
+  filename: string | null;
+  filesize: number | null;
+};
 
-export type {AuthContextType, NavigatorType, PostRecipeData};
+export type {
+  AuthContextType,
+  NavigatorType,
+  PostRecipeData,
+  UpdateUserData,
+  RecipeWithProfileImage,
+};

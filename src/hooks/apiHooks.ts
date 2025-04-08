@@ -9,6 +9,7 @@ import {
 import {
   Credentials,
   DietType,
+  ProfilePicture,
   Recipe,
   RecipeWithOwner,
   RegisterCredentials,
@@ -17,7 +18,11 @@ import {
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
-import {PostRecipeData} from '../types/LocalTypes';
+import {
+  PostRecipeData,
+  RecipeWithProfileImage,
+  UpdateUserData,
+} from '../types/LocalTypes';
 
 const useAuthentication = () => {
   // login with user credentials
@@ -76,6 +81,55 @@ const useUser = () => {
     }
   };
 
+  // update a user
+  const updateUser = async (
+    token: string,
+    profile_picture: UploadResponse,
+    inputs: Record<string, string | string[]>,
+  ) => {
+    const dietaryInfo = Array.isArray(inputs.diet_type)
+      ? inputs.diet_type.map((id) => Number(id))
+      : [];
+
+    // Create update object with only non-empty fields
+    const update: UpdateUserData = {
+      username:
+        typeof inputs.username === 'string' && inputs.username.trim() !== ''
+          ? inputs.username
+          : null,
+      email:
+        typeof inputs.email === 'string' && inputs.email.trim() !== ''
+          ? inputs.email
+          : null,
+      bio:
+        typeof inputs.bio === 'string' && inputs.bio.trim() !== ''
+          ? (inputs.bio as string)
+          : null,
+      dietary_info: dietaryInfo.length > 0 ? dietaryInfo : null,
+      media_type: profile_picture.data?.media_type || null,
+      filename: profile_picture.data?.filename || null,
+      filesize: profile_picture.data?.filesize || null,
+    };
+    const options = {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(update),
+    };
+
+    try {
+      // send input to the auth server
+      return await fetchData<UserResponse>(
+        process.env.EXPO_PUBLIC_AUTH_API + '/users/user/update',
+        options,
+      );
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
   // see if the username is available
   const getUsernameAvailable = async (username: string) => {
     // return true if username is available, false if not
@@ -102,6 +156,7 @@ const useUser = () => {
   return {
     getUserByToken,
     postRegister,
+    updateUser,
     getUsernameAvailable,
     getEmailAvailable,
     getUserById,
@@ -122,15 +177,37 @@ const useRecipes = (user_id?: number) => {
         const recipes = await fetchData<Recipe[]>(
           process.env.EXPO_PUBLIC_MEDIA_API + url,
         );
+
         const recipeWithOwner: RecipeWithOwner[] = await Promise.all(
           recipes.map(async (recipe) => {
             const owner = await fetchData<UserWithNoPassword>(
-              process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + recipe.user_id,
+              process.env.EXPO_PUBLIC_AUTH_API +
+                '/users/user/byuserid/' +
+                recipe.user_id,
             );
 
-            const recipeItem: RecipeWithOwner = {
+            let profilePictureUrl = 'defaultprofileimage.png';
+
+            if ('profile_picture_id' in owner) {
+              try {
+                const profilePicture = await fetchData<ProfilePicture>(
+                  process.env.EXPO_PUBLIC_AUTH_API +
+                    '/users/profilepicture/id/' +
+                    (owner as any).profile_picture_id,
+                );
+
+                if (profilePicture && profilePicture.filename) {
+                  profilePictureUrl = profilePicture.filename;
+                }
+              } catch (err) {
+                console.log('Error fetching profile picture:', err);
+              }
+            }
+
+            const recipeItem: RecipeWithProfileImage = {
               ...recipe,
               username: owner.username,
+              profile_picture: profilePictureUrl,
             };
             return recipeItem;
           }),
@@ -255,7 +332,7 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body)
+    console.log('file result', fileResult.body);
     console.log('parsed file result', JSON.parse(fileResult.body));
     return JSON.parse(fileResult.body);
   };
