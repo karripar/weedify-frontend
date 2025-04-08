@@ -1,4 +1,10 @@
-import {Credentials, UserWithNoPassword} from 'hybrid-types/DBTypes';
+import {
+  Credentials,
+  UserWithNoPassword,
+  Recipe,
+  RecipeWithOwner,
+  DietType,
+} from 'hybrid-types/DBTypes';
 
 type AuthContextType = {
   user: UserWithNoPassword | null;
@@ -38,5 +44,26 @@ type PostRecipeData = {
   dietary_info: number[];
 };
 
+// Hakutoimintoa varten
+// lisätty lokaalisti testausta varten
+// (recipeModel.ts rivi 56)
+type DietTypeWithName = {
+  diet_type_id: number;
+  name: string;
+};
 
-export type {AuthContextType, NavigatorType, PostRecipeData};
+// Laajennettu hakutoimintoa varten
+// Lisätty lokaalisti testausta varten
+type RecipeWithOwnerExtended = RecipeWithOwner & {
+  diet_types?: DietTypeWithName[];
+  ingredients?: RecipeIngredient[];
+};
+
+export type {
+  AuthContextType,
+  NavigatorType,
+  PostRecipeData,
+  RecipeIngredient,
+  DietTypeWithName,
+  RecipeWithOwnerExtended,
+};
