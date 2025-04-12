@@ -7,15 +7,19 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useRecipes} from '../hooks/apiHooks';
 import {useUpdateContext} from '../hooks/contextHooks';
 import RecipeListItem from '../components/RecipeListItem';
-import {RecipeWithOwnerExtended} from '../types/LocalTypes';
+import {
+  RecipeWithOwnerExtended,
+  RecipeWithPossibleLikes,
+} from '../types/LocalTypes';
 import SearchComponent from '../components/SearchBar';
+import {fetchData} from '../lib/functions';
 
 const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {recipeArray, loading} = useRecipes();
@@ -29,6 +33,13 @@ const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   // New state to track if any filters are active
   const [isFiltering, setIsFiltering] = useState(false);
 
+  // Transform recipeArray to include likes_count
+  const recipesWithLikes: RecipeWithOwnerExtended[] =
+    recipeArray?.map((recipe: RecipeWithPossibleLikes) => ({
+      ...recipe,
+      likes_count: recipe.likes_count !== undefined ? recipe.likes_count : 0,
+    })) || [];
+
   // Handler for when filters change in SearchComponent
   const handleFilterChange = (
     filtered: RecipeWithOwnerExtended[],
@@ -37,6 +48,31 @@ const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
     setFilteredRecipes(filtered);
     setIsFiltering(hasActiveFilters);
   };
+
+  // Fetch recipes with likes count
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        const recipesData = await fetchData<RecipeWithPossibleLikes[]>(
+          `${process.env.EXPO_PUBLIC_MEDIA_API}/recipes`,
+        );
+
+        const recipesWithLikes: RecipeWithOwnerExtended[] = recipesData.map(
+          (recipe) => ({
+            ...recipe,
+            likes_count:
+              recipe.likes_count !== undefined ? recipe.likes_count : 0,
+          }),
+        );
+
+        setFilteredRecipes(recipesWithLikes);
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+      }
+    };
+
+    fetchRecipes();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -57,11 +93,11 @@ const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         end={{x: 0, y: 1}}
       >
         <SearchComponent
-          recipeArray={recipeArray || []}
+          recipeArray={recipesWithLikes}
           onFilterChange={handleFilterChange}
         />
         <FlatList
-          data={isFiltering ? filteredRecipes : recipeArray}
+          data={isFiltering ? filteredRecipes : recipesWithLikes}
           renderItem={({item}) => (
             <RecipeListItem item={item} navigation={navigation} />
           )}

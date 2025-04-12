@@ -4,13 +4,80 @@ import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, ListItem} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {useState, useEffect} from 'react';
+import {useLikes} from '../hooks/apiHooks';
+import {useUserContext} from '../hooks/contextHooks';
+import {Alert} from 'react-native';
 
 type RecipeListItemProps = {
-  item: RecipeWithOwner;
+  item: RecipeWithOwner & {likes_count?: number};
   navigation: NavigationProp<ParamListBase>;
 };
 
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeId, setLikeId] = useState<number | null>(null);
+  const [likesCount, setLikesCount] = useState(item.likes_count || 0);
+  const {checkIfLiked, likeRecipe, unlikeRecipe} = useLikes();
+  const {user} = useUserContext();
+
+  // Check if the recipe is liked when component mounts
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (user) {
+        try {
+          // Check if the current user has liked this recipe
+          const response = await checkIfLiked(item.recipe_id);
+          setIsLiked(response !== null);
+          if (response) {
+            setLikeId(response.like_id);
+          }
+        } catch (error) {
+          console.error('Error fetching like status:', error);
+        }
+      }
+    };
+
+    fetchLikeStatus();
+  }, [item.recipe_id, user]);
+
+  // Handle like/unlike action
+  const handleLikePress = async () => {
+    if (!user) {
+      // User needs to be logged in to like recipes
+      Alert.alert('Login Required', 'You need to be logged in to like recipes');
+      navigation.navigate('Login');
+      return;
+    }
+
+    try {
+      if (isLiked && likeId) {
+        // Unlike the recipe
+        const success = await unlikeRecipe(likeId);
+        if (success) {
+          setIsLiked(false);
+          setLikeId(null);
+          setLikesCount((prev: number) => Math.max(0, prev - 1));
+        }
+      } else {
+        // Like the recipe
+        const success = await likeRecipe(item.recipe_id);
+        if (success) {
+          setIsLiked(true);
+          setLikesCount((prev: number) => prev + 1);
+
+          const response = await checkIfLiked(item.recipe_id);
+          if (response) {
+            setLikeId(response.like_id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+      Alert.alert('Error', 'Could not process your like. Please try again.');
+    }
+  };
+
   return (
     <TouchableOpacity
       onPress={() => {
@@ -44,9 +111,29 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <ListItem>
           <Text>{item.difficulty_level_id}</Text>
         </ListItem>
-        <View style={[styles.flexView, {marginHorizontal: 20}]}>
-          <Ionicons style={{marginHorizontal: 10}} name={'heart-outline'} size={34}></Ionicons>
-          <Ionicons name={'chatbubble-outline'} size={30}></Ionicons>
+        <View
+          style={[styles.flexView, {marginHorizontal: 20, marginVertical: 5}]}
+        >
+          <TouchableOpacity onPress={handleLikePress} style={styles.likeButton}>
+            <Ionicons
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={24}
+              color={isLiked ? 'red' : '#555'}
+            />
+            <Text
+              style={[
+                styles.likeCount,
+                isLiked && {color: 'red', fontWeight: 'bold'},
+              ]}
+            >
+              {likesCount}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.commentButton}>
+            <Ionicons name="chatbubble-outline" size={22} color="#555" />
+            <Text style={styles.commentCount}>0</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.flexView}>
           <Button
@@ -114,8 +201,37 @@ const styles = StyleSheet.create({
   },
   flexView: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 5,
+    marginBottom: 10,
     marginHorizontal: 10,
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  likeCount: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#555',
+  },
+  commentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  commentCount: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#555',
   },
 });
 

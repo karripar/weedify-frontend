@@ -13,11 +13,13 @@ import {
   RecipeWithOwner,
   RegisterCredentials,
   UserWithNoPassword,
+  Like,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
 import {PostRecipeData} from '../types/LocalTypes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useAuthentication = () => {
   // login with user credentials
@@ -125,7 +127,9 @@ const useRecipes = (user_id?: number) => {
         const recipeWithOwner: RecipeWithOwner[] = await Promise.all(
           recipes.map(async (recipe) => {
             const owner = await fetchData<UserWithNoPassword>(
-              process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + recipe.user_id,
+              process.env.EXPO_PUBLIC_AUTH_API +
+                '/users/user/byuserid/' +
+                recipe.user_id,
             );
 
             const recipeItem: RecipeWithOwner = {
@@ -255,7 +259,7 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body)
+    console.log('file result', fileResult.body);
     console.log('parsed file result', JSON.parse(fileResult.body));
     return JSON.parse(fileResult.body);
   };
@@ -273,4 +277,100 @@ const useDietTypes = () => {
   return {getAllDietTypes};
 };
 
-export {useAuthentication, useUser, useRecipes, useFile, useDietTypes};
+const useLikes = () => {
+  const {update, setUpdate} = useUpdateContext();
+
+  const checkIfLiked = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        return null;
+      }
+
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetchData<Like | null>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes/recipe/${recipe_id}/user`,
+        options,
+      );
+      return response;
+    } catch (error) {
+      console.error('Error checking like status:', error);
+      return null;
+    }
+  };
+
+  const likeRecipe = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({recipe_id}),
+      };
+
+      await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes`,
+        options,
+      );
+
+      // Trigger update to refresh content
+      setUpdate(!update);
+      return true;
+    } catch (error) {
+      console.error('Error liking recipe:', error);
+      return false;
+    }
+  };
+
+  const unlikeRecipe = async (like_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes/${like_id}`,
+        options,
+      );
+
+      // Trigger update to refresh content
+      setUpdate(!update);
+      return true;
+    } catch (error) {
+      console.error('Error unliking recipe:', error);
+      return false;
+    }
+  };
+
+  return {checkIfLiked, likeRecipe, unlikeRecipe};
+};
+
+export {
+  useAuthentication,
+  useUser,
+  useRecipes,
+  useFile,
+  useDietTypes,
+  useLikes,
+};
