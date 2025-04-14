@@ -14,7 +14,7 @@ const Favorites = () => {
       style={styles.container}
       start={{x: 0, y: 0}}
       end={{x: 0, y: 1}}
-      locations={[0, 0.4]}
+      locations={[0, 0.4, 1]}
     ></LinearGradient>
   );
 };

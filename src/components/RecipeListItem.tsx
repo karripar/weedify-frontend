@@ -45,7 +45,11 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           <Text>{item.difficulty_level_id}</Text>
         </ListItem>
         <View style={[styles.flexView, {marginHorizontal: 20}]}>
-          <Ionicons style={{marginHorizontal: 10}} name={'heart-outline'} size={34}></Ionicons>
+          <Ionicons
+            style={{marginHorizontal: 10}}
+            name={'heart-outline'}
+            size={34}
+          ></Ionicons>
           <Ionicons name={'chatbubble-outline'} size={30}></Ionicons>
         </View>
         <View style={styles.flexView}>
@@ -99,6 +103,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     padding: 10,
     paddingHorizontal: 20,
+    // Android shadow
+    elevation: 4,
   },
   buttonContainer: {
     // iOS shadow
@@ -109,8 +115,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    // Android shadow
-    elevation: 5,
   },
   flexView: {
     flexDirection: 'row',

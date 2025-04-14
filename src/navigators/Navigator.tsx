@@ -44,11 +44,7 @@ const TabScreen = () => {
         },
       })}
     >
-      <Tab.Screen
-        name="Home"
-        component={Home}
-        options={{headerShown: false}}
-      />
+      <Tab.Screen name="Home" component={Home} options={{headerShown: false}} />
       {user ? (
         <>
           <Tab.Screen
@@ -96,7 +92,15 @@ const StackScreen = () => {
           component={TabScreen}
           options={{headerShown: false}}
         />
-        <Stack.Screen name="Edit Profile" component={EditProfileForm} />
+        <Stack.Screen
+          name="Edit Profile"
+          component={EditProfileForm}
+          options={{
+            headerStyle: {backgroundColor: HexColors['medium-green']},
+            headerTintColor: HexColors['light-purple'],
+
+          }}
+        />
       </>
     </Stack.Navigator>
   );

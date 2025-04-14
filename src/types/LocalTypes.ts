@@ -48,21 +48,26 @@ type PostRecipeData = {
   dietary_info: number[];
 };
 
-// data to update the user
-type UpdateUserData = {
-  username: string | null;
-  email: string | null;
-  bio: string | null;
-  dietary_info: number[] | null;
-  media_type: string | null;
-  filename: string | null;
-  filesize: number | null;
+// Hakutoimintoa varten
+// lisätty lokaalisti testausta varten
+// (recipeModel.ts rivi 56)
+type DietTypeWithName = {
+  diet_type_id: number;
+  name: string;
+};
+
+// Laajennettu hakutoimintoa varten
+// Lisätty lokaalisti testausta varten
+type RecipeWithOwnerExtended = RecipeWithOwner & {
+  diet_types?: DietTypeWithName[];
+  ingredients?: RecipeIngredient[];
 };
 
 export type {
   AuthContextType,
   NavigatorType,
   PostRecipeData,
-  UpdateUserData,
   RecipeWithProfileImage,
+  RecipeWithOwnerExtended,
+  DietTypeWithName
 };

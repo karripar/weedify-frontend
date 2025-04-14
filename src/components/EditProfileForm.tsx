@@ -4,11 +4,12 @@ import {HexColors} from '../utils/colors';
 import {Button, Card, Chip, Image, Input} from '@rneui/base';
 import {useDietTypes, useFile, useUser} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
-import {useUpdateContext} from '../hooks/contextHooks';
+import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Controller, useForm} from 'react-hook-form';
 import {SelectList} from 'react-native-dropdown-select-list';
+import {LinearGradient} from 'expo-linear-gradient';
 
 type UpdateInputs = {
   username: string;
@@ -22,8 +23,9 @@ const EditProfileForm = ({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) => {
-  const {postExpoFile, loading} = useFile();
-  const {updateUser} = useUser();
+  const {user} = useUserContext();
+  const {postProfileImageFile, loading} = useFile();
+  const {updateUser, getUserDietaryRestrictions, getUserByToken} = useUser();
   const {triggerUpdate} = useUpdateContext();
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
@@ -32,8 +34,9 @@ const EditProfileForm = ({
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
-  const [diet, setSelectedDiet] = useState('');
   const [dietList, setDietList] = useState<string[]>([]);
+  const [resetKey, setResetKey] = useState(0);
+  const [dietTypesLoaded, setDietTypesLoaded] = useState(false);
 
   const initValues: UpdateInputs = {
     username: '',
@@ -50,10 +53,45 @@ const EditProfileForm = ({
     defaultValues: initValues,
   });
 
-  const resetForm = () => {
-    setImage(null);
-    reset(initValues);
-  };
+  useEffect(() => {
+    const loadUserDietaryInfo = async () => {
+      if (user && dietTypesLoaded && dietTypeOptions.length > 0) {
+        try {
+          const dietaryIds = await getUserDietaryRestrictions(user.user_id);
+          console.log('Fetched dietary IDs:', dietaryIds);
+
+          if (dietaryIds && dietaryIds.length > 0) {
+            const userDiets = dietaryIds
+              .map((id: string) => {
+                const diet = dietTypeOptions.find((d) => d.key === id);
+                return diet ? diet.value : '';
+              })
+              .filter(Boolean);
+
+            console.log('Setting diet list from API:', userDiets);
+            setDietList(userDiets);
+          }
+        } catch (error) {
+          console.error('Error loading dietary restrictions:', error);
+        }
+      }
+    };
+
+    loadUserDietaryInfo();
+  }, [user, dietTypesLoaded, dietTypeOptions]);
+
+  useEffect(() => {
+    if (user) {
+      reset({
+        username: user.username,
+        email: user.email,
+        bio: user.bio || '',
+        dietary_info: user.dietary_info || '',
+      });
+
+      console.log('User dietary info:', user.dietary_info);
+    }
+  }, [user, dietTypeOptions]);
 
   // data for diet types
   useEffect(() => {
@@ -69,6 +107,7 @@ const EditProfileForm = ({
             value: dietType.diet_type_name,
           }));
           setDietTypeOptions(dietTypes);
+          setDietTypesLoaded(true);
         } else {
           console.log('Diet types not in expected format:', allDietTypes);
           setDietTypeOptions([]);
@@ -79,15 +118,6 @@ const EditProfileForm = ({
     };
     fetchDietTypes();
   }, []);
-
-  const addDiet = () => {
-    if (!dietList.includes(diet)) {
-      const dietType = diet;
-
-      setDietList([...dietList, dietType]);
-    }
-    setSelectedDiet('');
-  };
 
   // select image for the post
   const pickImage = async () => {
@@ -108,156 +138,205 @@ const EditProfileForm = ({
   // do edit
   const doEditProfile = async (inputs: UpdateInputs) => {
     const token = await AsyncStorage.getItem('token');
-    if (!token) {
+    if (!token || !user) {
       Alert.alert('Error', 'No token found, please login.');
       return;
     }
 
-    // new profile image
-    if (image && image.assets) {
-      const fileResponse = await postExpoFile(image.assets[0].uri, token);
-      if (!fileResponse) {
-        Alert.alert('Upload failed');
-        return;
+    try {
+      // Create update object with fields to update
+      const updateData: Record<string, string | string[] | null> = {};
+
+      // Only add non-empty fields with proper validation
+      if (inputs.username && inputs.username.trim().length >= 3) {
+        updateData.username = inputs.username;
       }
 
-      console.log('file response', fileResponse);
+      if (inputs.email && inputs.email.includes('@')) {
+        updateData.email = inputs.email;
+      }
 
-      // get diet type ids from the selected names
-      const dietTypeIds = dietList.map((dietName) => {
-        // find the id that corresponds to the selected diet name
-        const dietType = dietTypeOptions.find((opt) => opt.value === dietName);
-        return dietType ? dietType.key : '1';
-      });
+      if (inputs.bio !== undefined) {
+        updateData.bio = inputs.bio.trim() || null; // Allow empty bio
+      }
 
-      try {
-        // update user
-        const editResponse = await updateUser(token, fileResponse, {
-          ...inputs,
-          diet_type: dietTypeIds,
+      // Add diet types if selected
+      if (dietList.length > 0) {
+        const dietTypeIds = dietList.map((dietName) => {
+          const dietType = dietTypeOptions.find(
+            (opt) => opt.value === dietName,
+          );
+          return dietType ? dietType.key : '1';
         });
-
-        console.log('payload', editResponse);
-
-        // Success handling
-        reset(initValues);
-        triggerUpdate();
-        Alert.alert('Update successful', editResponse.message);
-        navigation.navigate('Profile');
-      } catch (error) {
-        console.error('User update error:', error);
-        Alert.alert(
-          'Update failed',
-          (error as Error).message || 'Unknown error',
-        );
+        updateData.dietary_info = dietTypeIds;
+      } else {
+        updateData.dietary_info = null; // Explicitly set to null if empty
       }
+
+      // Handle profile image (both with and without new image)
+      let fileResponse;
+      if (image && image.assets) {
+        fileResponse = await postProfileImageFile(image.assets[0].uri, token);
+        if (!fileResponse) {
+          Alert.alert('Upload failed');
+          return;
+        }
+
+        // Add image data to update only if a new image was uploaded
+        updateData.filename = fileResponse.data.filename;
+        updateData.media_type = fileResponse.data.media_type || 'image/jpeg';
+        updateData.filesize = fileResponse.data.filesize.toString();
+      }
+
+      console.log('Sending update data:', JSON.stringify(updateData));
+
+      // update user with provided data
+      const editResponse = await updateUser(
+        token,
+        fileResponse || {
+          data: {filename: null, media_type: null, filesize: null},
+        },
+        updateData,
+        user.user_id,
+      );
+
+      setDietList([]);
+      triggerUpdate();
+      if (editResponse && editResponse.message) {
+        Alert.alert('Update successful', editResponse.message);
+      } else {
+        Alert.alert('Update successful', 'User data up to date');
+      }
+      navigation.navigate('Back', {screen: 'Profile'});
+    } catch (error) {
+      console.error('User update error:', error);
+      Alert.alert('Update failed', (error as Error).message || 'Unknown error');
     }
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      resetForm();
-    });
+    const unsubscribe = navigation.addListener('blur', () => {});
     return () => {
       unsubscribe();
     };
   }, []);
 
   return (
-    <ScrollView>
-      <Card containerStyle={styles.card}>
-        <Image
-          source={{
-            uri:
-              image?.assets![0].uri ||
-              process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-          }}
-          style={[
-            styles.image,
-            {
-              objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
-            },
-          ]}
-          onPress={pickImage}
-        />
-        <Text style={styles.text}>Username</Text>
+    <LinearGradient
+      colors={[
+        HexColors['medium-green'],
+        HexColors['light-grey'],
+        HexColors.grey,
+      ]}
+      style={styles.container}
+      start={{x: 0, y: 0}}
+      end={{x: 0, y: 1}}
+      locations={[0, 0.4, 1]}
+    >
+      <ScrollView>
+        <Card containerStyle={styles.card}>
+          <Image
+            source={{
+              uri:
+                image?.assets![0].uri ||
+                process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
+            }}
+            style={[
+              styles.image,
+              {
+                objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+              },
+            ]}
+            onPress={pickImage}
+          />
+          <Text style={styles.text}>Username</Text>
 
-        <Controller
-          control={control}
-          rules={{
-            maxLength: {value: 20, message: 'maximum 25 characters'},
-            minLength: {value: 3, message: 'minimum 3 characters'},
-          }}
-          render={({field: {onChange, onBlur, value}}) => (
-            <Input
-              style={styles.input}
-              inputContainerStyle={styles.inputContainer}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              autoCapitalize="none"
-              errorMessage={errors.username?.message}
-            />
-          )}
-          name="username"
-        />
+          <Controller
+            control={control}
+            rules={{
+              maxLength: {value: 20, message: 'maximum 25 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                autoCapitalize="none"
+                errorMessage={errors.username?.message}
+              />
+            )}
+            name="username"
+          />
 
-        <Text style={styles.text}>Email</Text>
-        <Controller
-          control={control}
-          rules={{
-            maxLength: {value: 50, message: 'maximum 50 characters'},
-            minLength: {value: 3, message: 'minimum 3 characters'},
-          }}
-          render={({field: {onChange, onBlur, value}}) => (
-            <Input
-              style={styles.input}
-              inputContainerStyle={styles.inputContainer}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              autoCapitalize="none"
-              errorMessage={errors.email?.message}
-            />
-          )}
-          name="email"
-        />
+          <Text style={styles.text}>Email</Text>
+          <Controller
+            control={control}
+            rules={{
+              maxLength: {value: 50, message: 'maximum 50 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                autoCapitalize="none"
+                errorMessage={errors.email?.message}
+              />
+            )}
+            name="email"
+          />
 
-        <Text style={styles.text}>Bio</Text>
-        <Controller
-          control={control}
-          rules={{
-            maxLength: {value: 200, message: 'maximum 200 characters'},
-            minLength: {value: 3, message: 'minimum 3 characters'},
-          }}
-          render={({field: {onChange, onBlur, value}}) => (
-            <Input
-              style={[styles.input, styles.instructionsInput]}
-              inputContainerStyle={styles.inputContainer}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              errorMessage={errors.bio?.message}
-              multiline={true}
-              numberOfLines={10}
-              textAlignVertical="top"
-            />
-          )}
-          name="bio"
-        />
+          <Text style={styles.text}>Bio</Text>
+          <Controller
+            control={control}
+            rules={{
+              maxLength: {value: 200, message: 'maximum 200 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={[styles.input, styles.instructionsInput]}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                errorMessage={errors.bio?.message}
+                multiline={true}
+                numberOfLines={10}
+                textAlignVertical="top"
+                testID="bio-input"
+              />
+            )}
+            name="bio"
+          />
 
-        <Text style={[styles.text, {marginTop: 20}]}>Diet restrictions</Text>
-        <View style={{flexDirection: 'row', marginBottom: 10}}>
+          <Text style={[styles.text, {marginTop: 20}]}>Diet restrictions</Text>
           <View style={{flex: 5}}>
             <SelectList
+              key={`diet-selector-${resetKey}`}
               data={dietTypeOptions}
-              setSelected={setSelectedDiet}
-              defaultOption={{key: diet, value: diet}}
+              setSelected={(diettype: string) => {
+                const isDuplicate = dietList.some(
+                  (existing) =>
+                    existing.toLowerCase() === diettype.toLowerCase(),
+                );
+
+                if (diettype && !isDuplicate) {
+                  setDietList([...dietList, diettype]);
+                }
+                setResetKey((prev) => prev + 1);
+              }}
               save="value"
               boxStyles={{
                 borderColor: HexColors['light-grey'],
                 borderWidth: 1.5,
-                marginHorizontal: 10,
+                margin: 10,
               }}
               dropdownStyles={{
                 borderColor: HexColors['light-grey'],
@@ -269,59 +348,58 @@ const EditProfileForm = ({
               placeholder="Diets"
             ></SelectList>
           </View>
-          <View style={{flex: 2}}>
-            <Button
-              buttonStyle={styles.addButton}
-              containerStyle={styles.buttonContainer}
-              titleStyle={styles.buttonTitle}
-              title="Add"
-              onPress={addDiet}
-              disabled={diet === ''}
-            >
-              Add
-            </Button>
+          <View style={styles.ingredientContainer}>
+            {dietList.length > 0 ? (
+              dietList.map((diet, index) => (
+                <Chip
+                  key={index}
+                  title={diet}
+                  buttonStyle={styles.chipButton}
+                  titleStyle={styles.chipTitle}
+                  containerStyle={styles.chipContainer}
+                  icon={{
+                    name: 'close',
+                    type: 'ionicon',
+                    size: 16,
+                    color: HexColors['dark-grey'],
+                  }}
+                  iconRight
+                  onPress={() => {
+                    // remove diet type when pressed
+                    setDietList(dietList.filter((_, i) => i !== index));
+                  }}
+                />
+              ))
+            ) : (
+              <Text
+                style={{color: HexColors['dark-grey'], fontStyle: 'italic'}}
+              >
+                No diet restrictions selected
+              </Text>
+            )}
           </View>
-        </View>
-        <View style={styles.ingredientContainer}>
-          {dietList.map((diet, index) => (
-            <Chip
-              key={index}
-              title={diet}
-              buttonStyle={styles.chipButton}
-              titleStyle={styles.chipTitle}
-              containerStyle={styles.chipContainer}
-              onPress={() => {
-                // remove diet type when pressed
-                setDietList(dietList.filter((_, i) => i !== index));
-              }}
-            />
-          ))}
-        </View>
-        <Button
-          title="Save"
-          buttonStyle={[
-            styles.button,
-            {backgroundColor: HexColors['medium-green']},
-          ]}
-          titleStyle={styles.buttonTitle}
-          containerStyle={styles.buttonContainer}
-          onPress={handleSubmit(doEditProfile)}
-          loading={loading}
-          disabled={!isValid || loading}
-        />
-        <Button
-          title="Reset"
-          buttonStyle={styles.button}
-          titleStyle={[styles.buttonTitle, {color: HexColors['dark-grey']}]}
-          containerStyle={styles.buttonContainer}
-          onPress={resetForm}
-        />
-      </Card>
-    </ScrollView>
+          <Button
+            title="Save"
+            buttonStyle={[
+              styles.button,
+              {backgroundColor: HexColors['medium-green']},
+            ]}
+            titleStyle={styles.buttonTitle}
+            containerStyle={styles.buttonContainer}
+            onPress={handleSubmit(doEditProfile)}
+            loading={loading}
+            disabled={!isValid || loading}
+          />
+        </Card>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    height: '100%',
+  },
   card: {
     borderRadius: 30,
     borderTopRightRadius: 10,
@@ -348,6 +426,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginHorizontal: 10,
     padding: 10,
+    // Android shadow
+    elevation: 4,
   },
   buttonContainer: {
     // iOS shadow
@@ -358,8 +438,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    // Android shadow
-    elevation: 5,
   },
   input: {
     backgroundColor: HexColors.white,

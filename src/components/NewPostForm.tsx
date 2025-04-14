@@ -13,6 +13,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useUpdateContext} from '../hooks/contextHooks';
 import {HexColors} from '../utils/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
+import {LinearGradient} from 'expo-linear-gradient';
 
 type PostInputs = {
   title: string;
@@ -36,18 +37,19 @@ const Post = () => {
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
-  const [diet, setSelectedDiet] = useState('');
   const [dietList, setDietList] = useState<string[]>([]);
   const [currentIngredient, setCurrentIngredient] = useState('');
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
+  const [resetKey, setResetKey] = useState(0);
 
   // data for the units for now, these will come from db later
   const data = [
     {key: 'g', value: 'g'},
     {key: 'mg', value: 'mg'},
     {key: 'tl', value: 'tl'},
+    {key: 'rkl', value: 'rkl'},
     {key: 'dl', value: 'dl'},
     {key: 'l', value: 'l'},
     {key: 'kpl', value: 'kpl'},
@@ -95,13 +97,18 @@ const Post = () => {
     defaultValues: initValues,
   });
 
+  // clear all the inputs fields and selected ingredients and dietypes
   const resetForm = () => {
     setImage(null);
+    setDietList([]);
+    setIngredientsList([]);
+    setCurrentIngredient('');
+    setAmount('');
+    setSelectedUnit('');
     reset(initValues);
   };
 
   // add ingredients with the unit and amout to the post
-  // TODO: clear these form the form as well if upload was successful or form reset
   const addIngredient = () => {
     if (
       // check that none of the fields are empty
@@ -119,17 +126,6 @@ const Post = () => {
       setAmount('');
       setSelectedUnit('');
     }
-  };
-
-  // add diet types
-  // TODO: clear these form the form as well if upload was successful or form reset
-  const addDiet = () => {
-    if (!dietList.includes(diet)) {
-      const dietType = diet;
-
-      setDietList([...dietList, dietType]);
-    }
-    setSelectedDiet('');
   };
 
   // post a new recipe with media
@@ -175,7 +171,7 @@ const Post = () => {
       );
 
       // Success handling
-      reset(initValues);
+      resetForm();
       triggerUpdate();
       Alert.alert('Upload successful', postResponse.message);
       navigation.navigate('Home');
@@ -203,7 +199,7 @@ const Post = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
       resetForm();
     });
     return () => {
@@ -212,134 +208,161 @@ const Post = () => {
   }, []);
 
   return (
-    <ScrollView>
-      <Card containerStyle={styles.card}>
-        {image?.assets && image.assets[0].type === 'video' ? (
-          <VideoPlayer videoFile={image.assets[0].uri} style={styles.image} />
-        ) : (
-          <Image
-            source={{
-              uri:
-                image?.assets![0].uri ||
-                process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-            }}
-            style={[
-              styles.image,
-              {
-                objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
-              },
-            ]}
-            onPress={pickImage}
-          />
-        )}
-        <Text style={styles.text}>Title</Text>
-
-        <Controller
-          control={control}
-          rules={{
-            required: {value: true, message: 'is required'},
-            maxLength: {value: 25, message: 'maximum 25 characters'},
-            minLength: {value: 3, message: 'minimum 3 characters'},
-          }}
-          render={({field: {onChange, onBlur, value}}) => (
-            <Input
-              style={styles.input}
-              inputContainerStyle={styles.inputContainer}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              autoCapitalize="none"
-              errorMessage={errors.title?.message}
+    <LinearGradient
+      colors={[
+        HexColors['medium-green'],
+        HexColors['light-grey'],
+        HexColors.grey,
+      ]}
+      style={styles.container}
+      start={{x: 0, y: 0}}
+      end={{x: 0, y: 1}}
+      locations={[0, 0.4, 1]}
+    >
+      <ScrollView contentContainerStyle={{flexGrow: 1}}>
+        <Card containerStyle={styles.card}>
+          {image?.assets && image.assets[0].type === 'video' ? (
+            <VideoPlayer videoFile={image.assets[0].uri} style={styles.image} />
+          ) : (
+            <Image
+              source={{
+                uri:
+                  image?.assets![0].uri ||
+                  process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
+              }}
+              style={[
+                styles.image,
+                {
+                  objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+                },
+              ]}
+              onPress={pickImage}
             />
           )}
-          name="title"
-        />
+          <Text style={styles.text}>Title</Text>
+          <Controller
+            control={control}
+            rules={{
+              required: {value: true, message: 'is required'},
+              maxLength: {value: 25, message: 'maximum 25 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                autoCapitalize="sentences"
+                errorMessage={errors.title?.message}
+              />
+            )}
+            name="title"
+          />
 
-        <Text style={styles.text}>Ingredients</Text>
-        <Input
-          style={styles.input}
-          inputContainerStyle={styles.inputContainer}
-          value={currentIngredient}
-          onChangeText={setCurrentIngredient}
-          autoCapitalize="none"
-          placeholder="Ingredient"
-        />
-        <View style={styles.ingredientsContainer}>
-          <View style={{flex: 1.5, marginHorizontal: 10}}>
-            <SelectList
-              data={data}
-              search={false}
-              setSelected={setSelectedUnit}
-              save="value"
-              defaultOption={{key: selectedUnit, value: selectedUnit}}
-              boxStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-              }}
-              dropdownStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-                marginBottom: 10,
-              }}
-              dropdownItemStyles={{marginVertical: 3}}
-              placeholder="Unit"
-            />
+          <Text style={styles.text}>Ingredients</Text>
+          <Input
+            style={styles.input}
+            inputContainerStyle={styles.inputContainer}
+            value={currentIngredient}
+            onChangeText={setCurrentIngredient}
+            autoCapitalize="sentences"
+            placeholder="Ingredient"
+          />
+          <View style={styles.ingredientsContainer}>
+            <View style={{flex: 1.5, marginHorizontal: 10}}>
+              <SelectList
+                data={data}
+                search={false}
+                setSelected={setSelectedUnit}
+                save="value"
+                defaultOption={{key: selectedUnit, value: selectedUnit}}
+                boxStyles={{
+                  borderColor: HexColors['light-grey'],
+                  borderWidth: 1.5,
+                }}
+                dropdownStyles={{
+                  borderColor: HexColors['light-grey'],
+                  borderWidth: 1.5,
+                  marginBottom: 10,
+                }}
+                dropdownItemStyles={{marginVertical: 3}}
+                placeholder="Unit"
+              />
+            </View>
+            <View style={{flex: 1}}>
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                value={amount}
+                onChangeText={setAmount}
+                autoCapitalize="none"
+                placeholder="Amount"
+              />
+            </View>
           </View>
-          <View style={{flex: 1}}>
-            <Input
-              style={styles.input}
-              inputContainerStyle={styles.inputContainer}
-              value={amount}
-              onChangeText={setAmount}
-              autoCapitalize="none"
-              placeholder="Amount"
-            />
-          </View>
-        </View>
-        <Button
-          buttonStyle={styles.addButton}
-          containerStyle={styles.buttonContainer}
-          titleStyle={styles.buttonTitle}
-          title="Add"
-          onPress={addIngredient}
-          disabled={
-            currentIngredient.trim() === '' ||
-            amount === '' ||
-            selectedUnit === ''
-          }
-        >
-          Add
-        </Button>
+          <Button
+            buttonStyle={styles.addButton}
+            containerStyle={styles.buttonContainer}
+            titleStyle={styles.buttonTitle}
+            title="Add"
+            onPress={addIngredient}
+            disabled={
+              currentIngredient.trim() === '' ||
+              amount === '' ||
+              selectedUnit === ''
+            }
+          >
+            Add
+          </Button>
 
-        <View style={styles.ingredientContainer}>
-          {ingredientsList.map((ingredient, index) => (
-            <Chip
-              key={index}
-              title={ingredient}
-              buttonStyle={styles.chipButton}
-              titleStyle={styles.chipTitle}
-              containerStyle={styles.chipContainer}
-              onPress={() => {
-                // remove ingredient when pressed
-                setIngredientsList(
-                  ingredientsList.filter((_, i) => i !== index),
-                );
-              }}
-            />
-          ))}
-        </View>
-        <Text style={[styles.text, {marginTop: 20}]}>Select special diets</Text>
-        <View style={{flexDirection: 'row', marginBottom: 10}}>
+          <View style={styles.ingredientContainer}>
+            {ingredientsList.map((ingredient, index) => (
+              <Chip
+                key={index}
+                title={ingredient}
+                buttonStyle={styles.chipButton}
+                titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
+                containerStyle={styles.chipContainer}
+                icon={{
+                  name: 'close',
+                  type: 'ionicon',
+                  size: 16,
+                  color: HexColors['dark-grey'],
+                }}
+                onPress={() => {
+                  // remove ingredient when pressed
+                  setIngredientsList(
+                    ingredientsList.filter((_, i) => i !== index),
+                  );
+                }}
+              />
+            ))}
+          </View>
+          <Text style={[styles.text, {marginTop: 20}]}>
+            Select special diets
+          </Text>
           <View style={{flex: 5}}>
             <SelectList
+              key={`diet-selector-${resetKey}`}
               data={dietTypeOptions}
-              setSelected={setSelectedDiet}
-              defaultOption={{key: diet, value: diet}}
+              setSelected={(diettype: string) => {
+                const isDuplicate = dietList.some(
+                  (existing) =>
+                    existing.toLowerCase() === diettype.toLowerCase(),
+                );
+
+                if (diettype && !isDuplicate) {
+                  setDietList([...dietList, diettype]);
+                }
+                setResetKey((prev) => prev + 1);
+              }}
               save="value"
               boxStyles={{
                 borderColor: HexColors['light-grey'],
                 borderWidth: 1.5,
-                marginHorizontal: 10,
+                margin: 10,
               }}
               dropdownStyles={{
                 borderColor: HexColors['light-grey'],
@@ -351,136 +374,135 @@ const Post = () => {
               placeholder="Diets"
             ></SelectList>
           </View>
-          <View style={{flex: 2}}>
-            <Button
-              buttonStyle={styles.addButton}
-              containerStyle={styles.buttonContainer}
-              titleStyle={styles.buttonTitle}
-              title="Add"
-              onPress={addDiet}
-              disabled={diet === ''}
-            >
-              Add
-            </Button>
-          </View>
-        </View>
-        <View style={styles.ingredientContainer}>
-          {dietList.map((diet, index) => (
-            <Chip
-              key={index}
-              title={diet}
-              buttonStyle={styles.chipButton}
-              titleStyle={styles.chipTitle}
-              containerStyle={styles.chipContainer}
-              onPress={() => {
-                // remove diet type when pressed
-                setDietList(dietList.filter((_, i) => i !== index));
-              }}
-            />
-          ))}
-        </View>
-
-        <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
-        <Controller
-          control={control}
-          rules={{
-            required: true,
-            maxLength: {value: 1000, message: 'maximum 1000 characters'},
-            minLength: {value: 5, message: 'minimum 5 characters'},
-          }}
-          render={({field: {onChange, onBlur, value}}) => (
-            <Input
-              style={[styles.input, styles.instructionsInput]}
-              inputContainerStyle={styles.inputContainer}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              errorMessage={errors.instructions?.message}
-              multiline={true}
-              numberOfLines={10}
-              textAlignVertical="top"
-            />
-          )}
-          name="instructions"
-        />
-        <Text style={styles.text}>Estimated cooking time</Text>
-
-        <View style={{flexDirection: 'row', maxWidth: '60%'}}>
-          <View style={{flex: 2}}>
-            <Controller
-              control={control}
-              rules={{
-                required: {value: true, message: 'Cooking time is required'},
-                maxLength: {value: 10, message: 'maximum 10 numbers'},
-                minLength: {value: 1, message: 'minimum 1 numbers'},
-                pattern: {
-                  value: /^[0-9]+$/,
-                  message: 'Please enter numbers only',
-                },
-              }}
-              render={({field: {onChange, onBlur, value}}) => (
-                <Input
-                  style={styles.input}
-                  inputContainerStyle={styles.inputContainer}
-                  onBlur={onBlur}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    onChange(
-                      numericValue === '' ? undefined : Number(numericValue),
-                    );
-                  }}
-                  value={value?.toString()}
-                  keyboardType="numeric"
-                  autoCapitalize="none"
-                  errorMessage={errors.cooking_time?.message}
-                />
-              )}
-              name="cooking_time"
-            />
-          </View>
-          <View style={{flex: 1}}>
-            <Text
-              style={[
-                styles.text,
-                {
-                  margin: 0,
-                  borderWidth: 1.5,
-                  borderRadius: 10,
-                  padding: 8,
+          <View style={styles.ingredientContainer}>
+            {dietList.map((diet, index) => (
+              <Chip
+                key={index}
+                title={diet}
+                buttonStyle={styles.chipButton}
+                titleStyle={styles.chipTitle}
+                containerStyle={styles.chipContainer}
+                icon={{
+                  name: 'close',
+                  type: 'ionicon',
+                  size: 16,
                   color: HexColors['dark-grey'],
-                  borderColor: HexColors['light-grey'],
-                },
-              ]}
-            >
-              min
-            </Text>
+                }}
+                iconRight
+                onPress={() => {
+                  // remove diet type when pressed
+                  setDietList(dietList.filter((_, i) => i !== index));
+                }}
+              />
+            ))}
           </View>
-        </View>
-        <Button
-          title="Post"
-          buttonStyle={[
-            styles.button,
-            {backgroundColor: HexColors['medium-green']},
-          ]}
-          titleStyle={styles.buttonTitle}
-          containerStyle={styles.buttonContainer}
-          onPress={handleSubmit(doUpload)}
-          loading={loading}
-          disabled={!isValid || image === null || loading}
-        />
-        <Button
-          title="Reset"
-          buttonStyle={styles.button}
-          titleStyle={[styles.buttonTitle, {color: HexColors['dark-grey']}]}
-          containerStyle={styles.buttonContainer}
-          onPress={resetForm}
-        />
-      </Card>
-    </ScrollView>
+
+          <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
+          <Controller
+            control={control}
+            rules={{
+              required: true,
+              maxLength: {value: 1000, message: 'maximum 1000 characters'},
+              minLength: {value: 2, message: 'minimum 20 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={[styles.input, styles.instructionsInput]}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                errorMessage={errors.instructions?.message}
+                multiline={true}
+                numberOfLines={10}
+                textAlignVertical="top"
+                autoCapitalize="sentences"
+              />
+            )}
+            name="instructions"
+          />
+          <Text style={styles.text}>Estimated cooking time</Text>
+
+          <View style={{flexDirection: 'row', maxWidth: '60%'}}>
+            <View style={{flex: 2}}>
+              <Controller
+                control={control}
+                rules={{
+                  required: {value: true, message: 'Cooking time is required'},
+                  maxLength: {value: 10, message: 'maximum 10 numbers'},
+                  minLength: {value: 1, message: 'minimum 1 numbers'},
+                  pattern: {
+                    value: /^[0-9]+$/,
+                    message: 'Please enter numbers only',
+                  },
+                }}
+                render={({field: {onChange, onBlur, value}}) => (
+                  <Input
+                    style={styles.input}
+                    inputContainerStyle={styles.inputContainer}
+                    onBlur={onBlur}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9]/g, '');
+                      onChange(
+                        numericValue === '' ? undefined : Number(numericValue),
+                      );
+                    }}
+                    value={value?.toString()}
+                    keyboardType="numeric"
+                    autoCapitalize="none"
+                    errorMessage={errors.cooking_time?.message}
+                  />
+                )}
+                name="cooking_time"
+              />
+            </View>
+            <View style={{flex: 1}}>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    margin: 0,
+                    borderWidth: 1.5,
+                    borderRadius: 10,
+                    padding: 8,
+                    color: HexColors['dark-grey'],
+                    borderColor: HexColors['light-grey'],
+                  },
+                ]}
+              >
+                min
+              </Text>
+            </View>
+          </View>
+          <Button
+            title="Post"
+            buttonStyle={[
+              styles.button,
+              {backgroundColor: HexColors['medium-green']},
+            ]}
+            titleStyle={styles.buttonTitle}
+            containerStyle={styles.buttonContainer}
+            onPress={handleSubmit(doUpload)}
+            loading={loading}
+            disabled={!isValid || image === null || loading}
+          />
+          <Button
+            title="Reset"
+            buttonStyle={styles.button}
+            titleStyle={[styles.buttonTitle, {color: HexColors['dark-grey']}]}
+            containerStyle={styles.buttonContainer}
+            onPress={resetForm}
+          />
+        </Card>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    height: '100%',
+  },
   card: {
     borderRadius: 10,
     marginBottom: 10,
@@ -504,6 +526,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginHorizontal: 10,
     padding: 10,
+    // Android shadow
+    elevation: 4,
   },
   buttonContainer: {
     // iOS shadow
@@ -514,8 +538,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    // Android shadow
-    elevation: 5,
   },
   input: {
     backgroundColor: HexColors.white,
@@ -564,6 +586,7 @@ const styles = StyleSheet.create({
   chipTitle: {
     color: HexColors['dark-grey'],
     fontSize: 12,
+    paddingLeft: 10,
   },
   chipContainer: {
     borderRadius: 20,

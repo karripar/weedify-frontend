@@ -13,16 +13,13 @@ import {
   Recipe,
   RecipeWithOwner,
   RegisterCredentials,
+  User,
   UserWithNoPassword,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
-import {
-  PostRecipeData,
-  RecipeWithProfileImage,
-  UpdateUserData,
-} from '../types/LocalTypes';
+import {PostRecipeData, RecipeWithProfileImage} from '../types/LocalTypes';
 
 const useAuthentication = () => {
   // login with user credentials
@@ -63,6 +60,50 @@ const useUser = () => {
     }
   };
 
+  // get user with profile image
+  const getUserWithProfileImage = async (user_id: number) => {
+    try {
+      const profile_picture = await fetchData<ProfilePicture>(
+        process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture/' + user_id,
+      );
+      console.log('user profile image', profile_picture);
+      return profile_picture;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // get users's dietary restrictions
+  const getUserDietaryRestrictions = async (userId: number) => {
+    try {
+      // get the user with their dietary info
+      const userWithDietary = await fetchData<any>(
+        process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + userId,
+      );
+
+      console.log('User with dietary data:', userWithDietary);
+
+      // Use dietary_restrictions property instead of dietary
+      if (userWithDietary && userWithDietary.dietary_restrictions) {
+        // Convert the array of objects to an array of IDs
+        const dietaryInfo = Array.isArray(userWithDietary.dietary_restrictions)
+          ? userWithDietary.dietary_restrictions.map(
+              (diet: {dietary_restriction_id: number}) =>
+                diet.dietary_restriction_id.toString(),
+            )
+          : [
+              userWithDietary.dietary_restrictions.dietary_restriction_id.toString(),
+            ];
+
+        return dietaryInfo;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching dietary restrictions:', error);
+      return [];
+    }
+  };
+
   // register new user
   const postRegister = async (credentials: RegisterCredentials) => {
     const options = {
@@ -84,32 +125,34 @@ const useUser = () => {
   // update a user
   const updateUser = async (
     token: string,
-    profile_picture: UploadResponse,
-    inputs: Record<string, string | string[]>,
+    filename:
+      | UploadResponse
+      | {data: {filename: null; media_type: null; filesize: null}},
+    inputs: Record<string, string | string[] | null>,
+    user_id: number,
   ) => {
-    const dietaryInfo = Array.isArray(inputs.diet_type)
-      ? inputs.diet_type.map((id) => Number(id))
-      : [];
+    // update object for backend
+    const update: any = {};
 
-    // Create update object with only non-empty fields
-    const update: UpdateUserData = {
-      username:
-        typeof inputs.username === 'string' && inputs.username.trim() !== ''
-          ? inputs.username
-          : null,
-      email:
-        typeof inputs.email === 'string' && inputs.email.trim() !== ''
-          ? inputs.email
-          : null,
-      bio:
-        typeof inputs.bio === 'string' && inputs.bio.trim() !== ''
-          ? (inputs.bio as string)
-          : null,
-      dietary_info: dietaryInfo.length > 0 ? dietaryInfo : null,
-      media_type: profile_picture.data?.media_type || null,
-      filename: profile_picture.data?.filename || null,
-      filesize: profile_picture.data?.filesize || null,
-    };
+    // check if the fields have input and are meant to be updated
+    if ('username' in inputs && inputs.username) {
+      update.username = inputs.username;
+    }
+
+    if ('email' in inputs && inputs.email) {
+      update.email = inputs.email;
+    }
+
+    if ('bio' in inputs) {
+      update.bio = inputs.bio || null;
+    }
+
+    if ('dietary_info' in inputs && Array.isArray(inputs.dietary_info)) {
+      update.dietary_info = inputs.dietary_info.map((id) => Number(id));
+    }
+
+    console.log('Update payload:', JSON.stringify(update));
+
     const options = {
       method: 'PUT',
       headers: {
@@ -120,11 +163,64 @@ const useUser = () => {
     };
 
     try {
-      // send input to the auth server
-      return await fetchData<UserResponse>(
+      // update the user details, the profile image update is a separate endpoint
+      const userResponse = await fetchData<UserResponse>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/user/update',
         options,
       );
+
+      // update the profile image if image uploaded
+      console.log(filename.data?.filename);
+      if (filename.data?.filename) {
+        const picData = {
+          filename: filename.data.filename,
+          media_type: filename.data.media_type || 'image/jpeg',
+          filesize: filename.data.filesize.toString(),
+        };
+
+        console.log('pic data', picData);
+
+        try {
+          // check is the user already has a profile pic
+          await fetchData<ProfilePicture>(
+            process.env.EXPO_PUBLIC_AUTH_API +
+              '/users/profilepicture/' +
+              user_id,
+          );
+
+          console.log('user', user_id);
+
+          // if user already has a profile pic use PUT
+          const picOptions = {
+            method: 'PUT',
+            headers: {
+              Authorization: 'Bearer ' + token,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(picData),
+          };
+          await fetchData<ProfilePicture>(
+            process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture',
+            picOptions,
+          );
+        } catch (error) {
+          // if user doesn't have a profile pic yeat use POST
+          const picOptions = {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + token,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(picData),
+          };
+
+          await fetchData<ProfilePicture>(
+            process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture',
+            picOptions,
+          );
+        }
+      }
+      return userResponse;
     } catch (error) {
       throw new Error((error as Error).message);
     }
@@ -156,6 +252,8 @@ const useUser = () => {
   return {
     getUserByToken,
     postRegister,
+    getUserWithProfileImage,
+    getUserDietaryRestrictions,
     updateUser,
     getUsernameAvailable,
     getEmailAvailable,
@@ -193,8 +291,10 @@ const useRecipes = (user_id?: number) => {
                 const profilePicture = await fetchData<ProfilePicture>(
                   process.env.EXPO_PUBLIC_AUTH_API +
                     '/users/profilepicture/id/' +
-                    (owner as any).profile_picture_id,
+                    owner.profile_picture_id,
                 );
+
+                console.log('profile picture url', profilePicture);
 
                 if (profilePicture && profilePicture.filename) {
                   profilePictureUrl = profilePicture.filename;
@@ -337,7 +437,37 @@ const useFile = () => {
     return JSON.parse(fileResult.body);
   };
 
-  return {postExpoFile, loading};
+  const postProfileImageFile = async (
+    imageUri: string,
+    token: string,
+  ): Promise<UploadResponse> => {
+    setLoading(true);
+    const fileResult = await FileSystem.uploadAsync(
+      process.env.EXPO_PUBLIC_UPLOAD_API + '/upload/profile',
+      imageUri,
+      {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      },
+    );
+
+    setLoading(false);
+    if (!fileResult.body) {
+      throw new Error('File upload failed');
+    }
+    console.log('file result', fileResult.body);
+    console.log('parsed file result', JSON.parse(fileResult.body));
+
+    const response = JSON.parse(fileResult.body);
+
+    return response;
+  };
+
+  return {postExpoFile, postProfileImageFile, loading};
 };
 
 const useDietTypes = () => {
