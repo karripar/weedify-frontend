@@ -1,18 +1,34 @@
 // UserContext.tsx
 import React, {createContext, useState} from 'react';
-import {Credentials, UserWithNoPassword} from 'hybrid-types/DBTypes';
+import {
+  Credentials,
+  UserWithNoPassword,
+  UserWithProfilePicture,
+} from 'hybrid-types/DBTypes';
 import {useAuthentication, useUser} from '../hooks/apiHooks';
 import {AuthContextType} from '../types/LocalTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UserResponse} from 'hybrid-types/MessageTypes';
-import { Alert } from 'react-native';
+import {Alert} from 'react-native';
 
 const UserContext = createContext<AuthContextType | null>(null);
 
 const UserProvider = ({children}: {children: React.ReactNode}) => {
   const {getUserByToken} = useUser();
   const {postLogin} = useAuthentication();
-  const [user, setUser] = useState<UserWithNoPassword | null>(null);
+  const [user, setUser] = useState<UserWithProfilePicture | null>(null);
+
+  const formatUserData = (
+    userData: UserWithNoPassword,
+  ): UserWithProfilePicture => {
+    return {
+      ...userData,
+      profile_picture:
+        'profilePicture' in userData
+          ? (userData as any).profile_picture || ''
+          : '',
+    } as UserWithProfilePicture;
+  };
 
   const handleLogin = async (credentials: Credentials) => {
     try {
@@ -21,7 +37,7 @@ const UserProvider = ({children}: {children: React.ReactNode}) => {
       if (loginResult) {
         await AsyncStorage.setItem('token', loginResult.token);
 
-        setUser(loginResult.user);
+        setUser(formatUserData(loginResult.user));
       }
     } catch (e) {
       console.log((e as Error).message);
@@ -47,12 +63,10 @@ const UserProvider = ({children}: {children: React.ReactNode}) => {
         return;
       }
 
-      const userResponse: UserResponse = await getUserByToken(token);
-      if (!userResponse) {
-        throw new Error('User not found');
+      const userResponse = await getUserByToken(token);
+      if (userResponse && userResponse.user) {
+        setUser(formatUserData(userResponse.user));
       }
-
-      setUser(userResponse.user);
     } catch (e) {
       console.log((e as Error).message);
     }

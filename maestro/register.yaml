@@ -1,0 +1,20 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+
+- launchApp
+- tapOn: "Weedify"
+- tapOn:
+    id: "toggle-login"
+- tapOn:
+    id: "username-input"
+- inputText: 'testiuser'
+- tapOn:
+    id: "email-input"
+- inputText: 'testiuser@testi.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'register-button'
+- assertVisible: "User created"
+- takeScreenshot: Register-successfull

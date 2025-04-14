@@ -3,7 +3,7 @@ import {useUserContext} from '../hooks/contextHooks';
 import {Button, Card, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
 
-import {HexColors, HexGradients} from '../utils/colors';
+import {HexColors} from '../utils/colors';
 import {StyleSheet} from 'react-native';
 import { Credentials } from 'hybrid-types/DBTypes';
 
@@ -43,6 +43,7 @@ const LoginForm = () => {
               value={value}
               autoCapitalize="none"
               errorMessage={errors.email?.message}
+              testID="email-input"
             />
           )}
           name="email"
@@ -65,6 +66,7 @@ const LoginForm = () => {
               onChangeText={onChange}
               value={value}
               errorMessage={errors.password?.message}
+              testID="password-input"
             />
           )}
           name="password"
@@ -75,6 +77,7 @@ const LoginForm = () => {
           titleStyle={styles.buttonTitle}
           title="Login"
           onPress={handleSubmit(doLogin)}
+          testID="login-button"
         />
       </Card>
       <Text style={styles.bottomText}>Or create an account:</Text>
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     shadowRadius: 12,
     // Android shadow
-    elevation: 5,
+    elevation: 10,
   },
   buttonTitle: {
     fontFamily: 'InriaSans-Regular',

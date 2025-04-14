@@ -43,6 +43,7 @@ const Login = () => {
         containerStyle={styles.buttonContainer}
         titleStyle={styles.buttonTitle}
         onPress={toggleRegister}
+        testID="toggle-login"
       >
         {displayRegister ? 'Login' : 'Register'}
       </Button>

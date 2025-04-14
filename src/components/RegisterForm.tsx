@@ -81,6 +81,7 @@ const RegisterForm = ({
               value={value}
               autoCapitalize="none"
               errorMessage={errors.username?.message}
+              testID='username-input'
             />
           )}
           name="username"
@@ -115,6 +116,7 @@ const RegisterForm = ({
               onChangeText={onChange}
               value={value}
               errorMessage={errors.email?.message}
+              testID='email-input'
             />
           )}
           name="email"
@@ -137,6 +139,7 @@ const RegisterForm = ({
               onChangeText={onChange}
               value={value}
               errorMessage={errors.password?.message}
+              testID='password-input'
             />
           )}
           name="password"
@@ -148,6 +151,7 @@ const RegisterForm = ({
           titleStyle={styles.buttonTitle}
           title="Register"
           onPress={handleSubmit(doRegister)}
+          testID='register-button'
         />
       </Card>
       <Text style={styles.bottomText}>Or login to your account:</Text>
