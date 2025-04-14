@@ -1,20 +1,37 @@
-import {Alert, ScrollView, StyleSheet, TouchableOpacity} from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {LinearGradient} from 'expo-linear-gradient';
 import {HexColors} from '../utils/colors';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
-import {useUserContext} from '../hooks/contextHooks';
+import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import {Card, Icon, Image, Overlay, Text} from '@rneui/base';
 import {View} from 'react-native';
-import {useUser} from '../hooks/apiHooks';
+import {useRecipes, useUser} from '../hooks/apiHooks';
+import RecipeListItem from '../components/RecipeListItem';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
   const {getUserWithProfileImage} = useUser();
+  const {triggerUpdate} = useUpdateContext();
+  const [refreshing, setRefreshing] = useState(false);
+  const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    triggerUpdate();
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -28,7 +45,6 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         }
       } catch (error) {
         console.error('Failed to load profile image:', error);
-        // Keep default image on error
       }
     };
 
@@ -86,7 +102,12 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      <ScrollView contentContainerStyle={{flexGrow: 1}}>
+      <ScrollView
+        contentContainerStyle={{flexGrow: 1}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <Card
           containerStyle={{
             borderRadius: 10,
@@ -154,26 +175,67 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
             </Text>
           </View>
         </Card>
+        <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '600',
+              color: HexColors['darker-green'],
+              marginLeft: 20,
+              marginVertical: 10,
+              marginTop: 20
+            }}
+          >
+            User bio
+          </Text>
         <View
           style={{
             maxWidth: '100%',
             backgroundColor: HexColors['almost-white'],
             borderRadius: 10,
             padding: 20,
-            margin: 20,
+            marginHorizontal: 20
           }}
         >
-          <Text>{user ? user.bio : ''}</Text>
+          <Text>
+            {user ? user.bio !== null : 'Nothing on your user bio yet'}
+          </Text>
         </View>
-        <Card
-          containerStyle={{
-            marginHorizontal: 20,
-            borderRadius: 10,
+        <View
+          style={{
+            marginHorizontal: 10,
             marginBottom: 20,
           }}
         >
-          <Card.Title>My posts</Card.Title>
-        </Card>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '600',
+              color: HexColors['darker-green'],
+              marginBottom: 5,
+              marginLeft: 10,
+              marginTop: 20
+            }}
+          >
+            My posts
+          </Text>
+          {loading && (
+            <ActivityIndicator size="large" color={HexColors['medium-green']} />
+          )}
+
+          {!loading && recipeArray.length === 0 && (
+            <Text style={{textAlign: 'center', padding: 20}}>
+              You haven't created any posts yet
+            </Text>
+          )}
+
+          {recipeArray.map((recipe) => (
+            <RecipeListItem
+              key={recipe.recipe_id}
+              item={recipe}
+              navigation={navigation}
+            />
+          ))}
+        </View>
       </ScrollView>
     </LinearGradient>
   );

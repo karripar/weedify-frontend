@@ -22,6 +22,7 @@ type NavigatorType = {
   // stack screen
   Back: undefined;
   'Edit Profile': undefined;
+  'Recipe': undefined;
 };
 
 type RecipeIngredient = {
@@ -40,6 +41,7 @@ type PostRecipeData = {
   title: string;
   instructions: string;
   cooking_time: number;
+  portions: number;
   media_type: string;
   filename: string;
   filesize: number;

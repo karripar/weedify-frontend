@@ -21,15 +21,15 @@ const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {recipeArray, loading} = useRecipes();
   const {triggerUpdate} = useUpdateContext();
 
-  // State to store filtered recipes from SearchComponent
+  // state to store filtered recipes
   const [filteredRecipes, setFilteredRecipes] = useState<
     RecipeWithOwnerExtended[]
   >([]);
 
-  // New state to track if any filters are active
+  // new state to track if any filters are active
   const [isFiltering, setIsFiltering] = useState(false);
 
-  // Handler for when filters change in SearchComponent
+  // handler for when filters change in SearchComponent
   const handleFilterChange = (
     filtered: RecipeWithOwnerExtended[],
     hasActiveFilters: boolean,

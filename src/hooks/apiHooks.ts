@@ -265,7 +265,7 @@ const useRecipes = (user_id?: number) => {
   const [recipeArray, setRecipeArray] = useState<RecipeWithOwner[]>([]);
   const [loading, setLoading] = useState(false);
   const {update} = useUpdateContext();
-  const url = user_id ? '/recipes/byuser/byuserid/' + user_id : '/recipes';
+  const url = user_id ? '/recipes/byuser/userid/' + user_id : '/recipes';
 
   useEffect(() => {
     // get all or a singular recipe by user id
@@ -362,10 +362,14 @@ const useRecipes = (user_id?: number) => {
         typeof inputs.cooking_time === 'number'
           ? inputs.cooking_time
           : Number(inputs.cooking_time),
+      portions:
+        typeof inputs.portions === 'number'
+          ? inputs.portions
+          : Number(inputs.portions),
       media_type: file.data.media_type,
       filename: file.data.filename,
       filesize: file.data.filesize,
-      difficulty_level_id: Number(inputs.difficulty_level_id) || 1, // 1 is set to default for now because the form for it is still missing...
+      difficulty_level_id: Number(inputs.difficulty_level_id),
       ingredients: formattedIngredients,
       dietary_info: dietaryInfo,
     };

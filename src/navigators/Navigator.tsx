@@ -11,6 +11,7 @@ import {HexColors} from '../utils/colors';
 import {useUserContext} from '../hooks/contextHooks';
 import Login from '../views/Login';
 import EditProfileForm from '../components/EditProfileForm';
+import Single from '../views/Single';
 
 const Tab = createBottomTabNavigator<NavigatorType>();
 const Stack = createNativeStackNavigator<NavigatorType>();
@@ -101,6 +102,15 @@ const StackScreen = () => {
 
           }}
         />
+        <Stack.Screen
+          name="Recipe"
+          component={Single}
+          options={{
+            headerStyle: {backgroundColor: HexColors['medium-green']},
+            headerTintColor: HexColors['light-purple'],
+
+          }}
+          />
       </>
     </Stack.Navigator>
   );

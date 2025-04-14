@@ -12,15 +12,20 @@ import {NavigatorType} from '../types/LocalTypes';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useUpdateContext} from '../hooks/contextHooks';
 import {HexColors} from '../utils/colors';
-import {SelectList} from 'react-native-dropdown-select-list';
+import {
+  MultipleSelectList,
+  SelectList,
+} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 
 type PostInputs = {
   title: string;
   ingredients: string[];
+  dietary_info: string;
   instructions: string;
   cooking_time: number;
-  diet_type: string;
+  portions: number;
+  difficulty_level_id: number;
 };
 
 //
@@ -32,17 +37,18 @@ const Post = () => {
   const [selectedUnit, setSelectedUnit] = useState('');
   const [amount, setAmount] = useState('');
   const [ingredientsList, setIngredientsList] = useState<string[]>([]);
-
   const {getAllDietTypes} = useDietTypes();
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
   const [dietList, setDietList] = useState<string[]>([]);
   const [currentIngredient, setCurrentIngredient] = useState('');
+  const [instructionsLength, setInstructionsLength] = useState(0);
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
-  const [resetKey, setResetKey] = useState(0);
+  const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
+  const [dietResetKey, setDietResetKey] = useState(0);
 
   // data for the units for now, these will come from db later
   const data = [
@@ -53,6 +59,13 @@ const Post = () => {
     {key: 'dl', value: 'dl'},
     {key: 'l', value: 'l'},
     {key: 'kpl', value: 'kpl'},
+  ];
+
+  // data for difficulty levels
+  const difficultyData = [
+    {key: '1', value: 'Easy'},
+    {key: '2', value: 'Medium'},
+    {key: '3', value: 'Hard'},
   ];
 
   // data for diet types
@@ -84,9 +97,11 @@ const Post = () => {
   const initValues: PostInputs = {
     title: '',
     ingredients: [],
+    dietary_info: '',
     instructions: '',
     cooking_time: Number(),
-    diet_type: '',
+    portions: Number(),
+    difficulty_level_id: Number(),
   };
   const {
     control,
@@ -105,6 +120,9 @@ const Post = () => {
     setCurrentIngredient('');
     setAmount('');
     setSelectedUnit('');
+    setSelectedDifficultyLevel('');
+    setInstructionsLength(0)
+    setDietResetKey((prev) => prev + 1);
     reset(initValues);
   };
 
@@ -156,19 +174,27 @@ const Post = () => {
       return dietType ? dietType.key : '1';
     });
 
+    // post with the required data
+    const recipeData = {
+      ...inputs,
+      cooking_time: Number(inputs.cooking_time),
+      portions: Number(inputs.portions),
+      ingredients: ingredientsList,
+      difficulty_level_id: Number(selectedDifficultyLevel),
+    };
+
+    // add dietary info if not empty
+    if (dietTypeIds.length > 0) {
+      recipeData.dietary_info = dietTypeIds.join(', ');
+    }
+
     try {
       // post a new recipe
       const postResponse = await postRecipe(
-        fileResponse,
-        {
-          ...inputs,
-          cooking_time: Number(inputs.cooking_time),
-          ingredients: ingredientsList,
-          diet_type: dietTypeIds,
-          difficulty_level_id: 1,
-        },
-        token,
+        fileResponse, recipeData, token
       );
+
+      console.log('new recipe', postResponse);
 
       // Success handling
       resetForm();
@@ -182,7 +208,6 @@ const Post = () => {
   };
 
   // select image for the post
-  // TODO: why this doesn't display the selected image?
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
@@ -344,21 +369,17 @@ const Post = () => {
             Select special diets
           </Text>
           <View style={{flex: 5}}>
-            <SelectList
-              key={`diet-selector-${resetKey}`}
-              data={dietTypeOptions}
-              setSelected={(diettype: string) => {
-                const isDuplicate = dietList.some(
-                  (existing) =>
-                    existing.toLowerCase() === diettype.toLowerCase(),
-                );
-
-                if (diettype && !isDuplicate) {
-                  setDietList([...dietList, diettype]);
-                }
-                setResetKey((prev) => prev + 1);
+            <MultipleSelectList
+              key={`diet-selector-${dietResetKey}`}
+              setSelected={(val: string[]) => {
+                setDietList(val);
               }}
+              data={dietTypeOptions}
               save="value"
+              onSelect={() => {
+                console.log('Selected items: ', dietList);
+              }}
+              label="Selected Diets"
               boxStyles={{
                 borderColor: HexColors['light-grey'],
                 borderWidth: 1.5,
@@ -372,59 +393,46 @@ const Post = () => {
               }}
               dropdownItemStyles={{marginVertical: 3}}
               placeholder="Diets"
-            ></SelectList>
+            />
           </View>
-          <View style={styles.ingredientContainer}>
-            {dietList.map((diet, index) => (
-              <Chip
-                key={index}
-                title={diet}
-                buttonStyle={styles.chipButton}
-                titleStyle={styles.chipTitle}
-                containerStyle={styles.chipContainer}
-                icon={{
-                  name: 'close',
-                  type: 'ionicon',
-                  size: 16,
-                  color: HexColors['dark-grey'],
-                }}
-                iconRight
-                onPress={() => {
-                  // remove diet type when pressed
-                  setDietList(dietList.filter((_, i) => i !== index));
-                }}
-              />
-            ))}
-          </View>
-
           <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
           <Controller
             control={control}
             rules={{
               required: true,
               maxLength: {value: 1000, message: 'maximum 1000 characters'},
-              minLength: {value: 2, message: 'minimum 20 characters'},
+              minLength: {value: 20, message: 'minimum 20 characters'},
             }}
             render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={[styles.input, styles.instructionsInput]}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                errorMessage={errors.instructions?.message}
-                multiline={true}
-                numberOfLines={10}
-                textAlignVertical="top"
-                autoCapitalize="sentences"
-              />
+              <>
+                <Input
+                  style={[styles.input, styles.instructionsInput]}
+                  inputContainerStyle={styles.inputContainer}
+                  onBlur={onBlur}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    setInstructionsLength(text.length);
+                  }}
+                  value={value}
+                  errorMessage={errors.instructions?.message}
+                  multiline={true}
+                  numberOfLines={10}
+                  textAlignVertical="top"
+                  autoCapitalize="sentences"
+                />
+                <Text style={styles.counterText}>
+                  {instructionsLength < 20
+                    ? `${instructionsLength}/20 (${20 - instructionsLength} more needed)`
+                    : `${instructionsLength}/1000`}
+                </Text>
+              </>
             )}
             name="instructions"
           />
           <Text style={styles.text}>Estimated cooking time</Text>
 
           <View style={{flexDirection: 'row', maxWidth: '60%'}}>
-            <View style={{flex: 2}}>
+            <View style={{flex: 1}}>
               <Controller
                 control={control}
                 rules={{
@@ -459,19 +467,88 @@ const Post = () => {
             <View style={{flex: 1}}>
               <Text
                 style={[
-                  styles.text,
-                  {
-                    margin: 0,
-                    borderWidth: 1.5,
-                    borderRadius: 10,
-                    padding: 8,
-                    color: HexColors['dark-grey'],
-                    borderColor: HexColors['light-grey'],
-                  },
+                  styles.text, { marginLeft: 0}
+
                 ]}
               >
                 min
               </Text>
+            </View>
+          </View>
+          <Text style={styles.text}>Estimated dish portions</Text>
+
+          <View style={{flexDirection: 'row', maxWidth: '60%'}}>
+            <View style={{flex: 1}}>
+              <Controller
+                control={control}
+                rules={{
+                  required: {value: true, message: 'Porpotions is required'},
+                  maxLength: {value: 10, message: 'maximum 10 numbers'},
+                  minLength: {value: 1, message: 'minimum 1 numbers'},
+                  pattern: {
+                    value: /^[0-9]+$/,
+                    message: 'Please enter numbers only',
+                  },
+                }}
+                render={({field: {onChange, onBlur, value}}) => (
+                  <Input
+                    style={styles.input}
+                    inputContainerStyle={styles.inputContainer}
+                    onBlur={onBlur}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9]/g, '');
+                      onChange(
+                        numericValue === '' ? undefined : Number(numericValue),
+                      );
+                    }}
+                    value={value?.toString()}
+                    keyboardType="numeric"
+                    autoCapitalize="none"
+                    errorMessage={errors.portions?.message}
+                  />
+                )}
+                name="portions"
+              />
+            </View>
+            <View style={{flex: 1}}>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    marginLeft: 0,
+                  },
+                ]}
+              >
+                people
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.text, {marginTop: 20}]}>
+            Select difficulty level
+          </Text>
+          <View>
+            <View style={{flex: 1.5, marginHorizontal: 10, marginBottom: 20}}>
+              <SelectList
+                data={difficultyData}
+                search={false}
+                setSelected={setSelectedDifficultyLevel}
+                save="key"
+                defaultOption={{
+                  key: selectedDifficultyLevel,
+                  value: selectedDifficultyLevel,
+                }}
+                boxStyles={{
+                  borderColor: HexColors['light-grey'],
+                  borderWidth: 1.5,
+                }}
+                dropdownStyles={{
+                  borderColor: HexColors['light-grey'],
+                  borderWidth: 1.5,
+                  marginBottom: 10,
+                }}
+                dropdownItemStyles={{marginVertical: 3}}
+                placeholder="Difficulty levels"
+              />
             </View>
           </View>
           <Button
@@ -504,6 +581,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   card: {
+    marginTop: 0,
     borderRadius: 10,
     marginBottom: 10,
   },
@@ -582,6 +660,8 @@ const styles = StyleSheet.create({
     backgroundColor: HexColors['light-grey'],
     marginRight: 10,
     marginVertical: 5,
+    // Android shadow
+    elevation: 4,
   },
   chipTitle: {
     color: HexColors['dark-grey'],
@@ -598,8 +678,15 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    // Android shadow
-    elevation: 5,
+  },
+  counterText: {
+    color: HexColors['dark-grey'],
+    fontSize: 12,
+    textAlign: 'right',
+    marginRight: 15,
+    marginTop: -10,
+    marginBottom: 10,
+    fontFamily: 'InriaSans-Regular',
   },
 });
 
