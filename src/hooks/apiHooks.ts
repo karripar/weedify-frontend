@@ -110,128 +110,31 @@ const useUser = () => {
   };
 };
 
-const useRecipes = (user_id?: number) => {
+const useRecipes = () => {
   const [recipeArray, setRecipeArray] = useState<RecipeWithOwner[]>([]);
   const [loading, setLoading] = useState(false);
   const {update} = useUpdateContext();
-  const url = user_id ? '/recipes/byuser/byuserid/' + user_id : '/recipes';
 
+  // Add update to the dependency array to trigger reload when likes change
   useEffect(() => {
-    // get all or a singular recipe by user id
-    const getRecipes = async () => {
+    const fetchRecipes = async () => {
       try {
         setLoading(true);
-        const recipes = await fetchData<Recipe[]>(
-          process.env.EXPO_PUBLIC_MEDIA_API + url,
+        const recipes = await fetchData<RecipeWithOwner[]>(
+          `${process.env.EXPO_PUBLIC_MEDIA_API}/recipes`,
         );
-        const recipeWithOwner: RecipeWithOwner[] = await Promise.all(
-          recipes.map(async (recipe) => {
-            const owner = await fetchData<UserWithNoPassword>(
-              process.env.EXPO_PUBLIC_AUTH_API +
-                '/users/user/byuserid/' +
-                recipe.user_id,
-            );
-
-            const recipeItem: RecipeWithOwner = {
-              ...recipe,
-              username: owner.username,
-            };
-            return recipeItem;
-          }),
-        );
-
-        console.log(recipeWithOwner);
-
-        recipeWithOwner.reverse();
-
-        setRecipeArray(recipeWithOwner);
+        setRecipeArray(recipes);
       } catch (error) {
-        console.error((error as Error).message);
+        console.error('Error fetchRecipes: ', error);
       } finally {
         setLoading(false);
       }
     };
 
-    getRecipes();
-  }, [update]);
+    fetchRecipes();
+  }, [update]); // Add update to dependencies
 
-  // post a new recipe
-  const postRecipe = async (
-    file: UploadResponse,
-    inputs: Record<string, string | number | string[]>,
-    token: string,
-  ) => {
-    // format the ingredients to sent them to db
-    const formattedIngredients = (inputs.ingredients as string[]).map(
-      (ingredient) => {
-        const parts = ingredient.toString().trim().split(' ');
-        const amount = parseFloat(parts[0]);
-        const unit = parts[1];
-        const name = parts.slice(2).join(' ');
-
-        return {
-          name,
-          amount,
-          unit,
-        };
-      },
-    );
-
-    // format dietary info to be an array of numbers to send them with the recipe
-    const dietaryInfo = Array.isArray(inputs.diet_type)
-      ? inputs.diet_type.map((id) => Number(id))
-      : [];
-
-    const recipe: PostRecipeData = {
-      title: inputs.title as string,
-      instructions: inputs.instructions as string,
-      cooking_time:
-        typeof inputs.cooking_time === 'number'
-          ? inputs.cooking_time
-          : Number(inputs.cooking_time),
-      media_type: file.data.media_type,
-      filename: file.data.filename,
-      filesize: file.data.filesize,
-      difficulty_level_id: Number(inputs.difficulty_level_id) || 1, // 1 is set to default for now because the form for it is still missing...
-      ingredients: formattedIngredients,
-      dietary_info: dietaryInfo,
-    };
-
-    console.log('posting recipe', recipe);
-
-    console.log('Recipe object:', recipe);
-    console.log('Stringified body:', JSON.stringify(recipe));
-
-    // post the data to Media API and get the data as MessageResponse
-    const options = {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify(recipe),
-    };
-    return await fetchData<MessageResponse>(
-      process.env.EXPO_PUBLIC_MEDIA_API + '/recipes',
-      options,
-    );
-  };
-
-  // delete recipe
-  const deleteRecipe = async (recipe_id: number, token: string) => {
-    const options = {
-      method: 'DELETE',
-      headers: {
-        Authorization: 'Bearer ' + token,
-      },
-    };
-    return await fetchData<MessageResponse>(
-      process.env.EXPO_PUBLIC_MEDIA_API + '/recipes/' + recipe_id,
-      options,
-    );
-  };
-
-  return {recipeArray, postRecipe, deleteRecipe, loading};
+  return {recipeArray, loading};
 };
 
 const useFile = () => {

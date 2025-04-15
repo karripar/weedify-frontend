@@ -6,7 +6,7 @@ import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useState, useEffect} from 'react';
 import {useLikes} from '../hooks/apiHooks';
-import {useUserContext} from '../hooks/contextHooks';
+import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import {Alert} from 'react-native';
 
 type RecipeListItemProps = {
@@ -20,6 +20,13 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   const [likesCount, setLikesCount] = useState(item.likes_count || 0);
   const {checkIfLiked, likeRecipe, unlikeRecipe} = useLikes();
   const {user} = useUserContext();
+  const {update, setUpdate} = useUpdateContext();
+
+  useEffect(() => {
+    if (item && item.likes_count !== undefined) {
+      setLikesCount(item.likes_count);
+    }
+  }, [item.likes_count]);
 
   // Check if the recipe is liked when component mounts
   useEffect(() => {
@@ -57,18 +64,20 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         if (success) {
           setIsLiked(false);
           setLikeId(null);
-          setLikesCount((prev: number) => Math.max(0, prev - 1));
+          setLikesCount((prev) => Math.max(0, prev - 1));
+          setUpdate(!update);
         }
       } else {
         // Like the recipe
         const success = await likeRecipe(item.recipe_id);
         if (success) {
           setIsLiked(true);
-          setLikesCount((prev: number) => prev + 1);
+          setLikesCount((prev) => prev + 1);
 
           const response = await checkIfLiked(item.recipe_id);
           if (response) {
             setLikeId(response.like_id);
+            setUpdate(!update);
           }
         }
       }
