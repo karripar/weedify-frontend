@@ -32,6 +32,8 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
   const [availableDietTypes, setAvailableDietTypes] = useState<string[]>([]);
   const {getAllDietTypes} = useDietTypes();
 
+  const prevFilterRef = React.useRef('');
+
   // Fetch all diet types when component mounts
   useEffect(() => {
     const fetchDietTypes = async () => {
@@ -111,16 +113,25 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       });
     }
 
-    // Sort by creation date
+    // Sort by creation date or likes
     filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      if (sortOrder === 'oldest' || sortOrder === 'newest') {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
 
-      if (sortOrder === 'oldest') {
-        return dateA - dateB; // Oldest first
-      } else {
-        return dateB - dateA; // Newest first (default)
+        if (sortOrder === 'oldest') {
+          return dateA - dateB; // Oldest first
+        } else {
+          return dateB - dateA; // Newest first
+        }
+      } else if (sortOrder === 'likes') {
+        // Varmista että likes_count on numero
+        const likesA = a.likes_count !== undefined ? Number(a.likes_count) : 0;
+        const likesB = b.likes_count !== undefined ? Number(b.likes_count) : 0;
+        return likesB - likesA; // Eniten tykätyt ensin
       }
+
+      return 0;
     });
 
     // Check if any filters are active
@@ -130,8 +141,14 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       dietTypeFilter.length > 0 ||
       sortOrder !== 'newest';
 
-    // Pass filtered results and filter state back to parent component
-    onFilterChange(filtered, hasActiveFilters);
+    // TÄÄ RIVI ESTÄÄ IKUISEN LOOPIN
+    const currentFilterString = JSON.stringify(
+      filtered.map((r) => r.recipe_id),
+    );
+    if (currentFilterString !== prevFilterRef.current) {
+      prevFilterRef.current = currentFilterString;
+      onFilterChange(filtered, hasActiveFilters);
+    }
   }, [recipeArray, searchText, cookingTimeFilter, dietTypeFilter, sortOrder]);
 
   // Reset search filters
@@ -248,7 +265,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                     styles.filterOption,
                     sortOrder === 'likes' && styles.selectedOption,
                   ]}
-                  onPress={() => {}}
+                  onPress={() => setSortOrder('likes')}
                 >
                   <Text>Most liked</Text>
                 </TouchableOpacity>

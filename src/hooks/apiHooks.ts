@@ -14,11 +14,13 @@ import {
   RecipeWithOwner,
   RegisterCredentials,
   UserWithNoPassword,
+  Like,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
 import {PostRecipeData, RecipeWithProfileImage} from '../types/LocalTypes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useAuthentication = () => {
   // login with user credentials
@@ -266,13 +268,13 @@ const useRecipes = (user_id?: number) => {
   const {update} = useUpdateContext();
   const url = user_id ? '/recipes/byuser/userid/' + user_id : '/recipes';
 
+  // Add update to the dependency array to trigger reload when likes change
   useEffect(() => {
-    // get all or a singular recipe by user id
-    const getRecipes = async () => {
+    const fetchRecipes = async () => {
       try {
         setLoading(true);
-        const recipes = await fetchData<Recipe[]>(
-          process.env.EXPO_PUBLIC_MEDIA_API + url,
+        const recipes = await fetchData<RecipeWithOwner[]>(
+          `${process.env.EXPO_PUBLIC_MEDIA_API}${url}`,
         );
 
         const recipeWithOwner: RecipeWithOwner[] = await Promise.all(
@@ -318,14 +320,14 @@ const useRecipes = (user_id?: number) => {
 
         setRecipeArray(recipeWithOwner);
       } catch (error) {
-        console.error((error as Error).message);
+        console.error('Error fetchRecipes: ', error);
       } finally {
         setLoading(false);
       }
     };
 
-    getRecipes();
-  }, [update]);
+    fetchRecipes();
+  }, [update, url]); // Add update and url to dependencies
 
   // post a new recipe
   const postRecipe = async (
@@ -484,4 +486,100 @@ const useDietTypes = () => {
   return {getAllDietTypes};
 };
 
-export {useAuthentication, useUser, useRecipes, useFile, useDietTypes};
+const useLikes = () => {
+  const {update, setUpdate} = useUpdateContext();
+
+  const checkIfLiked = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        return null;
+      }
+
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetchData<Like | null>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes/recipe/${recipe_id}/user`,
+        options,
+      );
+      return response;
+    } catch (error) {
+      console.error('Error checking like status:', error);
+      return null;
+    }
+  };
+
+  const likeRecipe = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({recipe_id}),
+      };
+
+      await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes`,
+        options,
+      );
+
+      // Trigger update to refresh content
+      setUpdate(!update);
+      return true;
+    } catch (error) {
+      console.error('Error liking recipe:', error);
+      return false;
+    }
+  };
+
+  const unlikeRecipe = async (like_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/likes/${like_id}`,
+        options,
+      );
+
+      // Trigger update to refresh content
+      setUpdate(!update);
+      return true;
+    } catch (error) {
+      console.error('Error unliking recipe:', error);
+      return false;
+    }
+  };
+
+  return {checkIfLiked, likeRecipe, unlikeRecipe};
+};
+
+export {
+  useAuthentication,
+  useUser,
+  useRecipes,
+  useFile,
+  useDietTypes,
+  useLikes,
+};

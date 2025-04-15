@@ -1,14 +1,24 @@
-import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {RecipeWithAllFields, RecipeWithOwner} from 'hybrid-types/DBTypes';
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Alert,
+} from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Divider} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {useEffect, useState} from 'react';
-import {useUser} from '../hooks/apiHooks';
+import {useState, useEffect} from 'react';
+import {useLikes, useUser} from '../hooks/apiHooks';
+import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 
 type RecipeListItemProps = {
-  item: {
+  item:{
+    likes_count?: number;
+    diet_types?: Array<{name: string; diet_type_id: number}>;
     recipe_id: number;
     user_id: number;
     title: string;
@@ -25,13 +35,22 @@ type RecipeListItemProps = {
 };
 
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
+  // Profile image loading logic
   const {getUserWithProfileImage} = useUser();
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
 
+  // Like functionality state and hooks
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeId, setLikeId] = useState<number | null>(null);
+  const [likesCount, setLikesCount] = useState(item.likes_count || 0);
+  const {checkIfLiked, likeRecipe, unlikeRecipe} = useLikes();
+  const {user} = useUserContext();
+  const {update, setUpdate} = useUpdateContext();
+
+  // Load profile image
   useEffect(() => {
-    // get the profile image of the recipe owner (jooo nää voi laittaa ehk johonki yhteiseen get profile pic mut toistaseks tää sama functio on kaikissa komponenteissa jossa sitä tarvitaa....)
     const loadProfileImage = async () => {
       try {
         const profileImage = await getUserWithProfileImage(item.user_id);
@@ -46,12 +65,76 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     loadProfileImage();
   }, [item.user_id]);
 
-  // get the instructions shorter to display in the home view
+  // Set likes count when it changes
+  useEffect(() => {
+    if (item && item.likes_count !== undefined) {
+      setLikesCount(item.likes_count);
+    }
+  }, [item.likes_count]);
+
+  // Check if recipe is liked
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (user) {
+        try {
+          const response = await checkIfLiked(item.recipe_id);
+          setIsLiked(response !== null);
+          if (response) {
+            setLikeId(response.like_id);
+          }
+        } catch (error) {
+          console.error('Error fetching like status:', error);
+        }
+      }
+    };
+
+    fetchLikeStatus();
+  }, [item.recipe_id, user]);
+
+  // Get preview of description
   const getDescriptionPreview = () => {
     if (!item.instructions) return '';
     return item.instructions.length > 100
       ? item.instructions.substring(0, 100) + '...'
       : item.instructions;
+  };
+
+  // Handle like/unlike action
+  const handleLikePress = async () => {
+    if (!user) {
+      Alert.alert('Login Required', 'You need to be logged in to like recipes');
+      navigation.navigate('Login');
+      return;
+    }
+
+    try {
+      if (isLiked && likeId) {
+        // Unlike the recipe
+        const success = await unlikeRecipe(likeId);
+        if (success) {
+          setIsLiked(false);
+          setLikeId(null);
+          setLikesCount((prev) => Math.max(0, prev - 1));
+          setUpdate(!update);
+        }
+      } else {
+        // Like the recipe
+        const success = await likeRecipe(item.recipe_id);
+        if (success) {
+          setIsLiked(true);
+          setLikesCount((prev) => prev + 1);
+
+          const response = await checkIfLiked(item.recipe_id);
+          if (response) {
+            setLikeId(response.like_id);
+            setUpdate(!update);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+      Alert.alert('Error', 'Could not process your like. Please try again.');
+    }
   };
 
   return (
@@ -96,12 +179,23 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             <Text style={styles.cookingTime}>({item.cooking_time}min)</Text>
           </Text>
           <View style={styles.iconGroup}>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={handleLikePress}
+              style={styles.iconButton}
+            >
               <Ionicons
-                name="heart-outline"
+                name={isLiked ? 'heart' : 'heart-outline'}
                 size={24}
-                color={HexColors['dark-grey']}
+                color={isLiked ? 'red' : HexColors['dark-grey']}
               />
+              <Text
+                style={[
+                  styles.likeCount,
+                  isLiked && {color: 'red', fontWeight: 'bold'},
+                ]}
+              >
+                {likesCount}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton}>
               <Ionicons
@@ -136,7 +230,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           buttonStyle={styles.openButton}
           titleStyle={styles.openButtonText}
           containerStyle={styles.buttonContainer}
-          onPress={() => navigation.navigate('Recipe', {item})}
+          onPress={() => navigation.navigate('Single', {item})}
         />
       </View>
     </Card>
@@ -213,6 +307,8 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginLeft: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dietContainer: {
     flexDirection: 'row',
@@ -263,6 +359,40 @@ const styles = StyleSheet.create({
   openButtonText: {
     color: 'white',
     fontSize: 14,
+  },
+  flexView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 5,
+    marginBottom: 10,
+    marginHorizontal: 10,
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  likeCount: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#555',
+  },
+  commentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  commentCount: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#555',
   },
 });
 

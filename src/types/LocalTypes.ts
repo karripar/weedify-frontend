@@ -57,17 +57,25 @@ type PostRecipeData = {
 
 // Hakutoimintoa varten
 // lisätty lokaalisti testausta varten
-// (recipeModel.ts rivi 56)
 type DietTypeWithName = {
   diet_type_id: number;
   name: string;
 };
 
+// lisätty lokaalisti testausta varten
+type RecipeWithPossibleLikes = RecipeWithOwner & {
+  likes_count?: number;
+};
+
 // Laajennettu hakutoimintoa varten
 // Lisätty lokaalisti testausta varten
 type RecipeWithOwnerExtended = RecipeWithOwner & {
+  ingredients?: {
+    name: string;
+    quantity: string;
+  }[];
   diet_types?: DietTypeWithName[];
-  ingredients?: RecipeIngredient[];
+  likes_count: number;
 };
 
 export type {
@@ -77,4 +85,5 @@ export type {
   RecipeWithProfileImage,
   RecipeWithOwnerExtended,
   DietTypeWithName
+  RecipeWithPossibleLikes,
 };
