@@ -161,7 +161,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Single', {item})}>
+      <TouchableOpacity onPress={() => navigation.navigate('Recipe', {item})}>
         <Image
           style={styles.recipeImage}
           source={{
@@ -230,7 +230,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           buttonStyle={styles.openButton}
           titleStyle={styles.openButtonText}
           containerStyle={styles.buttonContainer}
-          onPress={() => navigation.navigate('Single', {item})}
+          onPress={() => navigation.navigate('Recipe', {item})}
         />
       </View>
     </Card>

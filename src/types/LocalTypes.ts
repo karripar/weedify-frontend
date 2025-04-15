@@ -84,6 +84,6 @@ export type {
   PostRecipeData,
   RecipeWithProfileImage,
   RecipeWithOwnerExtended,
-  DietTypeWithName
+  DietTypeWithName,
   RecipeWithPossibleLikes,
 };
