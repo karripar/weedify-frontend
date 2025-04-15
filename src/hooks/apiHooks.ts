@@ -13,7 +13,6 @@ import {
   Recipe,
   RecipeWithOwner,
   RegisterCredentials,
-  User,
   UserWithNoPassword,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
@@ -200,7 +199,7 @@ const useUser = () => {
             body: JSON.stringify(picData),
           };
           await fetchData<ProfilePicture>(
-            process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture',
+            process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture/change',
             picOptions,
           );
         } catch (error) {
@@ -350,10 +349,11 @@ const useRecipes = (user_id?: number) => {
       },
     );
 
-    // format dietary info to be an array of numbers to send them with the recipe
-    const dietaryInfo = Array.isArray(inputs.diet_type)
-      ? inputs.diet_type.map((id) => Number(id))
-      : [];
+    const dietaryInfo = Array.isArray(inputs.dietary_info)
+  ? inputs.dietary_info
+  : typeof inputs.dietary_info === 'string' && inputs.dietary_info.length > 0
+  ? inputs.dietary_info.split(',').map(id => Number(id))
+  : [];
 
     const recipe: PostRecipeData = {
       title: inputs.title as string,
@@ -371,7 +371,7 @@ const useRecipes = (user_id?: number) => {
       filesize: file.data.filesize,
       difficulty_level_id: Number(inputs.difficulty_level_id),
       ingredients: formattedIngredients,
-      dietary_info: dietaryInfo,
+      dietary_info: dietaryInfo.map((id) => Number(id)),
     };
 
     console.log('posting recipe', recipe);

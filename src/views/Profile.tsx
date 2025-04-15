@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     width: 200,
     padding: 0,
     position: 'absolute',
-    top: 80,
+    top: 90,
     right: 15,
     borderRadius: 10,
     backgroundColor: HexColors['light-purple'],

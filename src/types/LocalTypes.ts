@@ -4,6 +4,11 @@ import {
   UserWithProfilePicture,
 } from 'hybrid-types/DBTypes';
 
+// for testing
+declare global {
+  var TEST_MODE: boolean | undefined;
+}
+
 type AuthContextType = {
   user: UserWithProfilePicture | null;
   handleLogin: (credentials: Credentials) => void;

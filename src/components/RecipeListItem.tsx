@@ -19,7 +19,7 @@ type RecipeListItemProps = {
     media_type: string;
     created_at: string;
     username: string;
-    diet_types?: Array<{name: string; diet_type_id: number}>;
+    dietary_info?: Array<{name: string; diet_type_id: number}>;
   };
   navigation: NavigationProp<ParamListBase>;
 };
@@ -112,9 +112,9 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             </TouchableOpacity>
           </View>
         </View>
-        {item.diet_types && item.diet_types.length > 0 && (
+        {item.dietary_info && item.dietary_info.length > 0 && (
           <View style={styles.dietContainer}>
-            {item.diet_types.map((diet, index) => (
+            {item.dietary_info.map((diet, index) => (
               <View key={index} style={styles.dietChip}>
                 <Text style={styles.dietText}>{diet.name}</Text>
               </View>

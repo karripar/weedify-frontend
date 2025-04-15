@@ -1,6 +1,5 @@
 import {Platform, SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import React from 'react';
-import {LinearGradient} from 'expo-linear-gradient';
 import {HexColors} from '../utils/colors';
 import Post from '../components/NewPostForm';
 
