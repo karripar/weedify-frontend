@@ -5,7 +5,7 @@ import {Button, Card, ListItem} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useState, useEffect} from 'react';
-import {useLikes} from '../hooks/apiHooks';
+import {useLikes, useUser} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import {Alert} from 'react-native';
 

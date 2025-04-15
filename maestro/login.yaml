@@ -1,0 +1,15 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+
+- launchApp
+- tapOn: "Weedify"
+- tapOn:
+    id: "email-input"
+- inputText: 'elli@01.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'login-button'
+- assertVisible: "Home"
+- takeScreenshot: login-successful
