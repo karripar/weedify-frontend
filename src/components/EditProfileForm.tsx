@@ -8,7 +8,7 @@ import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Controller, useForm} from 'react-hook-form';
-import {SelectList} from 'react-native-dropdown-select-list';
+import {MultipleSelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 
 type UpdateInputs = {
@@ -35,7 +35,7 @@ const EditProfileForm = ({
     {key: string; value: string}[]
   >([]);
   const [dietList, setDietList] = useState<string[]>([]);
-  const [resetKey, setResetKey] = useState(0);
+  const [dietResetKey, setDietResetKey] = useState(0);
   const [dietTypesLoaded, setDietTypesLoaded] = useState(false);
 
   const initValues: UpdateInputs = {
@@ -52,6 +52,14 @@ const EditProfileForm = ({
   } = useForm({
     defaultValues: initValues,
   });
+
+  // clear all the inputs fields and selected ingredients and dietypes
+  const resetForm = () => {
+    setImage(null);
+    setDietList([]);
+    setDietResetKey((prev) => prev + 1);
+    reset(initValues);
+  };
 
   useEffect(() => {
     const loadUserDietaryInfo = async () => {
@@ -143,53 +151,50 @@ const EditProfileForm = ({
       return;
     }
 
+    // Create update object with fields to update
+    const updateData: Record<string, string | string[] | null> = {};
+
+    // Only add non-empty fields with proper validation
+    if (inputs.username && inputs.username.trim().length >= 3) {
+      updateData.username = inputs.username;
+    }
+
+    if (inputs.email && inputs.email.includes('@')) {
+      updateData.email = inputs.email;
+    }
+
+    if (inputs.bio !== undefined) {
+      updateData.bio = inputs.bio.trim() || null; // Allow empty bio
+    }
+
+    // get diet type ids from the selected names
+    const dietTypeIds = dietList.map((dietName) => {
+      // find the id that corresponds to the selected diet name
+      const dietType = dietTypeOptions.find((opt) => opt.value === dietName);
+      return dietType ? dietType.key : '1';
+    });
+
+    // add dietary info if not empty
+    if (dietTypeIds.length > 0) {
+      updateData.dietary_info = dietTypeIds.join(', ');
+    }
+
+    // handle profile image (both with and without new image)
+    let fileResponse;
+    if (image && image.assets) {
+      fileResponse = await postProfileImageFile(image.assets[0].uri, token);
+      if (!fileResponse) {
+        Alert.alert('Upload failed');
+        return;
+      }
+
+      // Add image data to update only if a new image was uploaded
+      updateData.filename = fileResponse.data.filename;
+      updateData.media_type = fileResponse.data.media_type || 'image/jpeg';
+      updateData.filesize = fileResponse.data.filesize.toString();
+    }
+
     try {
-      // Create update object with fields to update
-      const updateData: Record<string, string | string[] | null> = {};
-
-      // Only add non-empty fields with proper validation
-      if (inputs.username && inputs.username.trim().length >= 3) {
-        updateData.username = inputs.username;
-      }
-
-      if (inputs.email && inputs.email.includes('@')) {
-        updateData.email = inputs.email;
-      }
-
-      if (inputs.bio !== undefined) {
-        updateData.bio = inputs.bio.trim() || null; // Allow empty bio
-      }
-
-      // Add diet types if selected
-      if (dietList.length > 0) {
-        const dietTypeIds = dietList.map((dietName) => {
-          const dietType = dietTypeOptions.find(
-            (opt) => opt.value === dietName,
-          );
-          return dietType ? dietType.key : '1';
-        });
-        updateData.dietary_info = dietTypeIds;
-      } else {
-        updateData.dietary_info = null; // Explicitly set to null if empty
-      }
-
-      // Handle profile image (both with and without new image)
-      let fileResponse;
-      if (image && image.assets) {
-        fileResponse = await postProfileImageFile(image.assets[0].uri, token);
-        if (!fileResponse) {
-          Alert.alert('Upload failed');
-          return;
-        }
-
-        // Add image data to update only if a new image was uploaded
-        updateData.filename = fileResponse.data.filename;
-        updateData.media_type = fileResponse.data.media_type || 'image/jpeg';
-        updateData.filesize = fileResponse.data.filesize.toString();
-      }
-
-      console.log('Sending update data:', JSON.stringify(updateData));
-
       // update user with provided data
       const editResponse = await updateUser(
         token,
@@ -200,7 +205,9 @@ const EditProfileForm = ({
         user.user_id,
       );
 
-      setDietList([]);
+      console.log('Sending update data:', JSON.stringify(editResponse));
+
+      resetForm();
       triggerUpdate();
       if (editResponse && editResponse.message) {
         Alert.alert('Update successful', editResponse.message);
@@ -318,21 +325,17 @@ const EditProfileForm = ({
 
           <Text style={[styles.text, {marginTop: 20}]}>Diet restrictions</Text>
           <View style={{flex: 5}}>
-            <SelectList
-              key={`diet-selector-${resetKey}`}
-              data={dietTypeOptions}
-              setSelected={(diettype: string) => {
-                const isDuplicate = dietList.some(
-                  (existing) =>
-                    existing.toLowerCase() === diettype.toLowerCase(),
-                );
-
-                if (diettype && !isDuplicate) {
-                  setDietList([...dietList, diettype]);
-                }
-                setResetKey((prev) => prev + 1);
+            <MultipleSelectList
+              key={`diet-selector-${dietResetKey}`}
+              setSelected={(val: string[]) => {
+                setDietList(val);
               }}
+              data={dietTypeOptions}
               save="value"
+              onSelect={() => {
+                console.log('Selected items: ', dietList);
+              }}
+              label="Selected Diets"
               boxStyles={{
                 borderColor: HexColors['light-grey'],
                 borderWidth: 1.5,
@@ -343,40 +346,12 @@ const EditProfileForm = ({
                 borderWidth: 1.5,
                 marginBottom: 10,
                 marginHorizontal: 10,
+                maxHeight: 200,
               }}
               dropdownItemStyles={{marginVertical: 3}}
+              badgeStyles={{backgroundColor: HexColors['light-green']}}
               placeholder="Diets"
-            ></SelectList>
-          </View>
-          <View style={styles.ingredientContainer}>
-            {dietList.length > 0 ? (
-              dietList.map((diet, index) => (
-                <Chip
-                  key={index}
-                  title={diet}
-                  buttonStyle={styles.chipButton}
-                  titleStyle={styles.chipTitle}
-                  containerStyle={styles.chipContainer}
-                  icon={{
-                    name: 'close',
-                    type: 'ionicon',
-                    size: 16,
-                    color: HexColors['dark-grey'],
-                  }}
-                  iconRight
-                  onPress={() => {
-                    // remove diet type when pressed
-                    setDietList(dietList.filter((_, i) => i !== index));
-                  }}
-                />
-              ))
-            ) : (
-              <Text
-                style={{color: HexColors['dark-grey'], fontStyle: 'italic'}}
-              >
-                No diet restrictions selected
-              </Text>
-            )}
+            />
           </View>
           <Button
             title="Save"

@@ -32,6 +32,8 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
   const [availableDietTypes, setAvailableDietTypes] = useState<string[]>([]);
   const {getAllDietTypes} = useDietTypes();
 
+  const prevFilterRef = React.useRef('');
+
   // Fetch all diet types when component mounts
   useEffect(() => {
     const fetchDietTypes = async () => {
@@ -111,16 +113,25 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       });
     }
 
-    // Sort by creation date
+    // Sort by creation date or likes
     filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      if (sortOrder === 'oldest' || sortOrder === 'newest') {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
 
-      if (sortOrder === 'oldest') {
-        return dateA - dateB; // Oldest first
-      } else {
-        return dateB - dateA; // Newest first (default)
+        if (sortOrder === 'oldest') {
+          return dateA - dateB; // Oldest first
+        } else {
+          return dateB - dateA; // Newest first
+        }
+      } else if (sortOrder === 'likes') {
+        // Varmista että likes_count on numero
+        const likesA = a.likes_count !== undefined ? Number(a.likes_count) : 0;
+        const likesB = b.likes_count !== undefined ? Number(b.likes_count) : 0;
+        return likesB - likesA; // Eniten tykätyt ensin
       }
+
+      return 0;
     });
 
     // Check if any filters are active
@@ -130,8 +141,14 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       dietTypeFilter.length > 0 ||
       sortOrder !== 'newest';
 
-    // Pass filtered results and filter state back to parent component
-    onFilterChange(filtered, hasActiveFilters);
+    // TÄÄ RIVI ESTÄÄ IKUISEN LOOPIN
+    const currentFilterString = JSON.stringify(
+      filtered.map((r) => r.recipe_id),
+    );
+    if (currentFilterString !== prevFilterRef.current) {
+      prevFilterRef.current = currentFilterString;
+      onFilterChange(filtered, hasActiveFilters);
+    }
   }, [recipeArray, searchText, cookingTimeFilter, dietTypeFilter, sortOrder]);
 
   // Reset search filters
@@ -162,7 +179,6 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
           <Ionicons name="options" size={24} color={HexColors['dark-grey']} />
         </TouchableOpacity>
       </View>
-
       <Modal
         visible={showFilters}
         transparent={true}
@@ -171,142 +187,153 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter Recipes</Text>
+            <ScrollView showsVerticalScrollIndicator={true}>
+              <Text style={styles.modalTitle}>Filter Recipes</Text>
 
-            <Text style={styles.filterLabel}>Cooking Time</Text>
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  cookingTimeFilter === 'all' && styles.selectedOption,
-                ]}
-                onPress={() => setCookingTimeFilter('all')}
-              >
-                <Text>All</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  cookingTimeFilter === 'under30' && styles.selectedOption,
-                ]}
-                onPress={() => setCookingTimeFilter('under30')}
-              >
-                <Text>Under 30 min</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  cookingTimeFilter === '30to60' && styles.selectedOption,
-                ]}
-                onPress={() => setCookingTimeFilter('30to60')}
-              >
-                <Text>30-60 min</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  cookingTimeFilter === 'over60' && styles.selectedOption,
-                ]}
-                onPress={() => setCookingTimeFilter('over60')}
-              >
-                <Text>Over 60 min</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.filterLabel}>Sort Order</Text>
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  sortOrder === 'newest' && styles.selectedOption,
-                ]}
-                onPress={() => setSortOrder('newest')}
-              >
-                <Text>Newest first</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  sortOrder === 'oldest' && styles.selectedOption,
-                ]}
-                onPress={() => setSortOrder('oldest')}
-              >
-                <Text>Oldest first</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  sortOrder === 'rating' && styles.selectedOption,
-                ]}
-                onPress={() => {}}
-              >
-                <Text>Highest rating</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  sortOrder === 'likes' && styles.selectedOption,
-                ]}
-                onPress={() => {}}
-              >
-                <Text>Most liked</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.filterLabel}>Difficulty Level</Text>
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity style={styles.filterOption} onPress={() => {}}>
-                <Text>Easy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.filterOption} onPress={() => {}}>
-                <Text>Medium</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.filterOption} onPress={() => {}}>
-                <Text>Hard</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.filterLabel}>Diets</Text>
-            <ScrollView style={styles.dietContainer}>
-              {availableDietTypes.map((diet) => (
+              <Text style={styles.filterLabel}>Cooking Time</Text>
+              <View style={styles.buttonGroup}>
                 <TouchableOpacity
-                  key={diet}
                   style={[
                     styles.filterOption,
-                    dietTypeFilter.includes(diet) && styles.selectedOption,
+                    cookingTimeFilter === 'all' && styles.selectedOption,
                   ]}
-                  onPress={() => {
-                    if (dietTypeFilter.includes(diet)) {
-                      setDietTypeFilter(
-                        dietTypeFilter.filter((item) => item !== diet),
-                      );
-                    } else {
-                      setDietTypeFilter([...dietTypeFilter, diet]);
-                    }
-                  }}
+                  onPress={() => setCookingTimeFilter('all')}
                 >
-                  <Text>{diet}</Text>
+                  <Text>All</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    cookingTimeFilter === 'under30' && styles.selectedOption,
+                  ]}
+                  onPress={() => setCookingTimeFilter('under30')}
+                >
+                  <Text>Under 30 min</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    cookingTimeFilter === '30to60' && styles.selectedOption,
+                  ]}
+                  onPress={() => setCookingTimeFilter('30to60')}
+                >
+                  <Text>30-60 min</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    cookingTimeFilter === 'over60' && styles.selectedOption,
+                  ]}
+                  onPress={() => setCookingTimeFilter('over60')}
+                >
+                  <Text>Over 60 min</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.modalButtons}>
-              <Button
-                title="Clear"
-                onPress={resetFilters}
-                type="outline"
-                buttonStyle={styles.modalButton}
-              />
-              <Button
-                title="Close"
-                onPress={() => setShowFilters(false)}
-                buttonStyle={[
-                  styles.modalButton,
-                  {backgroundColor: HexColors['dark-green']},
-                ]}
-              />
-            </View>
+              <Text style={styles.filterLabel}>Sort Order</Text>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    sortOrder === 'newest' && styles.selectedOption,
+                  ]}
+                  onPress={() => setSortOrder('newest')}
+                >
+                  <Text>Newest first</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    sortOrder === 'oldest' && styles.selectedOption,
+                  ]}
+                  onPress={() => setSortOrder('oldest')}
+                >
+                  <Text>Oldest first</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    sortOrder === 'rating' && styles.selectedOption,
+                  ]}
+                  onPress={() => {}}
+                >
+                  <Text>Highest rating</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    sortOrder === 'likes' && styles.selectedOption,
+                  ]}
+                  onPress={() => setSortOrder('likes')}
+                >
+                  <Text>Most liked</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.filterLabel}>Difficulty Level</Text>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={styles.filterOption}
+                  onPress={() => {}}
+                >
+                  <Text>Easy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterOption}
+                  onPress={() => {}}
+                >
+                  <Text>Medium</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterOption}
+                  onPress={() => {}}
+                >
+                  <Text>Hard</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.filterLabel}>Diets</Text>
+              <ScrollView style={styles.dietContainer}>
+                {availableDietTypes.map((diet) => (
+                  <TouchableOpacity
+                    key={diet}
+                    style={[
+                      styles.filterOption,
+                      dietTypeFilter.includes(diet) && styles.selectedOption,
+                    ]}
+                    onPress={() => {
+                      if (dietTypeFilter.includes(diet)) {
+                        setDietTypeFilter(
+                          dietTypeFilter.filter((item) => item !== diet),
+                        );
+                      } else {
+                        setDietTypeFilter([...dietTypeFilter, diet]);
+                      }
+                    }}
+                  >
+                    <Text>{diet}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <View style={styles.modalButtons}>
+                <Button
+                  title="Clear"
+                  onPress={resetFilters}
+                  type="outline"
+                  buttonStyle={styles.modalButton}
+                />
+                <Button
+                  title="Close"
+                  onPress={() => setShowFilters(false)}
+                  buttonStyle={[
+                    styles.modalButton,
+                    {backgroundColor: HexColors['dark-green']},
+                  ]}
+                />
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -389,7 +416,7 @@ const styles = StyleSheet.create({
     borderColor: HexColors['dark-green'],
   },
   dietContainer: {
-    maxHeight: 150,
+    maxHeight: 200,
   },
   modalButtons: {
     flexDirection: 'row',

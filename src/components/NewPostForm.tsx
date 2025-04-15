@@ -1,7 +1,13 @@
 import {Controller, useForm} from 'react-hook-form';
 import {Button, Card, Chip, Image, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
-import {Alert, ScrollView, StyleSheet, View} from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useEffect, useState} from 'react';
 import VideoPlayer from './VideoPlayer';
@@ -18,6 +24,17 @@ import {
 } from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 
+// this is for testing
+declare global {
+  interface Window {
+    setTestUnit?: (unit: string) => void;
+    testHelpers?: {
+      setTestDiets?: (diets: string[]) => void;
+      setTestDifficulty?: (level: string) => void;
+    };
+  }
+}
+
 type PostInputs = {
   title: string;
   ingredients: string[];
@@ -28,7 +45,6 @@ type PostInputs = {
   difficulty_level_id: number;
 };
 
-//
 const Post = () => {
   const {postExpoFile, loading} = useFile();
   const {postRecipe} = useRecipes();
@@ -49,6 +65,35 @@ const Post = () => {
   );
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
   const [dietResetKey, setDietResetKey] = useState(0);
+  const [showMockPicker, setShowMockPicker] = useState(false);
+
+  // setting testing values for selector components
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
+      // add a unit to the ingredient list
+      window.setTestUnit = (unit) => {
+        console.log('Setting unit to:', unit);
+        setSelectedUnit(unit);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
+      window.testHelpers = {
+        // set diet types
+        setTestDiets: (diets: string[]) => {
+          console.log('Setting test diets:', diets);
+          setDietList(diets);
+        },
+        // set difficulty level
+        setTestDifficulty: (level: string) => {
+          console.log('Setting test difficulty:', level);
+          setSelectedDifficultyLevel(level);
+        },
+      };
+    }
+  }, []);
 
   // data for the units for now, these will come from db later
   const data = [
@@ -121,7 +166,7 @@ const Post = () => {
     setAmount('');
     setSelectedUnit('');
     setSelectedDifficultyLevel('');
-    setInstructionsLength(0)
+    setInstructionsLength(0);
     setDietResetKey((prev) => prev + 1);
     reset(initValues);
   };
@@ -148,6 +193,13 @@ const Post = () => {
 
   // post a new recipe with media
   const doUpload = async (inputs: PostInputs) => {
+    // check that all the fields are filled before uploading
+    if (!isValid) {
+      Alert.alert('Validation Error', 'Please fill out all required fields.');
+      return;
+    }
+
+    // check that the post has an image or video
     if (!image || !image.assets) {
       Alert.alert('Please choose a file.');
       return;
@@ -170,9 +222,11 @@ const Post = () => {
     // get diet type ids from the selected names
     const dietTypeIds = dietList.map((dietName) => {
       // find the id that corresponds to the selected diet name
-      const dietType = dietTypeOptions.find((opt) => opt.value === dietName);
-      return dietType ? dietType.key : '1';
-    });
+      const dietOption = dietTypeOptions.find(option => option.value === dietName);
+      return dietOption ? Number(dietOption.key) : null;
+    }).filter(id => id !== null);
+
+    console.log('selected diettype ids', dietTypeIds)
 
     // post with the required data
     const recipeData = {
@@ -185,14 +239,14 @@ const Post = () => {
 
     // add dietary info if not empty
     if (dietTypeIds.length > 0) {
-      recipeData.dietary_info = dietTypeIds.join(', ');
+      recipeData.dietary_info = dietTypeIds.join(',');
     }
+
+    console.log('recipe data', recipeData)
 
     try {
       // post a new recipe
-      const postResponse = await postRecipe(
-        fileResponse, recipeData, token
-      );
+      const postResponse = await postRecipe(fileResponse, recipeData, token);
 
       console.log('new recipe', postResponse);
 
@@ -209,6 +263,27 @@ const Post = () => {
 
   // select image for the post
   const pickImage = async () => {
+    // testing the image upload with a mock image (maestro doesn't allow picking media from devices gallery...)
+    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
+      console.log('Showing mock picker for test mode');
+      setShowMockPicker(true);
+
+      // set the mock image data for testing
+      setImage({
+        canceled: false,
+        assets: [
+          {
+            uri: 'mock-image.jpg',
+            width: 500,
+            height: 500,
+            type: 'image',
+          },
+        ],
+      });
+      return;
+    }
+
+    // the image picker for the app
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
       allowsEditing: true,
@@ -245,11 +320,58 @@ const Post = () => {
       locations={[0, 0.4, 1]}
     >
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
+        {showMockPicker && (
+          <View
+            testID="mock-image-picker"
+            style={{
+              position: 'absolute',
+              top: 100,
+              left: 20,
+              right: 20,
+              zIndex: 999,
+              backgroundColor: HexColors['medium-green'],
+              padding: 20,
+              borderRadius: 10,
+              borderWidth: 2,
+              borderColor: 'white',
+            }}
+          >
+            <TouchableOpacity
+              testID="mock-image-option"
+              style={{
+                backgroundColor: HexColors['light-grey'],
+                padding: 15,
+                borderRadius: 5,
+                alignItems: 'center',
+                marginVertical: 10,
+              }}
+              onPress={() => {
+                setImage({
+                  canceled: false,
+                  assets: [
+                    {
+                      uri: 'mock-image.jpg',
+                      width: 500,
+                      height: 500,
+                      type: 'image',
+                    },
+                  ],
+                });
+                setShowMockPicker(false);
+              }}
+            >
+              <Text style={{fontSize: 18, fontWeight: 'bold'}}>
+                Mock Image 1
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <Card containerStyle={styles.card}>
           {image?.assets && image.assets[0].type === 'video' ? (
             <VideoPlayer videoFile={image.assets[0].uri} style={styles.image} />
           ) : (
             <Image
+              testID="image-picker"
               source={{
                 uri:
                   image?.assets![0].uri ||
@@ -264,6 +386,7 @@ const Post = () => {
               onPress={pickImage}
             />
           )}
+
           <Text style={styles.text}>Title</Text>
           <Controller
             control={control}
@@ -281,6 +404,7 @@ const Post = () => {
                 value={value}
                 autoCapitalize="sentences"
                 errorMessage={errors.title?.message}
+                testID="title-input"
               />
             )}
             name="title"
@@ -294,9 +418,10 @@ const Post = () => {
             onChangeText={setCurrentIngredient}
             autoCapitalize="sentences"
             placeholder="Ingredient"
+            testID="ingredient-input"
           />
           <View style={styles.ingredientsContainer}>
-            <View style={{flex: 1.5, marginHorizontal: 10}}>
+            <View style={{flex: 1.5, marginHorizontal: 10}} testID="unit-input">
               <SelectList
                 data={data}
                 search={false}
@@ -324,6 +449,7 @@ const Post = () => {
                 onChangeText={setAmount}
                 autoCapitalize="none"
                 placeholder="Amount"
+                testID="amount-input"
               />
             </View>
           </View>
@@ -332,6 +458,7 @@ const Post = () => {
             containerStyle={styles.buttonContainer}
             titleStyle={styles.buttonTitle}
             title="Add"
+            testID="add-ingredient-button"
             onPress={addIngredient}
             disabled={
               currentIngredient.trim() === '' ||
@@ -368,7 +495,7 @@ const Post = () => {
           <Text style={[styles.text, {marginTop: 20}]}>
             Select special diets
           </Text>
-          <View style={{flex: 5}}>
+          <View style={{flex: 5}} testID="diet-input">
             <MultipleSelectList
               key={`diet-selector-${dietResetKey}`}
               setSelected={(val: string[]) => {
@@ -392,6 +519,7 @@ const Post = () => {
                 marginHorizontal: 10,
               }}
               dropdownItemStyles={{marginVertical: 3}}
+              badgeStyles={{backgroundColor: HexColors['light-green']}}
               placeholder="Diets"
             />
           </View>
@@ -419,6 +547,7 @@ const Post = () => {
                   numberOfLines={10}
                   textAlignVertical="top"
                   autoCapitalize="sentences"
+                  testID="instructions-input"
                 />
                 <Text style={styles.counterText}>
                   {instructionsLength < 20
@@ -459,20 +588,14 @@ const Post = () => {
                     keyboardType="numeric"
                     autoCapitalize="none"
                     errorMessage={errors.cooking_time?.message}
+                    testID="time-input"
                   />
                 )}
                 name="cooking_time"
               />
             </View>
             <View style={{flex: 1}}>
-              <Text
-                style={[
-                  styles.text, { marginLeft: 0}
-
-                ]}
-              >
-                min
-              </Text>
+              <Text style={[styles.text, {marginLeft: 0}]}>min</Text>
             </View>
           </View>
           <Text style={styles.text}>Estimated dish portions</Text>
@@ -505,6 +628,7 @@ const Post = () => {
                     keyboardType="numeric"
                     autoCapitalize="none"
                     errorMessage={errors.portions?.message}
+                    testID="portions-input"
                   />
                 )}
                 name="portions"
@@ -523,7 +647,10 @@ const Post = () => {
               </Text>
             </View>
           </View>
-          <Text style={[styles.text, {marginTop: 20}]}>
+          <Text
+            style={[styles.text, {marginTop: 20}]}
+            testID="difficulty-input"
+          >
             Select difficulty level
           </Text>
           <View>
@@ -562,6 +689,7 @@ const Post = () => {
             onPress={handleSubmit(doUpload)}
             loading={loading}
             disabled={!isValid || image === null || loading}
+            testID="post-button"
           />
           <Button
             title="Reset"
@@ -581,7 +709,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   card: {
-    marginTop: 0,
+    marginTop: 10,
     borderRadius: 10,
     marginBottom: 10,
   },

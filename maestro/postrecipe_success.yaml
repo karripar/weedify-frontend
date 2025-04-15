@@ -1,0 +1,54 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# first open the app and login
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@01.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+
+# after login navifate to post page
+- tapOn: 'Post'
+# tap on the mockimage picker to upload a fake image
+- tapOn:
+    id: 'image-picker'
+# fill in all the fields to post the recipe
+- tapOn:
+    id: 'title-input'
+- inputText: 'Vegan Tacos'
+- tapOn:
+    id: 'ingredient-input'
+- inputText: 'Tofu'
+- evalScript: window.setTestUnit('g')
+- tapOn:
+    id: 'amount-input'
+- inputText: '200'
+- tapOn:
+    id: 'add-ingredient-button'
+- evalScript: |
+    window.testHelpers.setTestDiets(['Vegan']);
+- scrollUntilVisible:
+    element:
+      id: 'instructions-input'
+    direction: DOWN
+- tapOn:
+    id: 'instructions-input'
+- inputText: 'Chop tofu, cook with spices, and serve with tortillas. Add salad, avocado, cucumber and other fresh vegetables of your choice'
+- tapOn:
+    id: 'time-input'
+- inputText: '30'
+- tapOn:
+    id: 'portions-input'
+- inputText: '4'
+- evalScript: |
+    window.testHelpers.setTestDifficulty('2'); // Medium = 2
+- tapOn:
+    id: 'post-button'
+- assertVisible: 'Upload successful'
+- takeScreenshot: 'Post recipe successful'
