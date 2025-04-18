@@ -153,11 +153,8 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
       >
         <Text
           onPress={() => console.log('Comment clicked:', comment)}
-          style={{
-            color: '#fbbf24',
-            fontWeight: '500',
-            fontSize: 18,
-          }}
+          style={styles.username}
+          // TODO: Add onPress to navigate to user profile
         >
           {comment.username}
         </Text>
@@ -299,11 +296,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
         </View>
       ) : (
         <Text
-          style={{
-            color: '#9ca3af',
-            textAlign: 'center',
-            marginTop: 20,
-          }}
+          style={styles.loginToComment}
         >
           Please log in to comment
         </Text>
@@ -382,6 +375,18 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
+  },
+  loginToComment: {
+    color: HexColors['dark-green'],
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  username: {
+    color: HexColors['grey'],
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

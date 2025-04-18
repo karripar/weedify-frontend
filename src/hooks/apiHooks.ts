@@ -638,7 +638,7 @@ const useComments = () => {
     }
   }
 
-  // delete a comment
+  // delete a comment (only for admins)
   const deleteComment = async (comment_id: number, token: string) => {
     try {
       const options = {
