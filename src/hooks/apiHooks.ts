@@ -249,7 +249,7 @@ const useUser = () => {
   // get user by user id and return the user without password
   const getUserById = async (user_id: number) => {
     return await fetchData<UserWithNoPassword>(
-      process.env.EXPO_PUBLIC_AUTH_API + '/users/user/' + user_id,
+      process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + user_id,
     );
   };
 
@@ -596,9 +596,9 @@ const useComments = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          comment_text,
-          recipe_id,
-          reference_comment_id,
+          comment: comment_text,
+          recipe_id: recipe_id,
+          reference_comment_id: reference_comment_id,
         }),
       }
       const response = await fetchData<MessageResponse>(
@@ -618,11 +618,13 @@ const useComments = () => {
       const comments = await fetchData<Comment[]>(
         process.env.EXPO_PUBLIC_MEDIA_API + '/comments/byrecipe/' + recipe_id,
       );
+      console.log('comments', comments);
 
       // fetch usernames for each comment
       const commentsWithUsernames = await Promise.all(
         comments.map(async (comment) => {
           const user = await getUserById(comment.user_id);
+          console.log('user', user);
           return {
             ...comment,
             username: user.username,

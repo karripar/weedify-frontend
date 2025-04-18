@@ -18,4 +18,8 @@ const fetchData = async <T>(
   return json;
 };
 
-export {fetchData};
+const formatDate = (date: string, lang: string) => {
+  return new Date(date).toLocaleString(lang);
+};
+
+export {fetchData, formatDate};

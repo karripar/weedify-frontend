@@ -9,6 +9,7 @@ import {useNavigation} from '@react-navigation/native';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
+import Comments from '../components/Comments';
 
 const Single = ({route}: any) => {
   const item: RecipeWithAllFields & {username: string} = route.params.item;
@@ -211,6 +212,11 @@ const Single = ({route}: any) => {
             </View>
           </View>
         </Card>
+        <Divider style={styles.divider} />
+        <View>
+          <Text style={styles.sectionTitle}>Comments</Text>
+          <Comments item={item} />
+        </View>
       </ScrollView>
     </LinearGradient>
   );
