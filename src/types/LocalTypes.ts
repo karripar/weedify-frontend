@@ -1,5 +1,6 @@
 import {
   Credentials,
+  RecipeWithAllFields,
   RecipeWithOwner,
   UserWithProfilePicture,
 } from 'hybrid-types/DBTypes';
@@ -27,7 +28,7 @@ type NavigatorType = {
   // stack screen
   Back: undefined;
   'Edit Profile': undefined;
-  'Recipe': undefined;
+  Recipe: undefined;
 };
 
 type RecipeIngredient = {
@@ -37,9 +38,10 @@ type RecipeIngredient = {
 };
 
 // recipe with profile image
-type RecipeWithProfileImage = RecipeWithOwner & {
-  profile_picture: string;
-};
+type RecipeWithProfileImage = RecipeWithOwner &
+  Pick<RecipeWithAllFields, 'diet_types' | 'ingredients'> & {
+    profile_picture: string;
+  };
 
 // data to post in a recipe
 type PostRecipeData = {
@@ -72,7 +74,8 @@ type RecipeWithPossibleLikes = RecipeWithOwner & {
 type RecipeWithOwnerExtended = RecipeWithOwner & {
   ingredients?: {
     name: string;
-    quantity: string;
+    unit: string;
+    amount: number;
   }[];
   diet_types?: DietTypeWithName[];
   likes_count: number;

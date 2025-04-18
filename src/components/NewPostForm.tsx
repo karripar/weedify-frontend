@@ -220,13 +220,17 @@ const Post = () => {
     console.log('file response', fileResponse);
 
     // get diet type ids from the selected names
-    const dietTypeIds = dietList.map((dietName) => {
-      // find the id that corresponds to the selected diet name
-      const dietOption = dietTypeOptions.find(option => option.value === dietName);
-      return dietOption ? Number(dietOption.key) : null;
-    }).filter(id => id !== null);
+    const dietTypeIds = dietList
+      .map((dietName) => {
+        // find the id that corresponds to the selected diet name
+        const dietOption = dietTypeOptions.find(
+          (option) => option.value === dietName,
+        );
+        return dietOption ? Number(dietOption.key) : null;
+      })
+      .filter((id) => id !== null);
 
-    console.log('selected diettype ids', dietTypeIds)
+    console.log('selected diettype ids', dietTypeIds);
 
     // post with the required data
     const recipeData = {
@@ -242,7 +246,7 @@ const Post = () => {
       recipeData.dietary_info = dietTypeIds.join(',');
     }
 
-    console.log('recipe data', recipeData)
+    console.log('recipe data', recipeData);
 
     try {
       // post a new recipe

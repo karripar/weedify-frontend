@@ -1,7 +1,7 @@
-import {RecipeWithAllFields, User} from 'hybrid-types/DBTypes';
+import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
 import {Alert, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
-import {Button, Card, Icon, ListItem, Divider} from '@rneui/base';
+import {Card, Icon, Divider} from '@rneui/base';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
@@ -135,13 +135,15 @@ const Single = ({route}: any) => {
               <Text style={[styles.sectionTitle, {marginLeft: 5}]}>
                 {item.title}
               </Text>
-              {item.diet_types && item.diet_types.length > 0 && (
-                <View style={styles.dietContainer}>
-                  {item.diet_types.map((diet, index) => (
-                    <View key={index} style={styles.dietChip}>
-                      <Text style={styles.dietText}>{diet.name}</Text>
-                    </View>
-                  ))}
+              {item.diet_types && item.diet_types.length > 0 ? (
+                item.diet_types.map((diet) => (
+                  <View key={diet.diet_type_id} style={styles.dietChip}>
+                    <Text style={styles.dietText}>{diet.name}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.dietChip}>
+                  <Text style={styles.dietText}>No special diets</Text>
                 </View>
               )}
             </View>

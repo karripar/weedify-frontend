@@ -1,4 +1,3 @@
-import {RecipeWithAllFields, RecipeWithOwner} from 'hybrid-types/DBTypes';
 import {
   Image,
   StyleSheet,
@@ -8,15 +7,15 @@ import {
   Alert,
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
-import {Button, Card, Divider} from '@rneui/base';
+import {Button, Card} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useState, useEffect} from 'react';
-import {useLikes, useUser} from '../hooks/apiHooks';
+import {useLikes, useUser, useFavorites} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 
 type RecipeListItemProps = {
-  item:{
+  item: {
     likes_count?: number;
     diet_types?: Array<{name: string; diet_type_id: number}>;
     recipe_id: number;
@@ -29,7 +28,6 @@ type RecipeListItemProps = {
     media_type: string;
     created_at: string;
     username: string;
-    dietary_info?: Array<{name: string; diet_type_id: number}>;
   };
   navigation: NavigationProp<ParamListBase>;
 };
@@ -48,6 +46,10 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   const {checkIfLiked, likeRecipe, unlikeRecipe} = useLikes();
   const {user} = useUserContext();
   const {update, setUpdate} = useUpdateContext();
+
+  // check if favorite, add and remove favorites
+  const [isFavorite, setIsFavorite] = useState(false);
+  const {checkFavorite, addToFavorites, removeFromFavorites} = useFavorites();
 
   // Load profile image
   useEffect(() => {
@@ -81,6 +83,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           setIsLiked(response !== null);
           if (response) {
             setLikeId(response.like_id);
+            console.log(response.like_id);
           }
         } catch (error) {
           console.error('Error fetching like status:', error);
@@ -89,21 +92,13 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     };
 
     fetchLikeStatus();
-  }, [item.recipe_id, user]);
-
-  // Get preview of description
-  const getDescriptionPreview = () => {
-    if (!item.instructions) return '';
-    return item.instructions.length > 100
-      ? item.instructions.substring(0, 100) + '...'
-      : item.instructions;
-  };
+  }, [item.recipe_id, user, update]);
 
   // Handle like/unlike action
   const handleLikePress = async () => {
     if (!user) {
       Alert.alert('Login Required', 'You need to be logged in to like recipes');
-      navigation.navigate('Login');
+      navigation.navigate('Weedify');
       return;
     }
 
@@ -135,6 +130,66 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
       console.error('Error handling like:', error);
       Alert.alert('Error', 'Could not process your like. Please try again.');
     }
+  };
+
+  // check if recipe is added to favorites
+  useEffect(() => {
+    const fetchFavoriteStatus = async () => {
+      if (user) {
+        try {
+          const response = await checkFavorite(item.recipe_id);
+          setIsFavorite(response !== false);
+          return response;
+        } catch (error) {
+          console.error('Error fetching favorite status:', error);
+        }
+      }
+    };
+
+    fetchFavoriteStatus();
+  }, [item.recipe_id, user, update]);
+
+  // add or remove from favorite
+  const handleAddToFavorite = async () => {
+    if (!user) {
+      Alert.alert(
+        'Login Required',
+        'You need to be logged in to add favorite recipes',
+      );
+      return;
+    }
+
+    try {
+      if (isFavorite === true) {
+        // remove the recipe from favorites
+        const success = await removeFromFavorites(item.recipe_id);
+        if (success) {
+          setIsFavorite(false);
+          setUpdate(!update);
+        }
+      } else {
+        // add the recipe to favorites
+        const success = await addToFavorites(item.recipe_id);
+        if (success) {
+          setIsFavorite(true);
+
+          const response = await checkFavorite(item.recipe_id);
+          setUpdate(!update);
+          return response;
+        }
+      }
+    } catch (error) {
+      console.error('Error at adding to favorites:', error);
+      Alert.alert('Error', 'Could not add to favorites. Please try again.');
+    }
+  };
+
+  // get preview of description
+  const getDescriptionPreview = () => {
+    if (!item.instructions) return '';
+    return item.instructions.length > 100
+      ? item.instructions.substring(0, 100) + '...'
+      : item.instructions;
   };
 
   return (
@@ -186,12 +241,17 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
               <Ionicons
                 name={isLiked ? 'heart' : 'heart-outline'}
                 size={24}
-                color={isLiked ? 'red' : HexColors['dark-grey']}
+                color={
+                  isLiked ? HexColors['darkest-green'] : HexColors['dark-grey']
+                }
               />
               <Text
                 style={[
                   styles.likeCount,
-                  isLiked && {color: 'red', fontWeight: 'bold'},
+                  isLiked && {
+                    color: HexColors['darkest-green'],
+                    fontWeight: 'bold',
+                  },
                 ]}
               >
                 {likesCount}
@@ -206,9 +266,9 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             </TouchableOpacity>
           </View>
         </View>
-        {item.dietary_info && item.dietary_info.length > 0 && (
+        {item.diet_types && item.diet_types.length > 0 && (
           <View style={styles.dietContainer}>
-            {item.dietary_info.map((diet, index) => (
+            {item.diet_types.map((diet, index) => (
               <View key={index} style={styles.dietChip}>
                 <Text style={styles.dietText}>{diet.name}</Text>
               </View>
@@ -220,10 +280,13 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
 
       <View style={styles.buttonRow}>
         <Button
-          title="Add as favorite"
-          buttonStyle={styles.favoriteButton}
+          title={isFavorite ? 'Remove favorite' : 'Add as favorite'}
+          buttonStyle={
+            isFavorite ? styles.removeFavoriteButton : styles.favoriteButton
+          }
           titleStyle={styles.favoriteButtonText}
           containerStyle={styles.buttonContainer}
+          onPress={handleAddToFavorite}
         />
         <Button
           title="Open"
@@ -339,6 +402,11 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 1,
     marginHorizontal: 4,
+  },
+  removeFavoriteButton: {
+    backgroundColor: HexColors['light-grey'],
+    borderRadius: 20,
+    paddingVertical: 8,
   },
   favoriteButton: {
     backgroundColor: 'white',
