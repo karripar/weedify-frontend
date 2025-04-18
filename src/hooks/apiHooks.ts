@@ -10,6 +10,7 @@ import {
   Credentials,
   DietType,
   ProfilePicture,
+  Comment,
   Recipe,
   RecipeWithOwner,
   RegisterCredentials,
@@ -577,6 +578,90 @@ const useLikes = () => {
   return {checkIfLiked, likeRecipe, unlikeRecipe};
 };
 
+const useComments = () => {
+  const {getUserById} = useUser();
+
+  // post a new comment with optional reference to another comment
+  const postComment = async (
+    comment_text: string,
+    recipe_id: number,
+    reference_comment_id: number | null, // null if no reference
+    token: string,
+  ) => {
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comment_text,
+          recipe_id,
+          reference_comment_id,
+        }),
+      }
+      const response = await fetchData<MessageResponse>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/comments',
+        options,
+      );
+      return response;
+    } catch (error) {
+      console.error('Error posting comment:', error); // console log comment for removing it later
+      throw new Error('Failed to post comment');
+    }
+  }
+
+  // get all comments for a recipe
+  const getCommentsByRecipeId = async (recipe_id: number) => {
+    try {
+      const comments = await fetchData<Comment[]>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/comments/byrecipe/' + recipe_id,
+      );
+
+      // fetch usernames for each comment
+      const commentsWithUsernames = await Promise.all(
+        comments.map(async (comment) => {
+          const user = await getUserById(comment.user_id);
+          return {
+            ...comment,
+            username: user.username,
+          }; // extract comment properties and add username
+        }),
+      );
+      return commentsWithUsernames;
+    } catch (error) {
+      console.error('Error fetching comments:', error); // console log comment for removing it later
+      throw new Error('Failed to fetch comments');
+    }
+  }
+
+  // delete a comment
+  const deleteComment = async (comment_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      };
+      return await fetchData<MessageResponse>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/comments/' + comment_id,
+        options,
+      );
+    } catch (error) {
+      console.error('Error deleting comment:', error); // console log comment for removing it later
+      throw new Error('Failed to delete comment');
+    }
+  }
+
+  return {
+    postComment,
+    getCommentsByRecipeId,
+    deleteComment,
+  }
+};
+
 export {
   useAuthentication,
   useUser,
@@ -584,4 +669,5 @@ export {
   useFile,
   useDietTypes,
   useLikes,
+  useComments,
 };
