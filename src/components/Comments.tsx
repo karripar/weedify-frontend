@@ -327,6 +327,8 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
   );
 };
 
+// adding styles is not finished
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
