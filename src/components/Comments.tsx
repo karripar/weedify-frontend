@@ -11,9 +11,9 @@ import {
 import {useComments} from '../hooks/apiHooks';
 import {formatDate} from '../lib/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TextInput, TouchableOpacity, View } from 'react-native';
-import { Text } from '@rneui/base';
-
+import {StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
+import {Text} from '@rneui/base';
+import {HexColors} from '../utils/colors';
 
 const Comments = ({item}: {item: RecipeWithOwner}) => {
   const inputRef = useRef<TextInput | null>(null);
@@ -32,7 +32,12 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('No token found');
-      await postComment(inputs.comment_text.trim(), item.recipe_id, null, token); // Normal comment, no @username
+      await postComment(
+        inputs.comment_text.trim(),
+        item.recipe_id,
+        null,
+        token,
+      ); // Normal comment, no @username
 
       const response = await getCommentsByRecipeId(item.recipe_id);
       if (response) {
@@ -144,18 +149,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
     return comments.map((comment) => (
       <View
         key={comment.comment_id}
-        style={{
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: 12,
-          width: '100%',
-          padding: 16,
-          borderRadius: 12,
-          backgroundColor: '#1f2937',
-          shadowColor: '#000',
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-        }}
+        style={styles.comment}
       >
         <Text
           onPress={() => console.log('Comment clicked:', comment)}
@@ -168,22 +162,13 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
           {comment.username}
         </Text>
 
-        <Text
-          style={{
-            color: '#d1d5db',
-            opacity: 0.8,
-            width: '100%',
-            textAlign: 'left',
-          }}
-        >
-          {comment.comment}
-        </Text>
+        <Text style={styles.commentText}>{comment.comment}</Text>
 
         {user && (
           <TouchableOpacity
             onPress={() => {
               setReplyToCommentId(comment.comment_id);
-              setInputs({ comment_text: `@${comment.username} ` });
+              setInputs({comment_text: `@${comment.username} `});
             }}
           >
             <Text
@@ -238,13 +223,13 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
                 padding: 12,
                 borderRadius: 10,
               }}
-              onChangeText={(text) =>
-                handleInputChange('comment_text', text)
-              }
+              onChangeText={(text) => handleInputChange('comment_text', text)}
             />
             <TouchableOpacity
               disabled={!inputs.comment_text.trim()}
-              onPress={(e) => handleReply(e as unknown as React.SyntheticEvent, comment)}
+              onPress={(e) =>
+                handleReply(e as unknown as React.SyntheticEvent, comment)
+              }
               style={{
                 width: '100%',
                 backgroundColor: '#fbbf24',
@@ -253,20 +238,13 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
                 alignItems: 'center',
               }}
             >
-              <Text
-                style={{
-                  color: '#1c1917',
-                  fontWeight: '600',
-                }}
-              >
-                Reply
-              </Text>
+              <Text style={styles.replyText}>Reply</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={{ width: '100%' }}>
-          <Text style={{ color: '#9ca3af' }}>
+        <View style={{width: '100%'}}>
+          <Text style={{color: '#9ca3af'}}>
             {comment.created_at
               ? formatDate(comment.created_at.toString(), 'fi-FI')
               : 'Unknown date'}
@@ -274,23 +252,13 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
         </View>
 
         {comment.replies && comment.replies.length > 0 && (
-          <View
-            style={{
-              paddingLeft: 16,
-              borderLeftWidth: 2,
-              borderLeftColor: '#374151',
-              marginTop: 12,
-              width: '100%',
-            }}
-          >
+          <View style={styles.replies}>
             {renderComments(comment.replies as CommentWithUsernameAndReplies[])}
           </View>
         )}
       </View>
     ));
   };
-
-
 
   useEffect(() => {
     if (item) {
@@ -301,30 +269,13 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
   return (
     <>
       {user ? (
-        <View
-          style={{
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            width: '100%',
-            marginTop: 20,
-          }}
-        >
+        <View style={styles.container}>
           <TextInput
             ref={inputRef}
             placeholder="Write a comment..."
             placeholderTextColor="#fcd34d"
-            style={{
-              width: '100%',
-              backgroundColor: '#292524',
-              color: '#fcd34d',
-              padding: 12,
-              borderRadius: 10,
-            }}
-            onChangeText={(text) =>
-              handleInputChange('comment_text', text)
-            }
+            style={styles.commentInput}
+            onChangeText={(text) => handleInputChange('comment_text', text)}
           />
           <TouchableOpacity
             onPress={handleSubmit}
@@ -374,8 +325,62 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
       )}
     </>
   );
-
 };
 
-export default Comments;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: HexColors['almost-white'],
+  },
+  commentInput: {
+    backgroundColor: HexColors['light-green'],
+    borderRadius: 10,
+    padding: 12,
+    width: '100%',
+    color: HexColors['white'],
+  },
+  commentButton: {
+    backgroundColor: HexColors['green'],
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  ReplyButton: {
+    backgroundColor: HexColors['light-green'],
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  commentText: {
+    color: HexColors['almost-white'],
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  replyText: {
+    color: HexColors['almost-white'],
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  replies: {
+    paddingLeft: 16,
+    borderLeftWidth: 2,
+    borderLeftColor: HexColors['light-green'],
+    marginTop: 12,
+    width: '100%',
+  },
+  comment: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 12,
+    width: '100%',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: HexColors['green'],
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+});
 
+export default Comments;
