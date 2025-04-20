@@ -424,7 +424,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   modalButton: {
+    borderRadius: 20,
     paddingHorizontal: 30,
+    margin: 10
   },
 });
 

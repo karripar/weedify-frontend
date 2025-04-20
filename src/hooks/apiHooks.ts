@@ -10,11 +10,11 @@ import {
   Credentials,
   DietType,
   ProfilePicture,
-  Recipe,
   RecipeWithOwner,
   RegisterCredentials,
   UserWithNoPassword,
   Like,
+  RecipeWithAllFields,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -81,8 +81,6 @@ const useUser = () => {
       const userWithDietary = await fetchData<any>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + userId,
       );
-
-      console.log('User with dietary data:', userWithDietary);
 
       // Use dietary_restrictions property instead of dietary
       if (userWithDietary && userWithDietary.dietary_restrictions) {
@@ -297,8 +295,6 @@ const useRecipes = (user_id?: number) => {
                     owner.profile_picture_id,
                 );
 
-                console.log('profile picture url', profilePicture);
-
                 if (profilePicture && profilePicture.filename) {
                   profilePictureUrl = profilePicture.filename;
                 }
@@ -311,12 +307,19 @@ const useRecipes = (user_id?: number) => {
               ...recipe,
               username: owner.username,
               profile_picture: profilePictureUrl,
+              // parse the diet types and ingredients
+              diet_types:
+                typeof recipe.diet_types === 'string'
+                  ? JSON.parse(recipe.diet_types)
+                  : recipe.diet_types || [],
+              ingredients:
+                typeof recipe.ingredients === 'string'
+                  ? JSON.parse(recipe.ingredients)
+                  : recipe.ingredients || [],
             };
             return recipeItem;
           }),
         );
-
-        console.log(recipeWithOwner);
 
         recipeWithOwner.reverse();
 
@@ -354,10 +357,11 @@ const useRecipes = (user_id?: number) => {
     );
 
     const dietaryInfo = Array.isArray(inputs.dietary_info)
-  ? inputs.dietary_info
-  : typeof inputs.dietary_info === 'string' && inputs.dietary_info.length > 0
-  ? inputs.dietary_info.split(',').map(id => Number(id))
-  : [];
+      ? inputs.dietary_info
+      : typeof inputs.dietary_info === 'string' &&
+          inputs.dietary_info.length > 0
+        ? inputs.dietary_info.split(',').map((id) => Number(id))
+        : [];
 
     const recipe: PostRecipeData = {
       title: inputs.title as string,
@@ -377,11 +381,6 @@ const useRecipes = (user_id?: number) => {
       ingredients: formattedIngredients,
       dietary_info: dietaryInfo.map((id) => Number(id)),
     };
-
-    console.log('posting recipe', recipe);
-
-    console.log('Recipe object:', recipe);
-    console.log('Stringified body:', JSON.stringify(recipe));
 
     // post the data to Media API and get the data as MessageResponse
     const options = {
@@ -577,6 +576,135 @@ const useLikes = () => {
   return {checkIfLiked, likeRecipe, unlikeRecipe};
 };
 
+// favorites
+const useFavorites = () => {
+  const {update, setUpdate} = useUpdateContext();
+
+  // get all user's favorites to display then on favorites page
+  const getAllFavorites = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        return null;
+      }
+
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const favorites = await fetchData<RecipeWithAllFields[]>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites/byuser`,
+        options,
+      );
+      // return the favorites
+      return favorites?.map((recipe) => ({
+        ...recipe,
+        // parse the diettypes and ingredients to an object array
+        diet_types:
+          typeof recipe.diet_types === 'string'
+            ? JSON.parse(recipe.diet_types)
+            : recipe.diet_types || [],
+        ingredients:
+          typeof recipe.ingredients === 'string'
+            ? JSON.parse(recipe.ingredients)
+            : recipe.ingredients || [],
+      }));
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // check if user has already set the post as a favorite
+  const checkFavorite = async (recipe_id: number) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetchData<{favorite: boolean}>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites/byuser/${recipe_id}`,
+        options,
+      );
+      return response.favorite ?? false;
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      return null;
+    }
+  };
+
+  // add a recipe to favorites
+  const addToFavorites = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({recipe_id}),
+      };
+
+      const added = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites`,
+        options,
+      );
+
+      console.log('added to', added);
+      setUpdate(!update);
+      return added;
+    } catch (error) {
+      console.error('Error adding favorite recipe:', error);
+      return false;
+    }
+  };
+
+  // remove recipe from favorites
+  const removeFromFavorites = async (recipe_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites/byrecipe/${recipe_id}`,
+        options,
+      );
+
+      setUpdate(!update);
+      return true;
+    } catch (error) {
+      console.error('Error removing recipe from favorites:', error);
+      return false;
+    }
+  };
+
+  return {getAllFavorites, checkFavorite, addToFavorites, removeFromFavorites};
+};
+
 export {
   useAuthentication,
   useUser,
@@ -584,4 +712,5 @@ export {
   useFile,
   useDietTypes,
   useLikes,
+  useFavorites,
 };

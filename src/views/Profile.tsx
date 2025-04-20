@@ -202,7 +202,6 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         </View>
         <View
           style={{
-            marginHorizontal: 10,
             marginBottom: 20,
           }}
         >
@@ -212,15 +211,12 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               fontWeight: '600',
               color: HexColors['darker-green'],
               marginBottom: 5,
-              marginLeft: 10,
-              marginTop: 20
+              marginLeft: 20,
+              marginTop: 20,
             }}
           >
             My posts
           </Text>
-          {loading && (
-            <ActivityIndicator size="large" color={HexColors['medium-green']} />
-          )}
 
           {!loading && recipeArray.length === 0 && (
             <Text style={{textAlign: 'center', padding: 20}}>
@@ -249,17 +245,17 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginLeft: 8,
-    height: 130,
-    width: 130,
-    borderRadius: 65,
+    height: 110,
+    width: 110,
+    borderRadius: 55,
     backgroundColor: HexColors['light-purple'],
   },
   image: {
     position: 'relative',
     margin: 5,
-    height: 120,
-    width: 120,
-    borderRadius: 60,
+    height: 100,
+    width: 100,
+    borderRadius: 50,
     zIndex: 50,
   },
   menuButton: {
