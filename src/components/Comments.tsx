@@ -139,7 +139,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
     });
 
     comments.forEach((comment) => {
-      if (comment.reference_comment_id) {
+      if (comment.reference_comment_id !== null) {
         // Push replies to the parent comment's 'replies' array
         commentMap[comment.reference_comment_id]?.replies.push(
           commentMap[comment.comment_id],
