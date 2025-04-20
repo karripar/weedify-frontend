@@ -1,4 +1,5 @@
 import {ErrorResponse} from 'hybrid-types/MessageTypes';
+import { formatDistanceToNow } from 'date-fns';
 
 const fetchData = async <T>(
   url: string,
@@ -18,8 +19,8 @@ const fetchData = async <T>(
   return json;
 };
 
-const formatDate = (date: string, lang: string) => {
-  return new Date(date).toLocaleString(lang);
+const formatDateToTimePassed = (date: string) => {
+  return formatDistanceToNow(new Date(date), { addSuffix: true});
 };
 
-export {fetchData, formatDate};
+export {fetchData, formatDateToTimePassed};
