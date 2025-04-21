@@ -16,4 +16,37 @@ Make sure you have node.js installed and run: <br>
 **[Backend Repository](https://github.com/karripar/weedify-backend)** <br>
 **[Hybrid TypeScript Types](https://github.com/karripar/weedify-types)** <br>
 
+Visualized json structure of comments with replies:
+```json
+[
+  {
+    comment_id: 1,
+    text: "Top Level Comment A",
+    replies: [
+      {
+        comment_id: 2,
+        text: "Reply to A",
+        replies: [
+          {
+            comment_id: 4,
+            text: "Reply to reply",
+            replies: []
+          }
+        ]
+      },
+      {
+        comment_id: 3,
+        text: "Another reply to A",
+        replies: []
+      }
+    ]
+  },
+  {
+    comment_id: 5,
+    text: "Top level B",
+    replies: []
+  }
+]
+```
+
 

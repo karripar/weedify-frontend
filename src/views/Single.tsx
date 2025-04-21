@@ -1,5 +1,5 @@
-import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
-import {Alert, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {RecipeWithAllFields, User} from 'hybrid-types/DBTypes';
+import {Alert, Image, ScrollView, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
 import {Card, Icon, Divider} from '@rneui/base';
 import {useRecipes, useUser} from '../hooks/apiHooks';
@@ -9,6 +9,8 @@ import {useNavigation} from '@react-navigation/native';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
+import Comments from '../components/Comments';
+import { ArrowUp, ArrowDown } from 'lucide-react-native';
 
 const Single = ({route}: any) => {
   const item: RecipeWithAllFields & {username: string} = route.params.item;
@@ -17,6 +19,7 @@ const Single = ({route}: any) => {
   const {triggerUpdate} = useUpdateContext();
   const {deleteRecipe} = useRecipes();
   const navigation = useNavigation();
+  const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
@@ -213,6 +216,28 @@ const Single = ({route}: any) => {
             </View>
           </View>
         </Card>
+        <Divider style={styles.divider} />
+        <View>
+          <TouchableOpacity
+            style={styles.commentsButton}
+            onPress={() => setShowComments(!showComments)}>
+            <Text
+            style={styles.sectionTitle}
+            >
+              {showComments ? 'Hide Comments' : 'Show Comments'}
+            </Text>
+            {showComments ? (
+              <ArrowUp size={24} color={HexColors['dark-green']} />
+            ) : (
+              <ArrowDown size={24} color={HexColors['dark-green']} />
+            )}
+          </TouchableOpacity>
+          {showComments && (
+            <View style={{marginBottom: 20}}>
+              <Comments item={item} />
+            </View>
+          )}
+        </View>
       </ScrollView>
     </LinearGradient>
   );
@@ -301,6 +326,14 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginHorizontal: 20,
+  },
+  commentsButton: {
+    backgroundColor: HexColors['almost-white'],
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 15,
+    marginHorizontal: 20,
+    alignItems: 'center',
   },
 });
 
