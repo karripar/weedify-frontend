@@ -2,14 +2,23 @@ import {Controller, useForm} from 'react-hook-form';
 import {useUserContext} from '../hooks/contextHooks';
 import {Button, Card, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
-
 import {HexColors} from '../utils/colors';
-import {StyleSheet} from 'react-native';
-import { Credentials } from 'hybrid-types/DBTypes';
+import {StyleSheet, TouchableOpacity} from 'react-native';
+import {Credentials} from 'hybrid-types/DBTypes';
+import {useState} from 'react';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const LoginForm = () => {
   const {handleLogin} = useUserContext();
   const initValues: Credentials = {email: '', password: ''};
+
+  // toggle the visibility of the password
+  const [isPasswordVisible, setIsPasswordVisible] = useState(true);
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible);
+  };
+
   const {
     control,
     handleSubmit,
@@ -53,15 +62,24 @@ const LoginForm = () => {
         <Controller
           control={control}
           rules={{
-            minLength: 10,
-            maxLength: 50,
+            minLength: 8,
             required: {value: true, message: 'is required'},
           }}
           render={({field: {onChange, onBlur, value}}) => (
             <Input
               style={styles.input}
               inputContainerStyle={styles.inputContainer}
-              secureTextEntry
+              secureTextEntry={isPasswordVisible}
+              rightIcon={
+                <TouchableOpacity onPress={togglePasswordVisibility}>
+                  <Ionicons
+                    name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'}
+                    size={25}
+                    style={{paddingHorizontal: 10}}
+                    color={HexColors['dark-grey']}
+                  ></Ionicons>
+                </TouchableOpacity>
+              }
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -140,9 +158,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   input: {
-    backgroundColor: HexColors['almost-white'],
     padding: 8,
-    borderRadius: 10,
+  },
+  inputContainer: {
     // iOS shadow
     shadowColor: HexColors['dark-grey'],
     shadowOffset: {
@@ -151,11 +169,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
+    borderRadius: 10,
+    backgroundColor: HexColors['almost-white'],
+    borderBottomWidth: 0,
     // Android shadow
     elevation: 5,
-  },
-  inputContainer: {
-    borderBottomWidth: 0,
   },
   text: {
     color: HexColors['almost-white'],

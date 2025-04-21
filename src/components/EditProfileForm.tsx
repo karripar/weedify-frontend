@@ -1,4 +1,11 @@
-import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Chip, Image, Input} from '@rneui/base';
@@ -10,10 +17,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Controller, useForm} from 'react-hook-form';
 import {MultipleSelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {UserWithProfilePicture} from 'hybrid-types/DBTypes';
 
 type UpdateInputs = {
   username: string;
   email: string;
+  current_password: string;
+  new_password: string;
   bio: string;
   dietary_info: string;
 };
@@ -23,10 +34,11 @@ const EditProfileForm = ({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) => {
-  const {user} = useUserContext();
+  const {user, setUpdatedUser} = useUserContext();
   const {postProfileImageFile, loading} = useFile();
-  const {updateUser, getUserDietaryRestrictions, getUserByToken} = useUser();
-  const {triggerUpdate} = useUpdateContext();
+  const {updateUser, getUserDietaryRestrictions, changePassword, getUserById} =
+    useUser();
+  const {triggerUpdate, update} = useUpdateContext();
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
@@ -38,9 +50,25 @@ const EditProfileForm = ({
   const [dietResetKey, setDietResetKey] = useState(0);
   const [dietTypesLoaded, setDietTypesLoaded] = useState(false);
 
+  // toggle the visibility of the password
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
+    useState(true);
+
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(true);
+
+  const toggleCurrentPasswordVisibility = () => {
+    setIsCurrentPasswordVisible(!isCurrentPasswordVisible);
+  };
+
+  const toggleNewPasswordVisibility = () => {
+    setIsNewPasswordVisible(!isNewPasswordVisible);
+  };
+
   const initValues: UpdateInputs = {
     username: '',
     email: '',
+    current_password: '',
+    new_password: '',
     bio: '',
     dietary_info: '',
   };
@@ -99,7 +127,7 @@ const EditProfileForm = ({
 
       console.log('User dietary info:', user.dietary_info);
     }
-  }, [user, dietTypeOptions]);
+  }, [user, update]);
 
   // data for diet types
   useEffect(() => {
@@ -151,10 +179,10 @@ const EditProfileForm = ({
       return;
     }
 
-    // Create update object with fields to update
+    // create update object with fields to update
     const updateData: Record<string, string | string[] | null> = {};
 
-    // Only add non-empty fields with proper validation
+    // only add non-empty fields with proper validation
     if (inputs.username && inputs.username.trim().length >= 3) {
       updateData.username = inputs.username;
     }
@@ -164,15 +192,23 @@ const EditProfileForm = ({
     }
 
     if (inputs.bio !== undefined) {
-      updateData.bio = inputs.bio.trim() || null; // Allow empty bio
+      updateData.bio = inputs.bio.trim() || '';
+    } else {
+      updateData.bio = '';
     }
 
     // get diet type ids from the selected names
-    const dietTypeIds = dietList.map((dietName) => {
-      // find the id that corresponds to the selected diet name
-      const dietType = dietTypeOptions.find((opt) => opt.value === dietName);
-      return dietType ? dietType.key : '1';
-    });
+    const dietTypeIds = dietList
+      .map((dietName) => {
+        // find the id that corresponds to the selected diet name
+        const dietOption = dietTypeOptions.find(
+          (option) => option.value === dietName,
+        );
+        return dietOption ? Number(dietOption.key) : null;
+      })
+      .filter((id) => id !== null);
+
+    console.log('selected diettype ids', dietTypeIds);
 
     // add dietary info if not empty
     if (dietTypeIds.length > 0) {
@@ -205,7 +241,49 @@ const EditProfileForm = ({
         user.user_id,
       );
 
+      // handle password change if current and new password is set
+      if (inputs.current_password && inputs.new_password) {
+        try {
+          console.log(
+            'change password',
+            inputs.current_password,
+            inputs.new_password,
+          );
+          await changePassword(inputs.current_password, inputs.new_password);
+          console.log(
+            'change password',
+            inputs.current_password,
+            inputs.new_password,
+          );
+        } catch (error) {
+          console.error('Password change error:', error);
+        }
+      }
+
       console.log('Sending update data:', JSON.stringify(editResponse));
+
+      try {
+        const updatedUserData = await getUserById(user.user_id);
+        console.log(
+          'Updated user data structure:',
+          JSON.stringify(updatedUserData),
+        );
+        if (updatedUserData) {
+          // format the user data to include the profile image
+          const formattedUser = {
+            ...updatedUserData,
+            profile_picture:
+              'profile_picture' in updatedUserData
+                ? updatedUserData.profile_picture
+                : '',
+          } as UserWithProfilePicture;
+
+          setUpdatedUser(formattedUser);
+          console.log(formattedUser);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching updated user:', fetchError);
+      }
 
       resetForm();
       triggerUpdate();
@@ -261,7 +339,7 @@ const EditProfileForm = ({
           <Controller
             control={control}
             rules={{
-              maxLength: {value: 20, message: 'maximum 25 characters'},
+              maxLength: {value: 20, message: 'maximum 20 characters'},
               minLength: {value: 3, message: 'minimum 3 characters'},
             }}
             render={({field: {onChange, onBlur, value}}) => (
@@ -282,8 +360,12 @@ const EditProfileForm = ({
           <Controller
             control={control}
             rules={{
-              maxLength: {value: 50, message: 'maximum 50 characters'},
-              minLength: {value: 3, message: 'minimum 3 characters'},
+              pattern: {
+                value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                message: 'not a valid email',
+              },
+              minLength: {value: 3, message: 'minimum length is 3'},
+              maxLength: 50,
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
@@ -304,7 +386,6 @@ const EditProfileForm = ({
             control={control}
             rules={{
               maxLength: {value: 200, message: 'maximum 200 characters'},
-              minLength: {value: 3, message: 'minimum 3 characters'},
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
@@ -353,11 +434,94 @@ const EditProfileForm = ({
               placeholder="Diets"
             />
           </View>
+          <Text
+            style={{
+              margin: 5,
+              marginTop: 30,
+              marginVertical: 20,
+              fontSize: 20,
+              color: HexColors['medium-green'],
+            }}
+          >
+            Change Password
+          </Text>
+          <Text
+            style={{marginHorizontal: 10, fontWeight: '200', marginBottom: 10}}
+          >
+            Fill in your current and new password to change your password
+          </Text>
+          <Text style={styles.text}>Current password</Text>
+          <Controller
+            control={control}
+            rules={{
+              minLength: {value: 8, message: 'minimum 8 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                secureTextEntry={isCurrentPasswordVisible}
+                value={value}
+                onChangeText={onChange}
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                rightIcon={
+                  <TouchableOpacity onPress={toggleCurrentPasswordVisibility}>
+                    <Ionicons
+                      name={
+                        isCurrentPasswordVisible
+                          ? 'eye-outline'
+                          : 'eye-off-outline'
+                      }
+                      size={25}
+                      style={{paddingHorizontal: 10}}
+                      color={HexColors['dark-grey']}
+                    />
+                  </TouchableOpacity>
+                }
+                onBlur={onBlur}
+                errorMessage={errors.current_password?.message}
+                autoCapitalize="none"
+              />
+            )}
+            name="current_password"
+          />
+          <Text style={styles.text}>New password</Text>
+          <Controller
+            control={control}
+            rules={{
+              minLength: {value: 8, message: 'minimum 8 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                secureTextEntry={isNewPasswordVisible}
+                rightIcon={
+                  <TouchableOpacity onPress={toggleNewPasswordVisibility}>
+                    <Ionicons
+                      name={
+                        isNewPasswordVisible ? 'eye-outline' : 'eye-off-outline'
+                      }
+                      size={25}
+                      style={{paddingHorizontal: 10}}
+                      color={HexColors['dark-grey']}
+                    ></Ionicons>
+                  </TouchableOpacity>
+                }
+                value={value}
+                onChangeText={onChange}
+                autoCapitalize="none"
+                errorMessage={errors.new_password?.message}
+              />
+            )}
+            name="new_password"
+          />
+
           <Button
             title="Save"
             buttonStyle={[
               styles.button,
-              {backgroundColor: HexColors['medium-green']},
+              {backgroundColor: HexColors['medium-green'], marginTop: 20},
             ]}
             titleStyle={styles.buttonTitle}
             containerStyle={styles.buttonContainer}
@@ -415,15 +579,22 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   input: {
-    backgroundColor: HexColors.white,
-    fontWeight: '200',
     padding: 8,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: HexColors['light-grey'],
   },
   inputContainer: {
+    // iOS shadow
+    shadowColor: HexColors['dark-grey'],
+    shadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    borderRadius: 10,
+    backgroundColor: HexColors['white'],
     borderBottomWidth: 0,
+    // Android shadow
+    elevation: 5,
   },
   instructionsInput: {
     height: 180,

@@ -15,6 +15,7 @@ type AuthContextType = {
   handleLogin: (credentials: Credentials) => void;
   handleLogout: () => void;
   handleAutoLogin: () => void;
+  setUpdatedUser: (updatedUser: UserWithProfilePicture) => void;
 };
 
 type NavigatorType = {

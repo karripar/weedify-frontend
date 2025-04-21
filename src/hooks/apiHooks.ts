@@ -225,6 +225,36 @@ const useUser = () => {
     }
   };
 
+  // change password
+  const changePassword = async (current_password: string, new_password: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('User not logged in');
+      }
+
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_password: current_password,
+          new_password: new_password,
+        }),
+      };
+
+      return await fetchData<MessageResponse>(
+        process.env.EXPO_PUBLIC_AUTH_API + '/auth/settings/change-password',
+        options,
+      );
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  };
+
   // see if the username is available
   const getUsernameAvailable = async (username: string) => {
     // return true if username is available, false if not
@@ -254,6 +284,7 @@ const useUser = () => {
     getUserWithProfileImage,
     getUserDietaryRestrictions,
     updateUser,
+    changePassword,
     getUsernameAvailable,
     getEmailAvailable,
     getUserById,

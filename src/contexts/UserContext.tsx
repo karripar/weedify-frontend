@@ -72,9 +72,14 @@ const UserProvider = ({children}: {children: React.ReactNode}) => {
     }
   };
 
+  // update user
+  const setUpdatedUser = (updatedUser: UserWithProfilePicture) => {
+    setUser(updatedUser);
+  };
+
   return (
     <UserContext.Provider
-      value={{user, handleLogin, handleLogout, handleAutoLogin}}
+      value={{user, handleLogin, handleLogout, handleAutoLogin, setUpdatedUser}}
     >
       {children}
     </UserContext.Provider>

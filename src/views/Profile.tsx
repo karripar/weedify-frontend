@@ -1,5 +1,4 @@
 import {
-  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
@@ -20,18 +19,11 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
   const {getUserWithProfileImage} = useUser();
   const {triggerUpdate} = useUpdateContext();
-  const [refreshing, setRefreshing] = useState(false);
   const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    triggerUpdate();
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -105,7 +97,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
       <ScrollView
         contentContainerStyle={{flexGrow: 1}}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={loading} onRefresh={triggerUpdate} />
         }
       >
         <Card
@@ -197,7 +189,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
           }}
         >
           <Text>
-            {user ? user.bio !== null : 'Nothing on your user bio yet'}
+            {user ? user.bio : 'Nothing on your user bio yet'}
           </Text>
         </View>
         <View

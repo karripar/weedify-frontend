@@ -12,7 +12,8 @@ import {useFavorites} from '../hooks/apiHooks';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
-import {Button, Card, ListItem, Text, Icon} from '@rneui/base';
+import {Button, Card, ListItem, Text} from '@rneui/base';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Favorites = ({
   navigation,
@@ -71,6 +72,21 @@ const Favorites = ({
     }
   };
 
+  // remove favorite confirmation alert
+  const confirmRemove = (recipe_id: number) => {
+    Alert.alert(
+      'Remove favorite',
+      'Are you sure you want to remove this recipe from your favorites?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {text: 'Remove', onPress: () => removeFavorite(recipe_id)},
+      ],
+    );
+  };
+
   return (
     <LinearGradient
       colors={[
@@ -112,11 +128,11 @@ const Favorites = ({
                   }}
                 >
                   <TouchableOpacity
-                    onPress={() => removeFavorite(item.recipe_id)}
+                    onPress={() => confirmRemove(item.recipe_id)}
                   >
-                    <Icon
-                      name="star"
-                      size={32}
+                    <Ionicons
+                      name="trash"
+                      size={25}
                       color={HexColors['medium-green']}
                     />
                   </TouchableOpacity>
@@ -139,7 +155,7 @@ const Favorites = ({
                         {item.diet_types && item.diet_types.length > 0 ? (
                           item.diet_types.map((dietType) => (
                             <Text
-                            style={{
+                              style={{
                                 marginRight: 10,
                                 paddingVertical: 3,
                                 color: HexColors['medium-green'],

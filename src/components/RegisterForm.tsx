@@ -1,10 +1,11 @@
 import {Button, Card, Input, Text} from '@rneui/base';
 import {Controller, useForm} from 'react-hook-form';
 import {useUser} from '../hooks/apiHooks';
-import {Alert, StyleSheet} from 'react-native';
-import {Dispatch} from 'react';
+import {Alert, StyleSheet, TouchableOpacity} from 'react-native';
+import {useState} from 'react';
 import {RegisterCredentials} from 'hybrid-types/DBTypes';
 import {HexColors} from '../utils/colors';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const RegisterForm = ({
   setDisplayRegister,
@@ -12,6 +13,13 @@ const RegisterForm = ({
   setDisplayRegister: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const {postRegister, getUsernameAvailable, getEmailAvailable} = useUser();
+  // toggle the visibility of the password
+  const [isPasswordVisible, setIsPasswordVisible] = useState(true);
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible);
+  };
+
   const initValues: {
     username: string;
     email: string;
@@ -60,7 +68,7 @@ const RegisterForm = ({
               message: 'not a valid username',
             },
             minLength: {value: 3, message: 'minimum length is 3'},
-            maxLength: 50,
+            maxLength: {value: 20, message: 'maximum 20 characters'},
             required: {value: true, message: 'is required'},
             validate: async (value) => {
               try {
@@ -81,7 +89,7 @@ const RegisterForm = ({
               value={value}
               autoCapitalize="none"
               errorMessage={errors.username?.message}
-              testID='username-input'
+              testID="username-input"
             />
           )}
           name="username"
@@ -116,7 +124,7 @@ const RegisterForm = ({
               onChangeText={onChange}
               value={value}
               errorMessage={errors.email?.message}
-              testID='email-input'
+              testID="email-input"
             />
           )}
           name="email"
@@ -126,20 +134,29 @@ const RegisterForm = ({
         <Controller
           control={control}
           rules={{
-            minLength: {value: 10, message: 'minimum length is 10'},
-            maxLength: 50,
+            minLength: {value: 8, message: 'minimum length is 8'},
             required: {value: true, message: 'is required'},
           }}
           render={({field: {onChange, onBlur, value}}) => (
             <Input
               style={styles.input}
               inputContainerStyle={styles.inputContainer}
-              secureTextEntry
+              rightIcon={
+                <TouchableOpacity onPress={togglePasswordVisibility}>
+                  <Ionicons
+                    name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'}
+                    size={25}
+                    style={{paddingHorizontal: 10}}
+                    color={HexColors['dark-grey']}
+                  ></Ionicons>
+                </TouchableOpacity>
+              }
+              secureTextEntry={isPasswordVisible}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
               errorMessage={errors.password?.message}
-              testID='password-input'
+              testID="password-input"
             />
           )}
           name="password"
@@ -151,7 +168,7 @@ const RegisterForm = ({
           titleStyle={styles.buttonTitle}
           title="Register"
           onPress={handleSubmit(doRegister)}
-          testID='register-button'
+          testID="register-button"
         />
       </Card>
       <Text style={styles.bottomText}>Or login to your account:</Text>
@@ -215,9 +232,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   input: {
-    backgroundColor: HexColors['almost-white'],
     padding: 8,
-    borderRadius: 10,
+  },
+  inputContainer: {
     // iOS shadow
     shadowColor: HexColors['dark-grey'],
     shadowOffset: {
@@ -226,11 +243,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 2,
+    borderRadius: 10,
+    backgroundColor: HexColors['almost-white'],
+    borderBottomWidth: 0,
     // Android shadow
     elevation: 5,
-  },
-  inputContainer: {
-    borderBottomWidth: 0,
   },
   text: {
     color: HexColors['almost-white'],
