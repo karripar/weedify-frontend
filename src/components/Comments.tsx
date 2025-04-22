@@ -13,7 +13,7 @@ import {formatDateToTimePassed} from '../lib/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {Text} from '@rneui/base';
-import {HexColors} from '../utils/colors';
+import {HexColors, HexGradients} from '../utils/colors';
 
 const Comments = ({item}: {item: RecipeWithOwner}) => {
   const inputRef = useRef<TextInput | null>(null);
@@ -234,7 +234,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
             <TouchableOpacity
               onPress={() => toggleRepliesVisible(comment.comment_id)}
             >
-              <Text style={{color: '#fbbf24', marginTop: 8}}>
+              <Text style={styles.showHideRepliesText}>
                 {replyVisible[comment.comment_id]
                   ? 'Hide Replies'
                   : `Show ${comment.replies.length} Replies`}
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     width: '95%',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: HexColors['green'],
+    backgroundColor: HexColors['medium-green'],
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -408,6 +408,12 @@ const styles = StyleSheet.create({
   replySubmitText: {
     color: HexColors['almost-white'],
     fontWeight: '600',
+  },
+  showHideRepliesText: {
+    color: HexColors['light-purple'],
+    fontSize: 16,
+    fontWeight: '400',
+    marginTop: 8
   }
 });
 
