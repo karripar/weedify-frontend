@@ -1,14 +1,13 @@
-// UserContext.tsx
 import React, {createContext, useState} from 'react';
 import {
   Credentials,
+  UserWithDietaryInfo,
   UserWithNoPassword,
   UserWithProfilePicture,
 } from 'hybrid-types/DBTypes';
 import {useAuthentication, useUser} from '../hooks/apiHooks';
 import {AuthContextType} from '../types/LocalTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {UserResponse} from 'hybrid-types/MessageTypes';
 import {Alert} from 'react-native';
 
 const UserContext = createContext<AuthContextType | null>(null);
@@ -16,18 +15,18 @@ const UserContext = createContext<AuthContextType | null>(null);
 const UserProvider = ({children}: {children: React.ReactNode}) => {
   const {getUserByToken} = useUser();
   const {postLogin} = useAuthentication();
-  const [user, setUser] = useState<UserWithProfilePicture | null>(null);
+  const [user, setUser] = useState<UserWithDietaryInfo | null>(null);
 
   const formatUserData = (
     userData: UserWithNoPassword,
-  ): UserWithProfilePicture => {
+  ): UserWithDietaryInfo => {
     return {
       ...userData,
       profile_picture:
         'profilePicture' in userData
           ? (userData as any).profile_picture || ''
           : '',
-    } as UserWithProfilePicture;
+    } as UserWithDietaryInfo;
   };
 
   const handleLogin = async (credentials: Credentials) => {
@@ -73,7 +72,7 @@ const UserProvider = ({children}: {children: React.ReactNode}) => {
   };
 
   // update user
-  const setUpdatedUser = (updatedUser: UserWithProfilePicture) => {
+  const setUpdatedUser = (updatedUser: UserWithDietaryInfo) => {
     setUser(updatedUser);
   };
 

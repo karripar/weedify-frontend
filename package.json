@@ -45,6 +45,7 @@
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.27.0",
     "@react-native-community/cli": "^18.0.0",
+    "@types/date-fns": "^2.5.3",
     "@types/node": "^22.14.1",
     "@types/react": "~18.3.12",
     "eslint-config-prettier": "^10.1.1",

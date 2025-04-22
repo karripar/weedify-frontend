@@ -2,8 +2,9 @@ import {
   Credentials,
   RecipeWithAllFields,
   RecipeWithOwner,
-  UserWithProfilePicture,
+  UserWithDietaryInfo,
 } from 'hybrid-types/DBTypes';
+import {MessageResponse} from 'hybrid-types/MessageTypes';
 
 // for testing
 declare global {
@@ -11,11 +12,11 @@ declare global {
 }
 
 type AuthContextType = {
-  user: UserWithProfilePicture | null;
+  user: UserWithDietaryInfo | null;
   handleLogin: (credentials: Credentials) => void;
   handleLogout: () => void;
   handleAutoLogin: () => void;
-  setUpdatedUser: (updatedUser: UserWithProfilePicture) => void;
+  setUpdatedUser: (updatedUser: UserWithDietaryInfo) => void;
 };
 
 type NavigatorType = {
@@ -82,6 +83,10 @@ type RecipeWithOwnerExtended = RecipeWithOwner & {
   likes_count: number;
 };
 
+type UpdateUserResponse = MessageResponse & {
+  user: UserWithDietaryInfo;
+};
+
 export type {
   AuthContextType,
   NavigatorType,
@@ -90,4 +95,5 @@ export type {
   RecipeWithOwnerExtended,
   DietTypeWithName,
   RecipeWithPossibleLikes,
+  UpdateUserResponse,
 };

@@ -18,7 +18,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {MultipleSelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {UserWithProfilePicture} from 'hybrid-types/DBTypes';
+import {UserWithDietaryInfo} from 'hybrid-types/DBTypes';
 
 type UpdateInputs = {
   username: string;
@@ -26,7 +26,7 @@ type UpdateInputs = {
   current_password: string;
   new_password: string;
   bio: string;
-  dietary_info: string;
+  dietary_restrictions: string;
 };
 
 const EditProfileForm = ({
@@ -36,24 +36,35 @@ const EditProfileForm = ({
 }) => {
   const {user, setUpdatedUser} = useUserContext();
   const {postProfileImageFile, loading} = useFile();
-  const {updateUser, getUserDietaryRestrictions, changePassword, getUserById} =
-    useUser();
+  // TODO: check if the username or email is already taken in the form
+  const {
+    updateUser,
+    getUserDietaryRestrictions,
+    changePassword,
+    getUserById,
+    getUsernameAvailable,
+    getEmailAvailable,
+  } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
+
+  // fetch and set all dietypes to the selector
   const {getAllDietTypes} = useDietTypes();
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
+
   const [dietList, setDietList] = useState<string[]>([]);
   const [dietResetKey, setDietResetKey] = useState(0);
-  const [dietTypesLoaded, setDietTypesLoaded] = useState(false);
+
+  // TODO: update the edit user profile form with user's existing diets
+  const [userDiets, setUserDiets] = useState<string[] | null>([]);
 
   // toggle the visibility of the password
   const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
     useState(true);
-
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(true);
 
   const toggleCurrentPasswordVisibility = () => {
@@ -70,7 +81,7 @@ const EditProfileForm = ({
     current_password: '',
     new_password: '',
     bio: '',
-    dietary_info: '',
+    dietary_restrictions: '',
   };
   const {
     control,
@@ -81,51 +92,15 @@ const EditProfileForm = ({
     defaultValues: initValues,
   });
 
-  // clear all the inputs fields and selected ingredients and dietypes
-  const resetForm = () => {
-    setImage(null);
-    setDietList([]);
-    setDietResetKey((prev) => prev + 1);
-    reset(initValues);
-  };
-
-  useEffect(() => {
-    const loadUserDietaryInfo = async () => {
-      if (user && dietTypesLoaded && dietTypeOptions.length > 0) {
-        try {
-          const dietaryIds = await getUserDietaryRestrictions(user.user_id);
-          console.log('Fetched dietary IDs:', dietaryIds);
-
-          if (dietaryIds && dietaryIds.length > 0) {
-            const userDiets = dietaryIds
-              .map((id: string) => {
-                const diet = dietTypeOptions.find((d) => d.key === id);
-                return diet ? diet.value : '';
-              })
-              .filter(Boolean);
-
-            console.log('Setting diet list from API:', userDiets);
-            setDietList(userDiets);
-          }
-        } catch (error) {
-          console.error('Error loading dietary restrictions:', error);
-        }
-      }
-    };
-
-    loadUserDietaryInfo();
-  }, [user, dietTypesLoaded, dietTypeOptions]);
-
+  // reset the updated user data
   useEffect(() => {
     if (user) {
       reset({
         username: user.username,
         email: user.email,
         bio: user.bio || '',
-        dietary_info: user.dietary_info || '',
+        dietary_restrictions: user.dietary_restrictions || '',
       });
-
-      console.log('User dietary info:', user.dietary_info);
     }
   }, [user, update]);
 
@@ -143,7 +118,6 @@ const EditProfileForm = ({
             value: dietType.diet_type_name,
           }));
           setDietTypeOptions(dietTypes);
-          setDietTypesLoaded(true);
         } else {
           console.log('Diet types not in expected format:', allDietTypes);
           setDietTypeOptions([]);
@@ -164,8 +138,6 @@ const EditProfileForm = ({
       quality: 0.4,
     });
 
-    console.log(result);
-
     if (!result.canceled) {
       setImage(result);
     }
@@ -180,7 +152,7 @@ const EditProfileForm = ({
     }
 
     // create update object with fields to update
-    const updateData: Record<string, string | string[] | null> = {};
+    const updateData: Record<string, string | string[] | number[] | null> = {};
 
     // only add non-empty fields with proper validation
     if (inputs.username && inputs.username.trim().length >= 3) {
@@ -191,11 +163,8 @@ const EditProfileForm = ({
       updateData.email = inputs.email;
     }
 
-    if (inputs.bio !== undefined) {
-      updateData.bio = inputs.bio.trim() || '';
-    } else {
-      updateData.bio = '';
-    }
+    // send the text in the bio field or an empty string
+    updateData.bio = inputs.bio !== undefined ? inputs.bio.trim() : '';
 
     // get diet type ids from the selected names
     const dietTypeIds = dietList
@@ -212,7 +181,7 @@ const EditProfileForm = ({
 
     // add dietary info if not empty
     if (dietTypeIds.length > 0) {
-      updateData.dietary_info = dietTypeIds.join(', ');
+      updateData.dietary_restrictions = dietTypeIds.join(',');
     }
 
     // handle profile image (both with and without new image)
@@ -268,6 +237,7 @@ const EditProfileForm = ({
           'Updated user data structure:',
           JSON.stringify(updatedUserData),
         );
+
         if (updatedUserData) {
           // format the user data to include the profile image
           const formattedUser = {
@@ -276,8 +246,16 @@ const EditProfileForm = ({
               'profile_picture' in updatedUserData
                 ? updatedUserData.profile_picture
                 : '',
-          } as UserWithProfilePicture;
+          } as UserWithDietaryInfo;
 
+          reset({
+            username: updatedUserData.username,
+            email: updatedUserData.email,
+            bio: updatedUserData.bio || '',
+            dietary_restrictions: updatedUserData.dietary_restrictions || '',
+          });
+
+          setImage(null);
           setUpdatedUser(formattedUser);
           console.log(formattedUser);
         }
@@ -285,7 +263,6 @@ const EditProfileForm = ({
         console.error('Error fetching updated user:', fetchError);
       }
 
-      resetForm();
       triggerUpdate();
       if (editResponse && editResponse.message) {
         Alert.alert('Update successful', editResponse.message);
@@ -341,6 +318,18 @@ const EditProfileForm = ({
             rules={{
               maxLength: {value: 20, message: 'maximum 20 characters'},
               minLength: {value: 3, message: 'minimum 3 characters'},
+              /*
+              validate: async (value) => {
+                try {
+                  const {exists} = await getUsernameAvailable(value);
+                  console.log('username exists?: ', exists);
+                  return exists ? 'username not available' : false;
+                } catch (error) {
+                  console.error((error as Error).message);
+                }
+
+              },
+              */
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
@@ -366,6 +355,17 @@ const EditProfileForm = ({
               },
               minLength: {value: 3, message: 'minimum length is 3'},
               maxLength: 50,
+              /*
+              validate: async (value) => {
+                try {
+                  const {exists} = await getEmailAvailable(value);
+                  console.log('email exists?: ', exists);
+                  return exists ? 'email not available' : false;
+                } catch (error) {
+                  console.error((error as Error).message);
+                }
+              },
+              */
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
@@ -396,7 +396,7 @@ const EditProfileForm = ({
                 value={value}
                 errorMessage={errors.bio?.message}
                 multiline={true}
-                numberOfLines={10}
+                numberOfLines={6}
                 textAlignVertical="top"
                 testID="bio-input"
               />
@@ -433,6 +433,38 @@ const EditProfileForm = ({
               badgeStyles={{backgroundColor: HexColors['light-green']}}
               placeholder="Diets"
             />
+          </View>
+          <Text style={{marginHorizontal: 15, marginTop: 10}}>
+            Selected diet restrictions:
+          </Text>
+          <View style={styles.ingredientContainer}>
+            {userDiets &&
+              userDiets.map((dietId, index) => {
+                const dietName =
+                  dietTypeOptions.find((option) => option.key === dietId)
+                    ?.value || dietId;
+                return (
+                  <Chip
+                    key={index}
+                    title={dietName}
+                    buttonStyle={styles.chipButton}
+                    titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
+                    containerStyle={styles.chipContainer}
+                    icon={{
+                      name: 'close',
+                      type: 'ionicon',
+                      size: 16,
+                      color: HexColors['dark-grey'],
+                    }}
+                    onPress={() => {
+                      // remove ingredient when pressed
+                      const updatedUserDiets =
+                        userDiets?.filter((_, i) => i !== index) || [];
+                      setUserDiets(updatedUserDiets);
+                    }}
+                  />
+                );
+              })}
           </View>
           <Text
             style={{

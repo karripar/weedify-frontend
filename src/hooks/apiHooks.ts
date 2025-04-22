@@ -1,6 +1,6 @@
 import {fetchData} from '../lib/functions';
 import {
-  AvailableResponse,
+  ExistsResponse,
   LoginResponse,
   MessageResponse,
   UploadResponse,
@@ -11,17 +11,21 @@ import {
   DietType,
   ProfilePicture,
   Comment,
-  Recipe,
   RecipeWithOwner,
   RegisterCredentials,
   UserWithNoPassword,
   Like,
   RecipeWithAllFields,
+  UserWithDietaryInfo,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
-import {PostRecipeData, RecipeWithProfileImage} from '../types/LocalTypes';
+import {
+  PostRecipeData,
+  RecipeWithProfileImage,
+  UpdateUserResponse,
+} from '../types/LocalTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useAuthentication = () => {
@@ -77,11 +81,11 @@ const useUser = () => {
   };
 
   // get users's dietary restrictions
-  const getUserDietaryRestrictions = async (userId: number) => {
+  const getUserDietaryRestrictions = async (user_id: number) => {
     try {
       // get the user with their dietary info
       const userWithDietary = await fetchData<any>(
-        process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + userId,
+        process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + user_id,
       );
 
       // Use dietary_restrictions property instead of dietary
@@ -131,7 +135,7 @@ const useUser = () => {
     filename:
       | UploadResponse
       | {data: {filename: null; media_type: null; filesize: null}},
-    inputs: Record<string, string | string[] | null>,
+    inputs: Record<string, string | string[] | number[] | null>,
     user_id: number,
   ) => {
     // update object for backend
@@ -147,14 +151,19 @@ const useUser = () => {
     }
 
     if ('bio' in inputs) {
-      update.bio = inputs.bio || null;
+      update.bio = inputs.bio || '';
     }
 
-    if ('dietary_info' in inputs && Array.isArray(inputs.dietary_info)) {
-      update.dietary_info = inputs.dietary_info.map((id) => Number(id));
-    }
+    const dietaryRestrictions = Array.isArray(inputs.dietary_restrictions)
+      ? inputs.dietary_restrictions
+      : typeof inputs.dietary_restrictions === 'string' &&
+          inputs.dietary_restrictions.length > 0
+        ? inputs.dietary_restrictions.split(',').map((id) => Number(id))
+        : [];
 
-    console.log('Update payload:', JSON.stringify(update));
+    if (dietaryRestrictions.length > 0) {
+      update.dietary_info = dietaryRestrictions.map((id) => Number(id));
+    }
 
     const options = {
       method: 'PUT',
@@ -167,7 +176,7 @@ const useUser = () => {
 
     try {
       // update the user details, the profile image update is a separate endpoint
-      const userResponse = await fetchData<UserResponse>(
+      const userResponse = await fetchData<UpdateUserResponse>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/user/update',
         options,
       );
@@ -181,8 +190,6 @@ const useUser = () => {
           filesize: filename.data.filesize.toString(),
         };
 
-        console.log('pic data', picData);
-
         try {
           // check is the user already has a profile pic
           await fetchData<ProfilePicture>(
@@ -190,8 +197,6 @@ const useUser = () => {
               '/users/profilepicture/' +
               user_id,
           );
-
-          console.log('user', user_id);
 
           // if user already has a profile pic use PUT
           const picOptions = {
@@ -230,11 +235,14 @@ const useUser = () => {
   };
 
   // change password
-  const changePassword = async (current_password: string, new_password: string) => {
+  const changePassword = async (
+    current_password: string,
+    new_password: string,
+  ) => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        throw new Error('User not logged in');
+        return new Error('User not logged in');
       }
 
       const options = {
@@ -262,7 +270,7 @@ const useUser = () => {
   // see if the username is available
   const getUsernameAvailable = async (username: string) => {
     // return true if username is available, false if not
-    return await fetchData<AvailableResponse>(
+    return await fetchData<ExistsResponse>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/username/' + username,
     );
   };
@@ -270,14 +278,14 @@ const useUser = () => {
   // see if email is available
   const getEmailAvailable = async (email: string) => {
     // return true if email is available, false if not
-    return await fetchData<AvailableResponse>(
+    return await fetchData<ExistsResponse>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/email/' + email,
     );
   };
 
   // get user by user id and return the user without password
   const getUserById = async (user_id: number) => {
-    return await fetchData<UserWithNoPassword>(
+    return await fetchData<UserWithDietaryInfo>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + user_id,
     );
   };
@@ -631,7 +639,7 @@ const useComments = () => {
           recipe_id: recipe_id,
           reference_comment_id: reference_comment_id,
         }),
-      }
+      };
       const response = await fetchData<MessageResponse>(
         process.env.EXPO_PUBLIC_MEDIA_API + '/comments',
         options,
@@ -641,7 +649,7 @@ const useComments = () => {
       console.error('Error posting comment:', error); // console log comment for removing it later
       throw new Error('Failed to post comment');
     }
-  }
+  };
 
   // get all comments for a recipe
   const getCommentsByRecipeId = async (recipe_id: number) => {
@@ -667,7 +675,7 @@ const useComments = () => {
       console.error('Error fetching comments:', error); // console log comment for removing it later
       throw new Error('Failed to fetch comments');
     }
-  }
+  };
 
   // delete a comment (only for admins)
   const deleteComment = async (comment_id: number, token: string) => {
@@ -686,13 +694,13 @@ const useComments = () => {
       console.error('Error deleting comment:', error); // console log comment for removing it later
       throw new Error('Failed to delete comment');
     }
-  }
+  };
 
   return {
     postComment,
     getCommentsByRecipeId,
     deleteComment,
-  }
+  };
 };
 
 // favorites

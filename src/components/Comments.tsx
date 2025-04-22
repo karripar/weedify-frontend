@@ -346,13 +346,15 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 12,
-    width: '100%',
+    width: '95%',
     padding: 16,
     borderRadius: 12,
     backgroundColor: HexColors['green'],
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
+    marginHorizontal: 10,
+    marginBottom: 20
   },
   loginToComment: {
     color: HexColors['dark-green'],

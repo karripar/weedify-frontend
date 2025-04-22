@@ -1,5 +1,5 @@
 import {ErrorResponse} from 'hybrid-types/MessageTypes';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 
 const fetchData = async <T>(
   url: string,

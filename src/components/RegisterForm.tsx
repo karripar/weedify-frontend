@@ -48,7 +48,6 @@ const RegisterForm = ({
 
   const {
     control,
-    getValues,
     handleSubmit,
     formState: {errors},
   } = useForm({
@@ -72,9 +71,9 @@ const RegisterForm = ({
             required: {value: true, message: 'is required'},
             validate: async (value) => {
               try {
-                const {available} = await getUsernameAvailable(value);
-                console.log('username available?: ', available);
-                return available ? true : 'username not available';
+                const {exists} = await getUsernameAvailable(value);
+                console.log('username exists?: ', exists);
+                return exists ? 'username not available' : false;
               } catch (error) {
                 console.error((error as Error).message);
               }
@@ -108,9 +107,9 @@ const RegisterForm = ({
             required: {value: true, message: 'is required'},
             validate: async (value) => {
               try {
-                const {available} = await getEmailAvailable(value);
-                console.log('email available?: ', available);
-                return available ? true : 'email not available';
+                const {exists} = await getEmailAvailable(value);
+                console.log('email exists?: ', exists);
+                return exists ? 'email not available' : false;
               } catch (error) {
                 console.error((error as Error).message);
               }
