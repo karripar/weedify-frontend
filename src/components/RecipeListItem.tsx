@@ -28,9 +28,12 @@ type RecipeListItemProps = {
     media_type: string;
     created_at: string;
     username: string;
+    screenshots?: string[];
   };
   navigation: NavigationProp<ParamListBase>;
 };
+
+
 
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   // Profile image loading logic
@@ -38,6 +41,8 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+
+  console.log('RecipeListItem', item);
 
   // Like functionality state and hooks
   const [isLiked, setIsLiked] = useState(false);
@@ -221,9 +226,12 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           style={styles.recipeImage}
           source={{
             uri:
-              item.filename ||
-              process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-          }}
+            item.media_type.includes('image')
+            ? item.filename
+            : item.media_type.includes('video') && item.screenshots?.[0]
+              ? item.screenshots[0]
+              : process.env.EXPO_PUBLIC_UPLOADS + '/defaultrecipeimage.png'
+            }}
         />
       </TouchableOpacity>
 
