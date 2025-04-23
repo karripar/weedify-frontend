@@ -36,10 +36,8 @@ const EditProfileForm = ({
 }) => {
   const {user, setUpdatedUser} = useUserContext();
   const {postProfileImageFile, loading} = useFile();
-  // TODO: check if the username or email is already taken in the form
   const {
     updateUser,
-    getUserDietaryRestrictions,
     changePassword,
     getUserById,
     getUsernameAvailable,
@@ -81,13 +79,14 @@ const EditProfileForm = ({
     current_password: '',
     new_password: '',
     bio: '',
-    dietary_restrictions: '',
+    dietary_restrictions: user?.dietary_restrictions || '',
   };
   const {
     control,
     handleSubmit,
     formState: {errors, isValid},
     reset,
+    trigger,
   } = useForm({
     defaultValues: initValues,
   });
@@ -318,25 +317,31 @@ const EditProfileForm = ({
             rules={{
               maxLength: {value: 20, message: 'maximum 20 characters'},
               minLength: {value: 3, message: 'minimum 3 characters'},
-              /*
               validate: async (value) => {
+                // the current user's username wont be checked
+                if (user && value === user.username) {
+                  return true;
+                }
                 try {
-                  const {exists} = await getUsernameAvailable(value);
-                  console.log('username exists?: ', exists);
-                  return exists ? 'username not available' : false;
+                  const {available} = await getUsernameAvailable(value);
+                  console.log('username available?: ', available);
+                  return available ? true : 'username not available';
                 } catch (error) {
                   console.error((error as Error).message);
                 }
-
               },
-              */
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
                 style={styles.input}
                 inputContainerStyle={styles.inputContainer}
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(input) => {
+                  onChange(input);
+                  if (input.length >= 3) {
+                    trigger('username');
+                  }
+                }}
                 value={value}
                 autoCapitalize="none"
                 errorMessage={errors.username?.message}
@@ -355,24 +360,31 @@ const EditProfileForm = ({
               },
               minLength: {value: 3, message: 'minimum length is 3'},
               maxLength: 50,
-              /*
               validate: async (value) => {
+                // the current user's email wont be checked
+                if (user && value === user.email) {
+                  return true;
+                }
                 try {
-                  const {exists} = await getEmailAvailable(value);
-                  console.log('email exists?: ', exists);
-                  return exists ? 'email not available' : false;
+                  const {available} = await getEmailAvailable(value);
+                  console.log('email available?: ', available);
+                  return available ? true : 'email not available';
                 } catch (error) {
                   console.error((error as Error).message);
                 }
               },
-              */
             }}
             render={({field: {onChange, onBlur, value}}) => (
               <Input
                 style={styles.input}
                 inputContainerStyle={styles.inputContainer}
                 onBlur={onBlur}
-                onChangeText={onChange}
+                onChangeText={(input) => {
+                  onChange(input);
+                  if (input.length >= 3) {
+                    trigger('email');
+                  }
+                }}
                 value={value}
                 autoCapitalize="none"
                 errorMessage={errors.email?.message}
@@ -433,38 +445,6 @@ const EditProfileForm = ({
               badgeStyles={{backgroundColor: HexColors['light-green']}}
               placeholder="Diets"
             />
-          </View>
-          <Text style={{marginHorizontal: 15, marginTop: 10}}>
-            Selected diet restrictions:
-          </Text>
-          <View style={styles.ingredientContainer}>
-            {userDiets &&
-              userDiets.map((dietId, index) => {
-                const dietName =
-                  dietTypeOptions.find((option) => option.key === dietId)
-                    ?.value || dietId;
-                return (
-                  <Chip
-                    key={index}
-                    title={dietName}
-                    buttonStyle={styles.chipButton}
-                    titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
-                    containerStyle={styles.chipContainer}
-                    icon={{
-                      name: 'close',
-                      type: 'ionicon',
-                      size: 16,
-                      color: HexColors['dark-grey'],
-                    }}
-                    onPress={() => {
-                      // remove ingredient when pressed
-                      const updatedUserDiets =
-                        userDiets?.filter((_, i) => i !== index) || [];
-                      setUserDiets(updatedUserDiets);
-                    }}
-                  />
-                );
-              })}
           </View>
           <Text
             style={{

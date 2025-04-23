@@ -71,9 +71,9 @@ const RegisterForm = ({
             required: {value: true, message: 'is required'},
             validate: async (value) => {
               try {
-                const {exists} = await getUsernameAvailable(value);
-                console.log('username exists?: ', exists);
-                return exists ? 'username not available' : false;
+                const {available} = await getUsernameAvailable(value);
+                console.log('username available?: ', available);
+                return available ? true : 'username not available';
               } catch (error) {
                 console.error((error as Error).message);
               }
@@ -107,9 +107,9 @@ const RegisterForm = ({
             required: {value: true, message: 'is required'},
             validate: async (value) => {
               try {
-                const {exists} = await getEmailAvailable(value);
-                console.log('email exists?: ', exists);
-                return exists ? 'email not available' : false;
+                const {available} = await getEmailAvailable(value);
+                console.log('email available?: ', available);
+                return available ? true : 'email not available';
               } catch (error) {
                 console.error((error as Error).message);
               }

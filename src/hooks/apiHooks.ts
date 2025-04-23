@@ -1,6 +1,6 @@
 import {fetchData} from '../lib/functions';
 import {
-  ExistsResponse,
+  AvailableResponse,
   LoginResponse,
   MessageResponse,
   UploadResponse,
@@ -270,7 +270,7 @@ const useUser = () => {
   // see if the username is available
   const getUsernameAvailable = async (username: string) => {
     // return true if username is available, false if not
-    return await fetchData<ExistsResponse>(
+    return await fetchData<AvailableResponse>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/username/' + username,
     );
   };
@@ -278,7 +278,7 @@ const useUser = () => {
   // see if email is available
   const getEmailAvailable = async (email: string) => {
     // return true if email is available, false if not
-    return await fetchData<ExistsResponse>(
+    return await fetchData<AvailableResponse>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/email/' + email,
     );
   };
