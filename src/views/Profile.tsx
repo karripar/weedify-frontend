@@ -113,6 +113,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               type="ionicon"
               color={HexColors['dark-grey']}
               size={24}
+              testID="profile-buttons"
             />
           </TouchableOpacity>
 
@@ -130,6 +131,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
                   name="edit"
                   type="material"
                   color={HexColors['dark-grey']}
+                  testID="edit-profile-button"
                 />
                 <Text style={styles.menuText}>Edit Profile</Text>
               </TouchableOpacity>
@@ -137,6 +139,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={handleDeleteProfile}
+                testID="delete-profile-button"
               >
                 <Icon name="delete" type="material" color="red" />
                 <Text style={[styles.menuText, {color: 'red'}]}>
@@ -149,6 +152,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
                   name="logout"
                   type="material"
                   color={HexColors['dark-grey']}
+                  testID="logout-button"
                 />
                 <Text style={styles.menuText}>Logout</Text>
               </TouchableOpacity>
@@ -168,29 +172,27 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
           </View>
         </Card>
         <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '600',
-              color: HexColors['darker-green'],
-              marginLeft: 20,
-              marginVertical: 10,
-              marginTop: 20
-            }}
-          >
-            User bio
-          </Text>
+          style={{
+            fontSize: 20,
+            fontWeight: '600',
+            color: HexColors['darker-green'],
+            marginLeft: 20,
+            marginVertical: 10,
+            marginTop: 20,
+          }}
+        >
+          User bio
+        </Text>
         <View
           style={{
             maxWidth: '100%',
             backgroundColor: HexColors['almost-white'],
             borderRadius: 10,
             padding: 20,
-            marginHorizontal: 20
+            marginHorizontal: 20,
           }}
         >
-          <Text>
-            {user ? user.bio : 'Nothing on your user bio yet'}
-          </Text>
+          <Text>{user ? user.bio : 'Nothing on your user bio yet'}</Text>
         </View>
         <View
           style={{

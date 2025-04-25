@@ -22,6 +22,7 @@ import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
 import {
+  EditRecipeInputs,
   PostRecipeData,
   RecipeWithProfileImage,
   UpdateUserResponse,
@@ -82,27 +83,39 @@ const useUser = () => {
 
   // get users's dietary restrictions
   const getUserDietaryRestrictions = async (user_id: number) => {
+    const {getAllDietTypes} = useDietTypes();
     try {
       // get the user with their dietary info
+      // TODO: tän tyypin vois vaihtaa johonki...
       const userWithDietary = await fetchData<any>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + user_id,
       );
 
-      // Use dietary_restrictions property instead of dietary
-      if (userWithDietary && userWithDietary.dietary_restrictions) {
-        // Convert the array of objects to an array of IDs
-        const dietaryInfo = Array.isArray(userWithDietary.dietary_restrictions)
-          ? userWithDietary.dietary_restrictions.map(
-              (diet: {dietary_restriction_id: number}) =>
-                diet.dietary_restriction_id.toString(),
-            )
-          : [
-              userWithDietary.dietary_restrictions.dietary_restriction_id.toString(),
-            ];
-
-        return dietaryInfo;
+      // return an empty array if no diets selected
+      if (!userWithDietary?.dietary_restrictions) {
+        return [];
       }
-      return [];
+
+      const dietIds = Array.isArray(userWithDietary.dietary_restrictions)
+        ? userWithDietary.dietary_restrictions.map(
+            (diet: {dietary_restriction_id: number}) =>
+              diet.dietary_restriction_id.toString(),
+          )
+        : [
+            userWithDietary.dietary_restrictions.dietary_restriction_id.toString(),
+          ];
+
+      // fetch all the diets to convert the ids to diet names
+      const allDiets = await getAllDietTypes();
+
+      // map the diet ids to names
+      const userDiets = dietIds
+        .map((id: string) => {
+          const diet = allDiets.find((d) => d.diet_type_id.toString() === id);
+          return diet?.diet_type_name;
+        })
+        .filter(Boolean);
+      return userDiets;
     } catch (error) {
       console.error('Error fetching dietary restrictions:', error);
       return [];
@@ -116,8 +129,6 @@ const useUser = () => {
       body: JSON.stringify(credentials),
       headers: {'Content-Type': 'application/json'},
     };
-    console.log('Auth API: ', process.env.EXPO_PUBLIC_AUTH_API);
-    console.log('Media API: ', process.env.EXPO_PUBLIC_MEDIA_API);
     try {
       // return created user without password
       return await fetchData<UserResponse>(
@@ -438,6 +449,32 @@ const useRecipes = (user_id?: number) => {
     );
   };
 
+  // update recipe
+  const updateRecipe = async (
+    token: string,
+    recipe_id: number,
+    updateData: EditRecipeInputs,
+  ) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      };
+
+      return await fetchData(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/recipes/' + recipe_id,
+        options,
+      );
+    } catch (error) {
+      console.error('Error updating recipe:', error);
+      throw error;
+    }
+  };
+
   // delete recipe
   const deleteRecipe = async (recipe_id: number, token: string) => {
     const options = {
@@ -452,7 +489,7 @@ const useRecipes = (user_id?: number) => {
     );
   };
 
-  return {recipeArray, postRecipe, deleteRecipe, loading};
+  return {recipeArray, postRecipe, updateRecipe, deleteRecipe, loading};
 };
 
 const useFile = () => {
@@ -480,8 +517,6 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body);
-    console.log('parsed file result', JSON.parse(fileResult.body));
     return JSON.parse(fileResult.body);
   };
 
@@ -507,8 +542,6 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body);
-    console.log('parsed file result', JSON.parse(fileResult.body));
 
     const response = JSON.parse(fileResult.body);
 
@@ -657,13 +690,11 @@ const useComments = () => {
       const comments = await fetchData<Comment[]>(
         process.env.EXPO_PUBLIC_MEDIA_API + '/comments/byrecipe/' + recipe_id,
       );
-      console.log('comments', comments);
 
       // fetch usernames for each comment
       const commentsWithUsernames = await Promise.all(
         comments.map(async (comment) => {
           const user = await getUserById(comment.user_id);
-          console.log('user', user);
           return {
             ...comment,
             username: user.username,
@@ -792,7 +823,6 @@ const useFavorites = () => {
         options,
       );
 
-      console.log('added to', added);
       setUpdate(!update);
       return added;
     } catch (error) {

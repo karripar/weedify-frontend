@@ -30,6 +30,7 @@ type NavigatorType = {
   // stack screen
   Back: undefined;
   'Edit Profile': undefined;
+  'Edit Recipe': undefined;
   Recipe: undefined;
 };
 
@@ -87,6 +88,14 @@ type UpdateUserResponse = MessageResponse & {
   user: UserWithDietaryInfo;
 };
 
+type EditRecipeInputs = {
+  title: string;
+  instructions: string;
+  cooking_time: string;
+  portions: string;
+  difficulty_level: string;
+};
+
 export type {
   AuthContextType,
   NavigatorType,
@@ -96,4 +105,5 @@ export type {
   DietTypeWithName,
   RecipeWithPossibleLikes,
   UpdateUserResponse,
+  EditRecipeInputs
 };

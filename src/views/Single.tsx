@@ -1,28 +1,89 @@
-import {RecipeWithAllFields, User} from 'hybrid-types/DBTypes';
-import {Alert, Image, ScrollView, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+} from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
-import {Card, Icon, Divider} from '@rneui/base';
+import {Card, Icon, Divider, Overlay} from '@rneui/base';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
-import {useNavigation} from '@react-navigation/native';
+import {
+  NavigationProp,
+  ParamListBase,
+  useNavigation,
+} from '@react-navigation/native';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
 import Comments from '../components/Comments';
-import { ArrowUp, ArrowDown } from 'lucide-react-native';
+import {ArrowUp, ArrowDown} from 'lucide-react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Single = ({route}: any) => {
   const item: RecipeWithAllFields & {username: string} = route.params.item;
   const {user} = useUserContext();
   const {getUserWithProfileImage} = useUser();
-  const {triggerUpdate} = useUpdateContext();
+  const {update, setUpdate} = useUpdateContext();
   const {deleteRecipe} = useRecipes();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+  // recipe edit/delete overlay
+  const [recipeOverlay, setRecipeOverlay] = useState(false);
+
+  // toggle the visibilty of the overlay
+  const toggleRecipeOverlay = () => {
+    setRecipeOverlay(!recipeOverlay);
+  };
+
+  // handle edit recipe button click
+  const handleEditRecipe = () => {
+    setRecipeOverlay(false);
+    navigation.navigate('Edit Recipe', {item});
+  };
+
+  // handle delete recipe button click
+  const handleDeleteRecipe = () => {
+    setRecipeOverlay(false);
+    // confirmation alert
+    Alert.alert(
+      'Delete Recipe',
+      'Are you sure you want to delete this recipe? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // delete recipe
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) return;
+
+              const deleteResponse = await deleteRecipe(item.recipe_id, token);
+              console.log('recipe deleted', deleteResponse);
+              setUpdate(!update);
+              Alert.alert('Success', 'Recipe deleted successfully');
+            } catch (error) {
+              console.error('Delete error:', error);
+              Alert.alert('Error', 'Failed to delete recipe');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -31,7 +92,6 @@ const Single = ({route}: any) => {
           const profileImage = await getUserWithProfileImage(item.user_id);
           if (profileImage && profileImage.filename) {
             setProfileImageUrl(profileImage.filename);
-            console.log('profileimage uri', profileImageUrl);
           }
         }
       } catch (error) {
@@ -41,22 +101,6 @@ const Single = ({route}: any) => {
 
     loadProfileImage();
   }, [user]);
-
-  // TODO: add delete and edit recipe functionality to the front, ALSO add comment, rating, like and save functionalities
-  const handleDelete = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
-      const deleteResponse = await deleteRecipe(item.recipe_id, token);
-      triggerUpdate();
-      Alert.alert('Success', deleteResponse.message);
-      navigation.goBack();
-    } catch (error) {
-      console.error('Delete error:', error);
-      Alert.alert('Error', 'Failed to delete recipe');
-    }
-  };
 
   return (
     <LinearGradient
@@ -88,6 +132,52 @@ const Single = ({route}: any) => {
                 {new Date(item.created_at).toLocaleDateString('fi-FI')}
               </Text>
             </View>
+
+            {user && user.user_id === item.user_id && (
+              <TouchableOpacity onPress={toggleRecipeOverlay}>
+                <Ionicons
+                  name="ellipsis-vertical"
+                  size={24}
+                  color={HexColors['dark-grey']}
+                  style={{marginLeft: 70}}
+                />
+              </TouchableOpacity>
+            )}
+
+            <Overlay
+              isVisible={recipeOverlay}
+              onBackdropPress={toggleRecipeOverlay}
+              overlayStyle={styles.overlay}
+            >
+              <View>
+                <TouchableOpacity
+                  style={styles.overlayItem}
+                  onPress={handleEditRecipe}
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={24}
+                    color={HexColors['dark-grey']}
+                    style={{width: 30}}
+                  />
+                  <Text style={styles.overlayText}>Edit Recipe</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.overlayItem}
+                  onPress={handleDeleteRecipe}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={24}
+                    color="red"
+                    style={{width: 30}}
+                  />
+                  <Text style={[styles.overlayText, {color: 'red'}]}>
+                    Delete Recipe
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Overlay>
           </View>
 
           {item.media_type.includes('image') ? (
@@ -220,10 +310,9 @@ const Single = ({route}: any) => {
         <View>
           <TouchableOpacity
             style={styles.commentsButton}
-            onPress={() => setShowComments(!showComments)}>
-            <Text
-            style={styles.sectionTitle}
-            >
+            onPress={() => setShowComments(!showComments)}
+          >
+            <Text style={styles.sectionTitle}>
               {showComments ? 'Hide Comments' : 'Show Comments'}
             </Text>
             {showComments ? (
@@ -252,6 +341,30 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 20,
     marginBottom: 40,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 120,
+    right: 15,
+    width: 250,
+    padding: 0,
+    borderRadius: 10,
+    backgroundColor: HexColors['light-purple'],
+  },
+  overlayItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderRadius: 10,
+    borderBottomColor: HexColors['light-grey'],
+  },
+  overlayText: {
+    fontFamily: 'InriaSans-Regular',
+    fontSize: 16,
+    marginLeft: 10,
+    color: HexColors['dark-grey'],
   },
   imageContainer: {
     height: 50,
