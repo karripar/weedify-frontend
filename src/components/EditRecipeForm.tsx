@@ -1,96 +1,63 @@
-import {Controller, useForm} from 'react-hook-form';
-import {Button, Card, Chip, Image, Text} from '@rneui/base';
-import {Input} from '@rneui/themed';
 import {
   Alert,
-  FlatList,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
+  FlatList,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import {useEffect, useState} from 'react';
-import VideoPlayer from './VideoPlayer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useDietTypes, useFile, useRecipes} from '../hooks/apiHooks';
-import {useNavigation} from '@react-navigation/native';
-import {NavigatorType} from '../types/LocalTypes';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {useUpdateContext} from '../hooks/contextHooks';
+import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
-import {SelectList} from 'react-native-dropdown-select-list';
-import {LinearGradient} from 'expo-linear-gradient';
+import {Button, Card, Input, ListItem, Icon} from '@rneui/base';
 import MultiSelect from 'react-native-multiple-select';
+import {useDietTypes, useRecipes} from '../hooks/apiHooks';
+import {NavigationProp, ParamListBase} from '@react-navigation/native';
+import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Controller, useForm} from 'react-hook-form';
+import {LinearGradient} from 'expo-linear-gradient';
+import {SelectList} from 'react-native-dropdown-select-list';
+import {EditRecipeInputs} from '../types/LocalTypes';
 
-// this is for testing
-declare global {
-  interface Window {
-    setTestUnit?: (unit: string) => void;
-    testHelpers?: {
-      setTestDiets?: (diets: string[]) => void;
-      setTestDifficulty?: (level: string) => void;
-    };
-  }
-}
-
-type PostInputs = {
-  title: string;
-  ingredients: string[];
-  dietary_info: string;
-  instructions: string;
-  cooking_time: number;
-  portions: number;
-  difficulty_level_id: number;
-};
-
-const Post = () => {
-  const {postExpoFile, loading} = useFile();
-  const {postRecipe} = useRecipes();
-  const navigation = useNavigation<NativeStackNavigationProp<NavigatorType>>();
-  const {triggerUpdate} = useUpdateContext();
-  const [selectedUnit, setSelectedUnit] = useState('');
-  const [amount, setAmount] = useState('');
-  const [ingredientsList, setIngredientsList] = useState<string[]>([]);
+const EditRecipeForm = ({
+  navigation,
+  route,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+  route: any;
+}) => {
+  const {user} = useUserContext();
+  const {updateRecipe, loading} = useRecipes();
+  const {triggerUpdate, update} = useUpdateContext();
   const {getAllDietTypes} = useDietTypes();
+
+  // get the recipe data
+  const recipe = route.params.item;
+
+  // set the diet type options
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
+
+  const [ingredients, setIngredients] = useState<
+    {name: string; amount: string; unit: string}[]
+  >([]);
+
+  const [instructionsLength, setInstructionsLength] = useState(
+    recipe.instructions.length,
+  );
+
+  // set the existing recipe data
   const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
   const [currentIngredient, setCurrentIngredient] = useState('');
-  const [instructionsLength, setInstructionsLength] = useState(0);
-  const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
-    null,
+  const [amount, setAmount] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState(
+    recipe.difficulty_level,
   );
-  const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
-  const [showMockPicker, setShowMockPicker] = useState(false);
 
-  // setting testing values for selector components
-  useEffect(() => {
-    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
-      // add a unit to the ingredient list
-      window.setTestUnit = (unit) => {
-        setSelectedUnit(unit);
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
-      window.testHelpers = {
-        // set diet types
-        setTestDiets: (diets: string[]) => {
-          setSelectedDiets(diets);
-        },
-        // set difficulty level
-        setTestDifficulty: (level: string) => {
-          setSelectedDifficultyLevel(level);
-        },
-      };
-    }
-  }, []);
-
-  // data for the units for now, these will come from db later
-  const data = [
+  // data for the unit selector
+  const unitData = [
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
     {key: 'ml', value: 'ml'},
@@ -101,29 +68,39 @@ const Post = () => {
     {key: 'pcs', value: 'pcs'},
   ];
 
-  // data for difficulty levels
+  // data for difficulty level selector
   const difficultyData = [
     {key: '1', value: 'Easy'},
     {key: '2', value: 'Medium'},
     {key: '3', value: 'Hard'},
   ];
 
-  // data for diet types
+  // set the edit recipe form with the recipe data
+  const {
+    control,
+    handleSubmit,
+    formState: {errors, isValid},
+  } = useForm<EditRecipeInputs>({
+    defaultValues: {
+      title: recipe.title,
+      instructions: recipe.instructions,
+      cooking_time: recipe.cooking_time,
+      portions: recipe.portions,
+      difficulty_level: recipe.difficulty_level,
+    },
+  });
+
+  // get the dietypes
   useEffect(() => {
     const fetchDietTypes = async () => {
       try {
-        // get all diet types from the db
         const allDietTypes = await getAllDietTypes();
-
         if (Array.isArray(allDietTypes)) {
-          // map the diettypes to get the id and name of the diet
           const dietTypes = allDietTypes.map((dietType) => ({
             key: dietType.diet_type_id.toString(),
             value: dietType.diet_type_name,
           }));
           setDietTypeOptions(dietTypes);
-        } else {
-          setDietTypeOptions([]);
         }
       } catch (error) {
         console.error('Error fetching diet types:', error);
@@ -132,166 +109,127 @@ const Post = () => {
     fetchDietTypes();
   }, []);
 
-  // set init values for the post form
-  const initValues: PostInputs = {
-    title: '',
-    ingredients: [],
-    dietary_info: '',
-    instructions: '',
-    cooking_time: Number(),
-    portions: Number(),
-    difficulty_level_id: Number(),
-  };
-  const {
-    control,
-    handleSubmit,
-    formState: {errors, isValid},
-    reset,
-  } = useForm({
-    defaultValues: initValues,
-  });
+  useEffect(() => {
+    if (recipe) {
+      const recipeIngredients = Array.isArray(recipe.ingredients)
+        ? recipe.ingredients
+        : typeof recipe.ingredients === 'string'
+          ? JSON.parse(recipe.ingredients)
+          : [];
 
-  // clear all the inputs fields and selected ingredients and dietypes
-  const resetForm = () => {
-    setImage(null);
-    setSelectedDiets([]);
-    setIngredientsList([]);
-    setCurrentIngredient('');
-    setAmount('');
-    setSelectedUnit('');
-    setSelectedDifficultyLevel('');
-    setInstructionsLength(0);
-    reset(initValues);
-  };
+      // format the ingredients
+      const formattedIngredients = recipeIngredients.map((ing: any) => ({
+        name: ing.name,
+        amount: ing.amount.toString(),
+        unit: ing.unit,
+      }));
+      setIngredients(formattedIngredients);
 
-  // add ingredients with the unit and amout to the post
+      const recipeDietTypes = Array.isArray(recipe.diet_types)
+        ? recipe.diet_types
+        : typeof recipe.diet_types === 'string'
+          ? JSON.parse(recipe.diet_types)
+          : [];
+
+      // get the corresponding diet type names from the fetched diet ids
+      if (dietTypeOptions.length > 0) {
+        const dietNames = recipeDietTypes
+          .map((diet: any) => {
+            const option = dietTypeOptions.find(
+              (opt) => opt.key === diet.diet_type_id?.toString(),
+            );
+            return option ? option.value : '';
+          })
+          .filter(Boolean);
+
+        setSelectedDiets(dietNames);
+      }
+    }
+  }, [recipe, dietTypeOptions]);
+
+  // add an ingredient to the recipe
   const addIngredient = () => {
     if (
-      // check that none of the fields are empty
       currentIngredient.trim() !== '' &&
       amount !== '' &&
       selectedUnit !== ''
     ) {
-      // create the ingredient with the unit and amount
-      const ingredient = `${amount} ${selectedUnit} ${currentIngredient.trim()}`;
+      const newIngredient = {
+        name: currentIngredient.trim(),
+        amount: amount,
+        unit: selectedUnit,
+      };
 
-      setIngredientsList([...ingredientsList, ingredient]);
+      setIngredients([...ingredients, newIngredient]);
 
-      // clear the input and selector fields
       setCurrentIngredient('');
       setAmount('');
       setSelectedUnit('');
     }
   };
 
-  // post a new recipe with media
-  const doUpload = async (inputs: PostInputs) => {
-    // check that all the fields are filled before uploading
-    if (!isValid) {
-      Alert.alert('Validation Error', 'Please fill out all required fields.');
-      return;
-    }
+  // remove an ingredient
+  const removeIngredient = (index: number) => {
+    const newIngredients = [...ingredients];
+    newIngredients.splice(index, 1);
+    setIngredients(newIngredients);
+  };
 
-    // check that the post has an image or video
-    if (!image || !image.assets) {
-      Alert.alert('Please choose a file.');
-      return;
-    }
-
-    const token = await AsyncStorage.getItem('token');
-    if (!token) {
-      Alert.alert('Error', 'No token found, please login.');
-      return;
-    }
-
-    const fileResponse = await postExpoFile(image.assets[0].uri, token);
-    if (!fileResponse) {
-      Alert.alert('Upload failed');
-      return;
-    }
-
-    // get diet type ids from the selected names
-    const dietTypeIds = selectedDiets
-      .map((dietName) => {
-        // find the id that corresponds to the selected diet name
-        const dietOption = dietTypeOptions.find(
-          (option) => option.value === dietName,
-        );
-        return dietOption ? Number(dietOption.key) : null;
-      })
-      .filter((id) => id !== null);
-
-    // post with the required data
-    const recipeData = {
-      ...inputs,
-      cooking_time: Number(inputs.cooking_time),
-      portions: Number(inputs.portions),
-      ingredients: ingredientsList,
-      difficulty_level_id: Number(selectedDifficultyLevel),
-    };
-
-    // add dietary info if not empty
-    if (dietTypeIds.length > 0) {
-      recipeData.dietary_info = dietTypeIds.join(',');
-    }
-
+  // edit recipe with the updated data
+  const doEditRecipe = async (inputs: EditRecipeInputs) => {
     try {
-      // post a new recipe
-      const postResponse = await postRecipe(fileResponse, recipeData, token);
+      const token = await AsyncStorage.getItem('token');
+      if (!token || !user) {
+        Alert.alert('Error', 'Please log in and try again.');
+        return;
+      }
 
-      // Success handling
-      resetForm();
-      triggerUpdate();
-      Alert.alert('Upload successful', postResponse.message);
-      navigation.navigate('Home');
+      // only user who owns the recipe can edit (TODO: admin needs to be added)
+      if (user.user_id !== recipe.user_id) {
+        Alert.alert('Error', 'You can only edit your own recipes.');
+        return;
+      }
+
+      const updateData: any = {
+        title: inputs.title,
+        instructions: inputs.instructions,
+        cooking_time: inputs.cooking_time ? parseInt(inputs.cooking_time) : 0,
+        portions: inputs.portions ? parseInt(inputs.portions) : 0,
+        difficulty_level_id: parseInt(selectedDifficultyLevel),
+      };
+
+      updateData.ingredients = ingredients.map((ing) => ({
+        name: ing.name,
+        amount: parseFloat(ing.amount),
+        unit: ing.unit,
+      }));
+
+      const dietTypeIds = selectedDiets
+        .map((dietName) => {
+          const dietOption = dietTypeOptions.find(
+            (option) => option.value === dietName,
+          );
+          return dietOption ? Number(dietOption.key) : null;
+        })
+        .filter((id) => id !== null);
+
+      updateData.dietary_info = dietTypeIds;
+
+      const response = await updateRecipe(token, recipe.recipe_id, updateData);
+
+      if (response) {
+        Alert.alert('Success', 'Recipe updated successfully');
+        triggerUpdate();
+        navigation.goBack();
+      }
     } catch (error) {
-      console.error('Recipe post error:', error);
-      Alert.alert('Upload failed', (error as Error).message || 'Unknown error');
+      console.error('Error updating recipe:', error);
+      Alert.alert(
+        'Error',
+        'Failed to update recipe: ' + (error as Error).message,
+      );
     }
   };
-
-  // select image for the post
-  const pickImage = async () => {
-    // testing the image upload with a mock image (maestro doesn't allow picking media from devices gallery...)
-    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
-      setShowMockPicker(true);
-
-      // set the mock image data for testing
-      setImage({
-        canceled: false,
-        assets: [
-          {
-            uri: 'mock-image.jpg',
-            width: 500,
-            height: 500,
-            type: 'image',
-          },
-        ],
-      });
-      return;
-    }
-
-    // the image picker for the app
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.4,
-    });
-
-    if (!result.canceled) {
-      setImage(result);
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', () => {
-      resetForm();
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, []);
 
   return (
     <LinearGradient
@@ -305,85 +243,18 @@ const Post = () => {
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      {showMockPicker && (
-        <View
-          testID="mock-image-picker"
-          style={{
-            position: 'absolute',
-            top: 100,
-            left: 20,
-            right: 20,
-            zIndex: 999,
-            backgroundColor: HexColors['medium-green'],
-            padding: 20,
-            borderRadius: 10,
-            borderWidth: 2,
-            borderColor: 'white',
-          }}
-        >
-          <TouchableOpacity
-            testID="mock-image-option"
-            style={{
-              backgroundColor: HexColors['light-grey'],
-              padding: 15,
-              borderRadius: 5,
-              alignItems: 'center',
-              marginVertical: 10,
-            }}
-            onPress={() => {
-              setImage({
-                canceled: false,
-                assets: [
-                  {
-                    uri: 'mock-image.jpg',
-                    width: 500,
-                    height: 500,
-                    type: 'image',
-                  },
-                ],
-              });
-              setShowMockPicker(false);
-            }}
-          >
-            <Text style={{fontSize: 18, fontWeight: 'bold'}}>Mock Image 1</Text>
-          </TouchableOpacity>
-        </View>
-      )}
       <FlatList
         data={[
           {
             component: (
               <>
-                {image?.assets && image.assets[0].type === 'video' ? (
-                  <VideoPlayer
-                    videoFile={image.assets[0].uri}
-                    style={styles.image}
-                  />
-                ) : (
-                  <Image
-                    testID="image-picker"
-                    source={{
-                      uri:
-                        image?.assets![0].uri ||
-                        process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-                    }}
-                    style={[
-                      styles.image,
-                      {
-                        objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
-                      },
-                    ]}
-                    onPress={pickImage}
-                  />
-                )}
-
                 <Text style={styles.text}>Title</Text>
                 <Controller
                   control={control}
                   rules={{
-                    required: {value: true, message: 'is required'},
-                    maxLength: {value: 25, message: 'maximum 25 characters'},
-                    minLength: {value: 3, message: 'minimum 3 characters'},
+                    required: {value: true, message: 'Title is required'},
+                    minLength: {value: 3, message: 'Minimum 3 characters'},
+                    maxLength: {value: 100, message: 'Maximum 100 characters'},
                   }}
                   render={({field: {onChange, onBlur, value}}) => (
                     <Input
@@ -410,13 +281,14 @@ const Post = () => {
                   placeholder="Ingredient"
                   testID="ingredient-input"
                 />
+
                 <View style={styles.ingredientsContainer}>
                   <View
                     style={{flex: 1.5, marginHorizontal: 10}}
                     testID="unit-input"
                   >
                     <SelectList
-                      data={data}
+                      data={unitData}
                       search={false}
                       setSelected={setSelectedUnit}
                       save="value"
@@ -446,45 +318,41 @@ const Post = () => {
                     />
                   </View>
                 </View>
-                <Button
-                  buttonStyle={styles.addButton}
-                  containerStyle={styles.buttonContainer}
-                  titleStyle={styles.buttonTitle}
-                  title="Add"
-                  testID="add-ingredient-button"
-                  onPress={addIngredient}
-                  disabled={
-                    currentIngredient.trim() === '' ||
-                    amount === '' ||
-                    selectedUnit === ''
-                  }
-                >
-                  Add
-                </Button>
+                <View style={{flex: 1, justifyContent: 'center'}}>
+                  <Button
+                    titleStyle={styles.buttonTitle}
+                    title="Add"
+                    disabled={
+                      currentIngredient.trim() === '' ||
+                      amount === '' ||
+                      selectedUnit === ''
+                    }
+                    buttonStyle={styles.addButton}
+                    onPress={addIngredient}
+                    testID="add-ingredient-button"
+                  />
+                </View>
 
                 <View style={styles.ingredientContainer}>
-                  {ingredientsList.map((ingredient, index) => (
-                    <Chip
+                  {ingredients.map((ingredient, index) => (
+                    <ListItem
                       key={index}
-                      title={ingredient}
-                      buttonStyle={styles.chipButton}
-                      titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
-                      containerStyle={styles.chipContainer}
-                      icon={{
-                        name: 'close',
-                        type: 'ionicon',
-                        size: 16,
-                        color: HexColors['dark-grey'],
-                      }}
-                      onPress={() => {
-                        // remove ingredient when pressed
-                        setIngredientsList(
-                          ingredientsList.filter((_, i) => i !== index),
-                        );
-                      }}
-                    />
+                      containerStyle={styles.ingredientItem}
+                    >
+                      <ListItem.Content>
+                        <ListItem.Title>{`${ingredient.amount} ${ingredient.unit} ${ingredient.name}`}</ListItem.Title>
+                      </ListItem.Content>
+                      <TouchableOpacity onPress={() => removeIngredient(index)}>
+                        <Icon
+                          name="delete"
+                          type="material"
+                          color={HexColors['dark-grey']}
+                        />
+                      </TouchableOpacity>
+                    </ListItem>
                   ))}
                 </View>
+
                 <Text style={styles.text}>Dietary info</Text>
                 <View style={{marginHorizontal: 10, marginBottom: 20}}>
                   <MultiSelect
@@ -527,16 +395,20 @@ const Post = () => {
                     submitButtonText="Add"
                   />
                 </View>
-                <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
+
+                <Text style={styles.text}>Instructions</Text>
                 <Controller
                   control={control}
                   rules={{
-                    required: true,
+                    required: {
+                      value: true,
+                      message: 'Instructions are required',
+                    },
+                    minLength: {value: 20, message: 'Minimum 20 characters'},
                     maxLength: {
                       value: 1000,
-                      message: 'maximum 1000 characters',
+                      message: 'Maximum 1000 characters',
                     },
-                    minLength: {value: 20, message: 'minimum 20 characters'},
                   }}
                   render={({field: {onChange, onBlur, value}}) => (
                     <>
@@ -565,6 +437,7 @@ const Post = () => {
                   )}
                   name="instructions"
                 />
+
                 <Text style={styles.text}>Estimated cooking time</Text>
 
                 <View style={{flexDirection: 'row', maxWidth: '80%'}}>
@@ -617,7 +490,7 @@ const Post = () => {
                           value: true,
                           message: 'Porpotions is required',
                         },
-                        maxLength: {value: 10, message: 'maximum 10 numbers'},
+                        max: {value: 20, message: 'Maximum 20 portions'},
                         minLength: {value: 1, message: 'minimum 1 numbers'},
                         pattern: {
                           value: /^[0-9]+$/,
@@ -689,28 +562,19 @@ const Post = () => {
                     />
                   </View>
                 </View>
+
                 <Button
-                  title="Post"
+                  title="Save changes"
                   buttonStyle={[
                     styles.button,
                     {backgroundColor: HexColors['medium-green']},
                   ]}
                   titleStyle={styles.buttonTitle}
                   containerStyle={styles.buttonContainer}
-                  onPress={handleSubmit(doUpload)}
+                  onPress={handleSubmit(doEditRecipe)}
                   loading={loading}
-                  disabled={!isValid || image === null || loading}
-                  testID="post-button"
-                />
-                <Button
-                  title="Reset"
-                  buttonStyle={styles.button}
-                  titleStyle={[
-                    styles.buttonTitle,
-                    {color: HexColors['dark-grey']},
-                  ]}
-                  containerStyle={styles.buttonContainer}
-                  onPress={resetForm}
+                  disabled={!isValid || loading}
+                  testID="save-button"
                 />
               </>
             ),
@@ -730,20 +594,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   card: {
-    marginTop: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  image: {
-    height: 200,
-    margin: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: HexColors['light-grey'],
-  },
-  buttonTitle: {
-    fontFamily: 'InriaSans-Regular',
-    fontSize: 14,
+    borderRadius: 30,
+    borderTopRightRadius: 10,
+    borderTopLeftRadius: 10,
+    marginBottom: 20,
+    paddingBottom: 30,
   },
   button: {
     backgroundColor: HexColors['almost-white'],
@@ -753,11 +608,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginHorizontal: 10,
     padding: 10,
-    // Android shadow
     elevation: 4,
   },
   buttonContainer: {
-    // iOS shadow
     shadowColor: HexColors['dark-grey'],
     shadowOffset: {
       width: 1,
@@ -791,6 +644,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  buttonTitle: {
+    fontFamily: 'InriaSans-Regular',
+    fontSize: 14,
+  },
   addButton: {
     marginHorizontal: 10,
     borderRadius: 30,
@@ -800,33 +657,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   ingredientContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     marginHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  chipButton: {
-    backgroundColor: HexColors['light-grey'],
-    marginRight: 10,
+  ingredientItem: {
+    backgroundColor: HexColors['almost-white'],
+    borderRadius: 10,
     marginVertical: 5,
-    // Android shadow
-    elevation: 4,
-  },
-  chipTitle: {
-    color: HexColors['dark-grey'],
-    fontSize: 12,
-    paddingLeft: 10,
-  },
-  chipContainer: {
-    borderRadius: 20,
-    // iOS shadow
-    shadowColor: HexColors['dark-grey'],
-    shadowOffset: {
-      width: 1,
-      height: 2,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
   },
   counterText: {
     color: HexColors['dark-grey'],
@@ -839,4 +676,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Post;
+export default EditRecipeForm;

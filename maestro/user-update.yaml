@@ -1,0 +1,51 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@gmail.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'popokissa123'
+- tapOn:
+    id: 'login-button'
+- tapOn: 'Profile'
+- tapOn:
+    id: 'profile-buttons'
+- tapOn:
+    id: 'edit-profile-button'
+- tapOn:
+    id: 'username-input'
+- eraseText: 5
+- inputText: 'elli'
+- scrollUntilVisible:
+    element:
+      id: 'email-input'
+    direction: DOWN
+- tapOn:
+    id: 'email-input'
+- eraseText: 15
+- inputText: 'elli@google.com'
+- tapOn:
+    id: 'bio-input'
+- eraseText: 50
+- inputText: 'Helouuu this is my bio!!!!'
+- scrollUntilVisible:
+    element:
+      id: 'current-password'
+    direction: DOWN
+- tapOn:
+    id: 'current-password'
+- inputText: 'popokissa123'
+- tapOn:
+    id: 'new-password'
+- inputText: 'maikissa123'
+- waitForAnimationToEnd
+- takeScreenshot: before-save
+
+- tapOn:
+    id: 'save-button'
+- waitForAnimationToEnd
+- assertVisible: 'Profile'
+- takeScreenshot: user update successful
