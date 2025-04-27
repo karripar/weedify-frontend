@@ -14,19 +14,24 @@ import {Card, Icon, Image, Overlay, Text} from '@rneui/base';
 import {View} from 'react-native';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import RecipeListItem from '../components/RecipeListItem';
-import { Bell } from 'lucide-react-native';
+import {Bell} from 'lucide-react-native';
 import Notifications from '../components/Notifications';
+import {useNotifications} from '../hooks/apiHooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
   const {getUserWithProfileImage} = useUser();
   const {triggerUpdate} = useUpdateContext();
+  const {getAllNotificationsForUser} = useNotifications();
   const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
-  const [notificationsVisible, setNotificationsVisible] = useState<boolean>(false);
+  const [notificationCount, setNotificationCount] = useState<number>(0);
+  const [notificationsVisible, setNotificationsVisible] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -44,6 +49,28 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
     };
 
     loadProfileImage();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        if (user) {
+          const token = await AsyncStorage.getItem('token');
+          if (!token) {
+            console.error('No token found');
+            return;
+          }
+          const notifications = await getAllNotificationsForUser(token);
+          if (notifications) {
+            setNotificationCount(notifications.length);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
   }, [user]);
 
   // toggle overlay with edit, delete and logout
@@ -176,32 +203,52 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         </Card>
 
         <TouchableOpacity
-          aria-label='Notifications'
-          style={{
-            position: 'relative',
-            left: 20,
-            top: 10,
-            marginBlock: 20,
-            width: 50,
-            height: 50,
-            borderRadius: 50,
-            backgroundColor: HexColors['almost-white'],
+          aria-label="Toggle Notifications"
+          style={styles.notiVisibilityToggle}
+          onPress={() => {
+            setNotificationsVisible(!notificationsVisible);
           }}
-          onPress={() => setNotificationsVisible(!notificationsVisible)}
         >
           <Bell
-            size={40}
+            size={24}
             color={HexColors['dark-grey']}
-            style={{
-              position: 'absolute',
-              top: 5,
-              left: 5,
-            }}
+            style={{marginRight: 10}}
           />
+          <Text
+            style={{
+              fontSize: 16,
+              color: HexColors['dark-grey'],
+              fontWeight: '500',
+            }}
+          >
+            Show Notifications
+          </Text>
+          {notificationCount > 0 && (
+            <View
+              style={{
+                backgroundColor: HexColors['green'],
+                borderRadius: 10,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+                position: 'absolute',
+                right: -3,
+                top: -8
+              }}
+            >
+              <Text
+                style={{
+                  color: HexColors['almost-white'],
+                  fontSize: 12,
+                  fontWeight: '600',
+                }}
+              >
+                {notificationCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
-        <Notifications
-          visible={notificationsVisible}
-        />
+
+        <Notifications visible={notificationsVisible} />
 
         <Text
           style={{
@@ -312,5 +359,22 @@ const styles = StyleSheet.create({
     fontFamily: 'InriaSans-Regular',
     fontSize: 16,
     color: HexColors['dark-grey'],
+  },
+  notiVisibilityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: HexColors['almost-white'],
+    borderRadius: 50,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
 });

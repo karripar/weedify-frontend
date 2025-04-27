@@ -6,7 +6,7 @@ import {
 } from 'hybrid-types/DBTypes';
 import {formatDateToTimePassed} from '../lib/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {StyleSheet, TouchableOpacity, View, Animated} from 'react-native';
+import {StyleSheet, TouchableOpacity, View, Animated, ScrollView} from 'react-native';
 import {Text} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 
@@ -20,9 +20,12 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const slideAnimation = useRef(new Animated.Value(0)).current;
+  const [isMounted, setIsMounted] = useState(visible);
+
 
   const [error, setError] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
+  
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -120,16 +123,29 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
   }, [visible]);
 
   useEffect(() => {
-    Animated.timing(slideAnimation, {
-      toValue: visible ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }
-  , [visible]);
+    if (visible) {
+      setIsMounted(true);
+      Animated.timing(slideAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        // AFTER the animation is finished
+        setIsMounted(false);
+      });
+    }
+  }, [visible]);
 
 
-  if (!visible) {
+
+
+  if (!isMounted) {
     return null; // Don't render anything if not visible
   }
 
@@ -149,53 +165,79 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
   }
 
   return (
-    <Animated.View style={styles.container}>
-      <Text style={styles.title}>Notifications</Text>
-      <TouchableOpacity
-        style={styles.toggleButton}
-        onPress={handleToggleNotificationsEnabled}
-      >
-        <Text style={styles.toggleButtonText}>
-          {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
-        </Text>
-      </TouchableOpacity>
-      {notifications.length === 0 ? (
-        <Text style={styles.noNotificationsText}>No notifications</Text>
-      ) : (
-        <View style={styles.notificationsList}>
-          {notifications.map((notification) => (
-            <View key={notification.notification_id} style={styles.notificationItem}>
-              <Text style={styles.notificationText}>{notification.notification_text}</Text>
-              <Text style={styles.notificationTime}>
-                {formatDateToTimePassed(notification.created_at)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-      {notifications.length > 0 && (
+    <Animated.View
+    pointerEvents={visible ? 'auto' : 'none'}
+    style={[styles.overlay, { opacity: slideAnimation }]}>
+      <View style={styles.modal}>
+        <Text style={styles.title}>Notifications</Text>
+        {/* close button for notification modal */}
         <TouchableOpacity
-          style={styles.markAllAsReadButton}
-          onPress={handleMarkAllAsRead}
+          style={styles.closeButton}
+          onPress={() => {
+            setIsMounted(false);
+          }}
         >
-          <Text style={styles.markAllAsReadButtonText}>Mark All as Read</Text>
+          <Text style={styles.closeButtonText}>X</Text>
         </TouchableOpacity>
-      )}
+        <TouchableOpacity
+          style={styles.toggleButton}
+          onPress={handleToggleNotificationsEnabled}
+        >
+          <Text style={styles.toggleButtonText}>
+            {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+          </Text>
+        </TouchableOpacity>
+        {notifications.length === 0 ? (
+          <Text style={styles.noNotificationsText}>No notifications</Text>
+        ) : (
+          <ScrollView style={styles.notificationsList}>
+            {notifications.map((notification) => (
+              <View key={notification.notification_id} style={styles.notificationItem}>
+                <Text style={styles.notificationText}>{notification.notification_text}</Text>
+                <Text style={styles.notificationTime}>
+                  {formatDateToTimePassed(notification.created_at)}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+        {notifications.length > 0 && (
+          <TouchableOpacity
+            style={styles.markAllAsReadButton}
+            onPress={handleMarkAllAsRead}
+          >
+            <Text style={styles.markAllAsReadButtonText}>Mark All as Read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </Animated.View>
   );
+
 };
 
 export default Notifications;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: HexColors.white,
-    height: '100%',
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // semi-transparent dark background
     justifyContent: 'center',
-    borderRadius: 10,
+    alignItems: 'center',
+    zIndex: 10, // ensure it's above other content
   },
+
+  modal: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: HexColors['white'],
+    borderRadius: 10,
+    padding: 20,
+  },
+
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -228,6 +270,7 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     marginBottom: 16,
+    maxHeight: 300,
   },
   notificationItem: {
     paddingVertical: 10,
@@ -279,4 +322,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginBottom: 16,
-  }});
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: HexColors['light-green'],
+    padding: 5,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: HexColors.white,
+    fontSize: 16,
+    padding: 5,
+  },
+});
