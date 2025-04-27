@@ -17,6 +17,7 @@ import {
   Like,
   RecipeWithAllFields,
   UserWithDietaryInfo,
+  Notification
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -832,6 +833,134 @@ const useFavorites = () => {
   return {getAllFavorites, checkFavorite, addToFavorites, removeFromFavorites};
 };
 
+const useNotifications = () => {
+  const {update, setUpdate} = useUpdateContext();
+  const getAllNotificationsForUser = async (token: string) => {
+    try {
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const notifications = await fetchData<Notification[]>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user`,
+        options,
+      );
+      return notifications;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return null;
+    }
+  };
+
+  const markNotificationAsRead = async (notification_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/${notification_id}/mark-read`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return null;
+    }
+  };
+
+  const markAllNotificationsAsRead = async (token: string) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/mark-read/all`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return null;
+    }
+  };
+
+  const toggleNotificationsEnabled = async (token: string) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/settings/toggle-enabled`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error toggling notifications enabled:', error);
+      return null;
+    }
+  };
+
+  const checkNotificationsEnabled = async (user_id: number) => {
+    try {
+      const response = await fetchData<{enabled: boolean}>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/enabled/${user_id}`,
+      );
+      return response.enabled;
+    } catch (error) {
+      console.error('Error checking notifications enabled:', error);
+      return null;
+    }
+  }
+
+  // delete old notifications (older than 30 days)
+  const deleteOldNotifications = async (token: string) => {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/delete/old`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error deleting old notifications:', error);
+      return null;
+    }
+  };
+
+  return {
+    getAllNotificationsForUser,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    toggleNotificationsEnabled,
+    checkNotificationsEnabled,
+    deleteOldNotifications,
+  }
+};
+
 export {
   useAuthentication,
   useUser,
@@ -841,4 +970,5 @@ export {
   useLikes,
   useComments,
   useFavorites,
+  useNotifications
 };

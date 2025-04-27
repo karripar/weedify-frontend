@@ -14,6 +14,8 @@ import {Card, Icon, Image, Overlay, Text} from '@rneui/base';
 import {View} from 'react-native';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import RecipeListItem from '../components/RecipeListItem';
+import { Bell } from 'lucide-react-native';
+import Notifications from '../components/Notifications';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
@@ -24,6 +26,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+  const [notificationsVisible, setNotificationsVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -167,6 +170,35 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
             </Text>
           </View>
         </Card>
+
+        <TouchableOpacity
+          aria-label='Notifications'
+          style={{
+            position: 'relative',
+            left: 20,
+            top: 10,
+            marginBlock: 20,
+            width: 50,
+            height: 50,
+            borderRadius: 50,
+            backgroundColor: HexColors['almost-white'],
+          }}
+          onPress={() => setNotificationsVisible(!notificationsVisible)}
+        >
+          <Bell
+            size={40}
+            color={HexColors['dark-grey']}
+            style={{
+              position: 'absolute',
+              top: 5,
+              left: 5,
+            }}
+          />
+        </TouchableOpacity>
+        <Notifications
+          visible={notificationsVisible}
+        />
+
         <Text
             style={{
               fontSize: 20,
