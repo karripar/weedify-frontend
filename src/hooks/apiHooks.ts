@@ -863,6 +863,7 @@ const useFavorites = () => {
   return {getAllFavorites, checkFavorite, addToFavorites, removeFromFavorites};
 };
 
+// notifications
 const useNotifications = () => {
   const {update, setUpdate} = useUpdateContext();
   const getAllNotificationsForUser = async (token: string) => {
@@ -873,6 +874,7 @@ const useNotifications = () => {
           Authorization: `Bearer ${token}`,
         },
       };
+      // fetch all notifications for the user (unread notifications)
       const notifications = await fetchData<Notification[]>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user`,
         options,
@@ -884,6 +886,7 @@ const useNotifications = () => {
     }
   };
 
+  // mark a notification as read
   const markNotificationAsRead = async (notification_id: number, token: string) => {
     try {
       const options = {
@@ -905,6 +908,7 @@ const useNotifications = () => {
     }
   };
 
+  // mark all notifications as read
   const markAllNotificationsAsRead = async (token: string) => {
     try {
       const options = {
@@ -926,6 +930,7 @@ const useNotifications = () => {
     }
   };
 
+  // toggle notifications enabled
   const toggleNotificationsEnabled = async (token: string) => {
     try {
       const options = {
@@ -947,6 +952,7 @@ const useNotifications = () => {
     }
   };
 
+  // check if notifications are enabled for the user
   const checkNotificationsEnabled = async (user_id: number) => {
     try {
       const response = await fetchData<{enabled: boolean}>(
