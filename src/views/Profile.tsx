@@ -16,20 +16,18 @@ import {useRecipes, useUser} from '../hooks/apiHooks';
 import RecipeListItem from '../components/RecipeListItem';
 import {Bell} from 'lucide-react-native';
 import Notifications from '../components/Notifications';
-import {useNotifications} from '../hooks/apiHooks';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNotificationContext } from '../contexts/NotificationContext';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
   const {getUserWithProfileImage} = useUser();
   const {triggerUpdate} = useUpdateContext();
-  const {getAllNotificationsForUser} = useNotifications();
   const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
-  const [notificationCount, setNotificationCount] = useState<number>(0);
+  const {notificationCount} = useNotificationContext();
   const [notificationsVisible, setNotificationsVisible] =
     useState<boolean>(false);
 
@@ -49,28 +47,6 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
     };
 
     loadProfileImage();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        if (user) {
-          const token = await AsyncStorage.getItem('token');
-          if (!token) {
-            console.error('No token found');
-            return;
-          }
-          const notifications = await getAllNotificationsForUser(token);
-          if (notifications) {
-            setNotificationCount(notifications.length);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    };
-
-    fetchNotifications();
   }, [user]);
 
   // toggle overlay with edit, delete and logout

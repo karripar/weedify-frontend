@@ -4,6 +4,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {UserProvider} from './contexts/UserContext';
 import {UpdateProvider} from './contexts/updateContext';
 import FontPreload from './components/FontPreload';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 export default function App() {
   return (
@@ -11,7 +12,9 @@ export default function App() {
       <FontPreload>
         <UserProvider>
           <UpdateProvider>
+            <NotificationProvider>
             <Navigator />
+            </NotificationProvider>
           </UpdateProvider>
         </UserProvider>
         <StatusBar style="auto" />
