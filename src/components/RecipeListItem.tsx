@@ -263,6 +263,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           <TouchableOpacity
             style={styles.menuButton}
             onPress={toggleRecipeOverlay}
+            testID="recipe-overlay"
           >
             <Ionicons
               name="ellipsis-vertical"
@@ -287,7 +288,9 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
                 color={HexColors['dark-grey']}
                 style={{width: 30}}
               />
-              <Text style={styles.overlayText}>Edit Recipe</Text>
+              <Text style={styles.overlayText} testID="edit-recipe-button">
+                Edit Recipe
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -378,6 +381,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           titleStyle={styles.favoriteButtonText}
           containerStyle={styles.buttonContainer}
           onPress={handleAddToFavorite}
+          testID="add-favorite-button"
         />
         <Button
           title="Open"

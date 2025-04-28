@@ -17,7 +17,7 @@ import {
   Like,
   RecipeWithAllFields,
   UserWithDietaryInfo,
-  Notification
+  Notification,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -738,6 +738,7 @@ const useComments = () => {
 // favorites
 const useFavorites = () => {
   const {update, setUpdate} = useUpdateContext();
+  const {getUserById} = useUser();
 
   // get all user's favorites to display then on favorites page
   const getAllFavorites = async () => {
@@ -754,23 +755,36 @@ const useFavorites = () => {
         },
       };
 
-      const favorites = await fetchData<RecipeWithAllFields[]>(
+      const fetchedFavorites = await fetchData<RecipeWithAllFields[]>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites/byuser`,
         options,
       );
-      // return the favorites
-      return favorites?.map((recipe) => ({
-        ...recipe,
-        // parse the diettypes and ingredients to an object array
-        diet_types:
-          typeof recipe.diet_types === 'string'
-            ? JSON.parse(recipe.diet_types)
-            : recipe.diet_types || [],
-        ingredients:
-          typeof recipe.ingredients === 'string'
-            ? JSON.parse(recipe.ingredients)
-            : recipe.ingredients || [],
-      }));
+
+      if (fetchedFavorites && fetchedFavorites.length > 0) {
+        // fetch usernames for the favorite recipes
+        const favoritesWithUsernames = await Promise.all(
+          fetchedFavorites.map(async (favorite) => {
+            const userData = await getUserById(favorite.user_id);
+
+            return {
+              ...favorite,
+              username: userData?.username || `User ${favorite.user_id}`,
+              diet_types:
+                typeof favorite.diet_types === 'string'
+                  ? JSON.parse(favorite.diet_types)
+                  : favorite.diet_types || [],
+              ingredients:
+                typeof favorite.ingredients === 'string'
+                  ? JSON.parse(favorite.ingredients)
+                  : favorite.ingredients || [],
+            };
+          }),
+        );
+        console.log(favoritesWithUsernames)
+        return favoritesWithUsernames;
+
+      }
+      return fetchedFavorites || [];
     } catch (error) {
       return null;
     }
@@ -887,14 +901,17 @@ const useNotifications = () => {
   };
 
   // mark a notification as read
-  const markNotificationAsRead = async (notification_id: number, token: string) => {
+  const markNotificationAsRead = async (
+    notification_id: number,
+    token: string,
+  ) => {
     try {
       const options = {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/${notification_id}/mark-read`,
@@ -916,7 +933,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/mark-read/all`,
@@ -938,7 +955,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/settings/toggle-enabled`,
@@ -963,7 +980,7 @@ const useNotifications = () => {
       console.error('Error checking notifications enabled:', error);
       return null;
     }
-  }
+  };
 
   // delete old notifications (older than 30 days)
   const deleteOldNotifications = async (token: string) => {
@@ -973,7 +990,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/delete/old`,
@@ -994,7 +1011,137 @@ const useNotifications = () => {
     toggleNotificationsEnabled,
     checkNotificationsEnabled,
     deleteOldNotifications,
-  }
+  };
+};
+
+// use ratings
+const useRatings = () => {
+  const [loading, setLoading] = useState(false);
+
+  // post a new rating for a recipe
+  const postRating = async (
+    recipeId: number,
+    rating: number,
+    review: string,
+    token: string,
+  ) => {
+    setLoading(true);
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipe_id: recipeId,
+          rating: {
+            rating: rating,
+            review: review.trim(),
+          },
+        }),
+      };
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to submit rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in postRating:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // get all the rating for the recipe to display them
+  const getRatingsByRecipeId = async (recipe_id: number) => {
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/recipe/${recipe_id}`,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch ratings');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getRatingsByRecipeId:', error);
+      return [];
+    }
+  };
+
+  // check if user has already rated the recipe
+  const checkRatingExists = async (recipeId: number, token: string) => {
+    try {
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/check-exists/${recipeId}`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to check rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking if rating exists:', error);
+      return false;
+    }
+  };
+
+  // delete a rating
+  const deleteRating = async (rating_id: number, token: string) => {
+    setLoading(true);
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      console.log('deleting rating', rating_id);
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/recipe/${rating_id}`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in deleteRating:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    postRating,
+    getRatingsByRecipeId,
+    checkRatingExists,
+    deleteRating,
+    loading,
+  };
 };
 
 export {
@@ -1006,5 +1153,6 @@ export {
   useLikes,
   useComments,
   useFavorites,
-  useNotifications
+  useNotifications,
+  useRatings,
 };

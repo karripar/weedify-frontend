@@ -5,9 +5,6 @@ import {
   TouchableOpacity,
   View,
   FlatList,
-  ScrollView,
-  StyleProp,
-  ViewStyle,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';

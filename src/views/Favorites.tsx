@@ -178,6 +178,7 @@ const Favorites = ({
                     titleStyle={styles.openButtonText}
                     containerStyle={styles.buttonContainer}
                     onPress={() => navigation.navigate('Recipe', {item})}
+                    testID="view-recipe"
                   />
                 </ListItem.Content>
               </ListItem>

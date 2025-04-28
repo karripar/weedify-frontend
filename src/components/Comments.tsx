@@ -13,7 +13,7 @@ import {formatDateToTimePassed} from '../lib/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {Text} from '@rneui/base';
-import {HexColors, HexGradients} from '../utils/colors';
+import {HexColors} from '../utils/colors';
 
 const Comments = ({item}: {item: RecipeWithOwner}) => {
   const inputRef = useRef<TextInput | null>(null);
@@ -222,7 +222,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
         )}
 
         <View style={{width: '100%'}}>
-          <Text style={{color: '#9ca3af'}}>
+          <Text style={{color: HexColors['light-grey']}}>
             {comment.created_at
               ? formatDateToTimePassed(comment.created_at.toString())
               : 'Unknown date'}
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   replyText: {
-    color: HexColors['light-green'],
+    color: HexColors['darker-green'],
     fontSize: 14,
     fontWeight: '400',
   },
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   username: {
-    color: HexColors['grey'],
+    color: HexColors['light-grey'],
     fontSize: 16,
     fontWeight: '600',
   },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   renderedComments: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 16,
+    gap: 1,
     marginTop: 20,
     width: '100%',
     flexWrap: 'wrap',

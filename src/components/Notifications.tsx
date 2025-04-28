@@ -25,7 +25,7 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
 
   const [error, setError] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
-  
+
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)', // semi-transparent dark background
     justifyContent: 'center',
     alignItems: 'center',
@@ -328,12 +327,12 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     backgroundColor: HexColors['light-green'],
-    padding: 5,
+    paddingHorizontal: 10,
     borderRadius: 5,
   },
   closeButtonText: {
     color: HexColors.white,
     fontSize: 16,
-    padding: 5,
+    padding: 3,
   },
 });

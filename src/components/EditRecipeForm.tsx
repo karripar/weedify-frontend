@@ -52,11 +52,14 @@ const EditRecipeForm = ({
   const [currentIngredient, setCurrentIngredient] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
-  const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState(
-    recipe.difficulty_level,
-  );
+  const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState(() => {
+    if (recipe.difficulty_level === 'Easy') return '1';
+    if (recipe.difficulty_level === 'Medium') return '2';
+    if (recipe.difficulty_level === 'Hard') return '3';
+    return '1';
+  });
 
-  // data for the unit selector
+  // data for the unit selector (TODO: emt näille vois kattoo viel mitkä olis eniten käytetyimmät ja universaalit)
   const unitData = [
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
@@ -546,7 +549,10 @@ const EditRecipeForm = ({
                       save="key"
                       defaultOption={{
                         key: selectedDifficultyLevel,
-                        value: selectedDifficultyLevel,
+                        value:
+                          difficultyData.find(
+                            (d) => d.key === selectedDifficultyLevel,
+                          )?.value || 'Easy',
                       }}
                       boxStyles={{
                         borderColor: HexColors['light-grey'],
@@ -574,7 +580,7 @@ const EditRecipeForm = ({
                   onPress={handleSubmit(doEditRecipe)}
                   loading={loading}
                   disabled={!isValid || loading}
-                  testID="save-button"
+                  testID="save-changes-button"
                 />
               </>
             ),

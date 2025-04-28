@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
-import {Card, Icon, Divider, Overlay} from '@rneui/base';
+import {Card, Icon, Divider, Overlay, Button} from '@rneui/base';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
@@ -24,11 +24,14 @@ import {useEffect, useState} from 'react';
 import Comments from '../components/Comments';
 import {ArrowUp, ArrowDown} from 'lucide-react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {useRatings} from '../hooks/apiHooks';
+import RatingForm from '../components/RatingForm';
+import RatingsDisplay from '../components/RatingsDisplay';
 
 const Single = ({route}: any) => {
   const item: RecipeWithAllFields & {username: string} = route.params.item;
   const {user} = useUserContext();
-  const {getUserWithProfileImage} = useUser();
+  const {getUserWithProfileImage, getUserById} = useUser();
   const {update, setUpdate} = useUpdateContext();
   const {deleteRecipe} = useRecipes();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -36,8 +39,108 @@ const Single = ({route}: any) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+  // handle ratings and their display
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [ratings, setRatings] = useState<any[]>([]);
+  const [userHasRated, setUserHasRated] = useState(false);
+  const {postRating, getRatingsByRecipeId, checkRatingExists, deleteRating} =
+    useRatings();
+
   // recipe edit/delete overlay
   const [recipeOverlay, setRecipeOverlay] = useState(false);
+
+  // load ratings for the recipe
+  const loadRatings = async () => {
+    try {
+      const ratingsData = await getRatingsByRecipeId(item.recipe_id);
+
+      // get the username for the rating
+      const ratingsWithUsernames = await Promise.all(
+        ratingsData.map(
+          async (rating: {user_id: number; [key: string]: any}) => {
+            try {
+              const userData = await getUserById(rating.user_id);
+              return {
+                ...rating,
+                username: userData?.username || `User ${rating.user_id}`,
+              };
+            } catch (error) {
+              return rating;
+            }
+          },
+        ),
+      );
+
+      setRatings(ratingsWithUsernames);
+    } catch (error) {
+      console.error('Error loading ratings:', error);
+      Alert.alert('Error', 'Could not load ratings');
+    }
+  };
+
+  // check if user has already rated the recipe
+  const checkUserRating = async () => {
+    if (!user) return;
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const hasRated = await checkRatingExists(item.recipe_id, token);
+      setUserHasRated(hasRated);
+    } catch (error) {
+      console.error('Error checking user rating:', error);
+    }
+  };
+
+  // do rating
+  const submitRating = async (ratingValue: number, reviewText: string) => {
+    if (!user) {
+      Alert.alert('Please log in to rate recipes');
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'You need to be logged in');
+        return;
+      }
+
+      await postRating(item.recipe_id, ratingValue, reviewText, token);
+
+      // reload ratings and update user rating status
+      loadRatings();
+      setUserHasRated(true);
+      Alert.alert('Success', 'Your rating has been submitted!');
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      Alert.alert('Error', 'Failed to submit rating');
+    }
+  };
+
+  // delete rating
+  const handleDeleteRating = async (rating_id: number) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      await deleteRating(rating_id, token);
+
+      // reload ratings and update user rating status
+      loadRatings();
+      setUserHasRated(false);
+      Alert.alert('Success', 'Your rating has been deleted');
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      Alert.alert('Error', 'Failed to delete rating');
+    }
+  };
+
+  useEffect(() => {
+    loadRatings();
+    checkUserRating();
+  }, [item.recipe_id, user]);
 
   // toggle the visibilty of the overlay
   const toggleRecipeOverlay = () => {
@@ -134,12 +237,14 @@ const Single = ({route}: any) => {
             </View>
 
             {user && user.user_id === item.user_id && (
-              <TouchableOpacity onPress={toggleRecipeOverlay}>
+              <TouchableOpacity
+                onPress={toggleRecipeOverlay}
+                style={{position: 'absolute', top: 30, right: 15}}
+              >
                 <Ionicons
                   name="ellipsis-vertical"
                   size={24}
                   color={HexColors['dark-grey']}
-                  style={{marginLeft: 70}}
                 />
               </TouchableOpacity>
             )}
@@ -305,8 +410,35 @@ const Single = ({route}: any) => {
               </Text>
             </View>
           </View>
+
+          <Divider style={styles.divider} />
+          <View style={styles.ratingsSection}>
+            <Text style={styles.sectionTitle}>Ratings</Text>
+
+            <RatingsDisplay
+              ratings={ratings}
+              currentUserId={user?.user_id}
+              onDeleteRating={handleDeleteRating}
+            />
+            {user && (
+              <Button
+                title={
+                  userHasRated ? "You've rated this recipe" : 'Rate this recipe'
+                }
+                buttonStyle={styles.rateButton}
+                disabled={userHasRated}
+                onPress={() => setShowRatingForm(true)}
+              />
+            )}
+
+            <RatingForm
+              visible={showRatingForm}
+              onClose={() => setShowRatingForm(false)}
+              onSubmit={submitRating}
+              recipe_id={item.recipe_id}
+            />
+          </View>
         </Card>
-        <Divider style={styles.divider} />
         <View>
           <TouchableOpacity
             style={styles.commentsButton}
@@ -340,7 +472,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 0,
     margin: 20,
-    marginBottom: 40,
   },
   overlay: {
     position: 'absolute',
@@ -431,6 +562,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontFamily: 'InriaSans-Regular',
+  },
+  ratingsSection: {
+    padding: 15,
+  },
+  rateButton: {
+    backgroundColor: HexColors['medium-green'],
+    borderRadius: 10,
+    marginHorizontal: 10,
+    marginVertical: 10,
   },
   deleteButton: {
     backgroundColor: 'crimson',
