@@ -105,6 +105,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={triggerUpdate} />
         }
+        scrollEnabled={notificationsVisible ? false : true}
       >
         <Card
           containerStyle={{
@@ -223,9 +224,9 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
             </View>
           )}
         </TouchableOpacity>
-
-        <Notifications visible={notificationsVisible} />
-
+        <Notifications
+          visible={notificationsVisible}
+          onClose={() => setNotificationsVisible(false)}/>
         <Text
           style={{
             fontSize: 20,

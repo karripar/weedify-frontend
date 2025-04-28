@@ -1,31 +1,42 @@
 import {useEffect, useRef, useState} from 'react';
 import {useUserContext} from '../hooks/contextHooks';
-import { useNotifications } from '../hooks/apiHooks';
-import {
-  Notification
-} from 'hybrid-types/DBTypes';
+import {useNotifications} from '../hooks/apiHooks';
+import {Notification} from 'hybrid-types/DBTypes';
 import {formatDateToTimePassed} from '../lib/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {StyleSheet, TouchableOpacity, View, Animated, ScrollView} from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Animated,
+  ScrollView,
+  TouchableWithoutFeedback
+} from 'react-native';
 import {Text} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 
 type NotificationsProps = {
   visible: boolean;
+  onClose: () => void;
 };
 
-const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
+const Notifications: React.FC<NotificationsProps> = ({visible, onClose}) => {
   const {user} = useUserContext();
-  const {getAllNotificationsForUser, markAllNotificationsAsRead, markNotificationAsRead, checkNotificationsEnabled, toggleNotificationsEnabled} = useNotifications();
+  const {
+    getAllNotificationsForUser,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    checkNotificationsEnabled,
+    toggleNotificationsEnabled,
+  } = useNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const slideAnimation = useRef(new Animated.Value(0)).current;
   const [isMounted, setIsMounted] = useState(visible);
 
-
   const [error, setError] = useState<string | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
-
+  const [notificationsEnabled, setNotificationsEnabled] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -54,9 +65,7 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
       setLoading(true); // show loading spinner while fetching
       fetchNotifications();
     }
-
   }, [visible, user?.user_id]); // depends on user_id and visible prop
-
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -81,7 +90,9 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
       }
       await markNotificationAsRead(notificationId, token);
       setNotifications((prevNotifications) =>
-        prevNotifications.filter((notification) => notification.notification_id !== notificationId)
+        prevNotifications.filter(
+          (notification) => notification.notification_id !== notificationId,
+        ),
       );
     } catch (error) {
       setError('Failed to mark notification as read');
@@ -110,7 +121,7 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
         return;
       }
       const enabled = await checkNotificationsEnabled(user_id);
-      setNotificationsEnabled(enabled? true : false);
+      setNotificationsEnabled(enabled ? true : false);
     } catch (error) {
       setError('Failed to check notifications enabled status');
     }
@@ -142,9 +153,6 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
     }
   }, [visible]);
 
-
-
-
   if (!isMounted) {
     return null; // Don't render anything if not visible
   }
@@ -166,51 +174,61 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
 
   return (
     <Animated.View
-    pointerEvents={visible ? 'auto' : 'none'}
-    style={[styles.overlay, { opacity: slideAnimation }]}>
-      <View style={styles.modal}>
-        <Text style={styles.title}>Notifications</Text>
-        {/* close button for notification modal */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => {
-            setIsMounted(false);
-          }}
-        >
-          <Text style={styles.closeButtonText}>X</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={handleToggleNotificationsEnabled}
-        >
-          <Text style={styles.toggleButtonText}>
-            {notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
-          </Text>
-        </TouchableOpacity>
-        {notifications.length === 0 ? (
-          <Text style={styles.noNotificationsText}>No notifications</Text>
-        ) : (
-          <ScrollView style={styles.notificationsList}>
-            {notifications.map((notification) => (
-              <View key={notification.notification_id} style={styles.notificationItem}>
-                <Text style={styles.notificationText}>{notification.notification_text}</Text>
-                <Text style={styles.notificationTime}>
-                  {formatDateToTimePassed(notification.created_at)}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-        {notifications.length > 0 && (
-          <TouchableOpacity
-            style={styles.markAllAsReadButton}
-            onPress={handleMarkAllAsRead}
+  pointerEvents={visible ? 'auto' : 'none'}
+  style={[styles.overlay, {opacity: slideAnimation}]}
+>
+  <View style={styles.modal}>
+    <Text style={styles.title}>Notifications</Text>
+
+    {/* Close Button */}
+    <TouchableOpacity
+      style={styles.closeButton}
+      onPress={() => {
+        onClose();
+        setIsMounted(false);
+      }}
+    >
+      <Text style={styles.closeButtonText}>X</Text>
+    </TouchableOpacity>
+
+    {/* Notifications ScrollView */}
+    <ScrollView
+      style={styles.scrollArea}
+      contentContainerStyle={{paddingBottom: 20}}
+      showsVerticalScrollIndicator={true}
+      keyboardShouldPersistTaps="handled"
+    >
+      {notifications.length === 0 ? (
+        <Text style={styles.noNotificationsText}>No notifications</Text>
+      ) : (
+        notifications.map((notification) => (
+          <View
+            key={notification.notification_id}
+            style={styles.notificationItem}
           >
-            <Text style={styles.markAllAsReadButtonText}>Mark All as Read</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </Animated.View>
+            <Text style={styles.notificationText}>
+              {notification.notification_text}
+            </Text>
+            <Text style={styles.notificationTime}>
+              {formatDateToTimePassed(notification.created_at)}
+            </Text>
+          </View>
+        ))
+      )}
+    </ScrollView>
+
+    {/* Mark All as Read Button */}
+    {notifications.length > 0 && (
+      <TouchableOpacity
+        style={styles.markAllAsReadButton}
+        onPress={handleMarkAllAsRead}
+      >
+        <Text style={styles.markAllAsReadButtonText}>Mark All as Read</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+</Animated.View>
+
   );
 
 };
@@ -223,18 +241,23 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // semi-transparent dark background
-    justifyContent: 'center',
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 100,
     alignItems: 'center',
-    zIndex: 10, // ensure it's above other content
+    justifyContent: 'flex-start',
   },
 
   modal: {
     width: '90%',
-    maxHeight: '80%',
+    maxHeight: '70%',
     backgroundColor: HexColors['white'],
     borderRadius: 10,
     padding: 20,
+    flexShrink: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    marginTop: 50,
   },
 
   title: {
@@ -269,17 +292,24 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     marginBottom: 16,
-    maxHeight: 300,
+    maxHeight: 350,
   },
   notificationItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: HexColors['dark-green'],
-    marginBottom: 10,
+    backgroundColor: HexColors['almost-white'],
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 0,
   },
   notificationText: {
     fontSize: 16,
-    color: HexColors['darkest-green'],
+    color: HexColors['light-green'],
   },
   notificationTime: {
     fontSize: 12,
@@ -298,7 +328,7 @@ const styles = StyleSheet.create({
   markAllAsReadButton: {
     backgroundColor: HexColors['green'],
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 8,
     marginTop: 16,
   },
   markAllAsReadButtonText: {
@@ -318,8 +348,8 @@ const styles = StyleSheet.create({
   },
   notificationEnabledButton: {
     backgroundColor: HexColors['green'],
-    padding: 10,
-    borderRadius: 5,
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 16,
   },
   closeButton: {
@@ -334,5 +364,9 @@ const styles = StyleSheet.create({
     color: HexColors.white,
     fontSize: 16,
     padding: 3,
+  },
+  scrollArea: {
+    flexGrow: 0,
+    maxHeight: '70%',  // <<< MAKE SURE THE SCROLL AREA CAN GROW
   },
 });

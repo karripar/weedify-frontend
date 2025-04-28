@@ -14,6 +14,7 @@ import {useState, useEffect} from 'react';
 import {useLikes, useUser, useFavorites, useRecipes} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Follows from './Follows';
 
 type RecipeListItemProps = {
   item: {
@@ -258,7 +259,12 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
         </View>
+        {user && user.user_id !== item.user_id && (
+          <Follows
+            userId={item.user_id}>
 
+            </Follows>
+        )}
         {user && user.user_id === item.user_id && (
           <TouchableOpacity
             style={styles.menuButton}

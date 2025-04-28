@@ -23,7 +23,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         }
         const notifications = await getAllNotificationsForUser(token);
         if (!notifications) {
-          console.error('No notifications found');
+          console.log('No notifications found');
           return;
         }
         setNotificationCount(notifications.length); // Update state after fetching
