@@ -224,7 +224,9 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
           )}
         </TouchableOpacity>
 
-        <Notifications visible={notificationsVisible} />
+        <Notifications
+          visible={notificationsVisible}
+          onClose={() => setNotificationsVisible(false)}/>
 
         <Text
           style={{

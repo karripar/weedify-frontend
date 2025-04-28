@@ -12,9 +12,10 @@ import {HexColors} from '../utils/colors';
 
 type NotificationsProps = {
   visible: boolean;
+  onClose: () => void;
 };
 
-const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
+const Notifications: React.FC<NotificationsProps> = ({ visible, onClose}) => {
   const {user} = useUserContext();
   const {getAllNotificationsForUser, markAllNotificationsAsRead, markNotificationAsRead, checkNotificationsEnabled, toggleNotificationsEnabled} = useNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -25,7 +26,7 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
 
   const [error, setError] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
-  
+
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -174,6 +175,7 @@ const Notifications: React.FC<NotificationsProps> = ({ visible }) => {
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => {
+            onClose();
             setIsMounted(false);
           }}
         >
@@ -270,17 +272,24 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     marginBottom: 16,
-    maxHeight: 300,
+    maxHeight: 350,
   },
   notificationItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: HexColors['dark-green'],
-    marginBottom: 10,
+    backgroundColor: HexColors['almost-white'],
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 0, // no visible border
   },
   notificationText: {
     fontSize: 16,
-    color: HexColors['darkest-green'],
+    color: HexColors['light-green'],
   },
   notificationTime: {
     fontSize: 12,
@@ -299,7 +308,7 @@ const styles = StyleSheet.create({
   markAllAsReadButton: {
     backgroundColor: HexColors['green'],
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 8,
     marginTop: 16,
   },
   markAllAsReadButtonText: {
@@ -319,8 +328,8 @@ const styles = StyleSheet.create({
   },
   notificationEnabledButton: {
     backgroundColor: HexColors['green'],
-    padding: 10,
-    borderRadius: 5,
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 16,
   },
   closeButton: {

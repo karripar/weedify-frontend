@@ -881,7 +881,7 @@ const useNotifications = () => {
       );
       return notifications;
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.log('Error fetching notifications:', error);
       return null;
     }
   };
