@@ -17,7 +17,8 @@ import {
   Like,
   RecipeWithAllFields,
   UserWithDietaryInfo,
-  Notification
+  Notification,
+  Follow,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -887,14 +888,17 @@ const useNotifications = () => {
   };
 
   // mark a notification as read
-  const markNotificationAsRead = async (notification_id: number, token: string) => {
+  const markNotificationAsRead = async (
+    notification_id: number,
+    token: string,
+  ) => {
     try {
       const options = {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/${notification_id}/mark-read`,
@@ -916,7 +920,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/mark-read/all`,
@@ -938,7 +942,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/settings/toggle-enabled`,
@@ -963,7 +967,7 @@ const useNotifications = () => {
       console.error('Error checking notifications enabled:', error);
       return null;
     }
-  }
+  };
 
   // delete old notifications (older than 30 days)
   const deleteOldNotifications = async (token: string) => {
@@ -973,7 +977,7 @@ const useNotifications = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
       };
       const response = await fetchData<MessageResponse>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/delete/old`,
@@ -994,7 +998,104 @@ const useNotifications = () => {
     toggleNotificationsEnabled,
     checkNotificationsEnabled,
     deleteOldNotifications,
-  }
+  };
+};
+
+const useFollow = () => {
+  const [followArray, setFollowArray] = useState<Follow[]>([]);
+
+  // post a new follow
+  const postFollow = async (user_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({user_id}),
+      };
+      return await fetchData<Follow>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/follows',
+        options,
+      );
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // remove a follow
+  const removeFollow = async (follow_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/follows/' + follow_id,
+        options,
+      );
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // get all followed users for a user
+  const getFollowedUsers = async (token?: string, username?: string) => {
+    let url;
+    if (username) {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/byusername/followed/${username}`;
+    } else {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/bytoken/followed`;
+    }
+
+    try {
+      const options = {
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<Follow[]>(url, options);
+      setFollowArray(response);
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // get all followers for a user
+  const getFollowers = async (token?: string, username?: string) => {
+    let url;
+    // check if the user is logged in and if not, use the username to get the followers
+    if (username) {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/byusername/followers/${username}`;
+    } else {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/bytoken/followers`;
+    }
+
+    try {
+      const options = {
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<Follow[]>(url, options);
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  return {
+    followArray,
+    postFollow,
+    removeFollow,
+    getFollowedUsers,
+    getFollowers,
+  };
 };
 
 export {
@@ -1006,5 +1107,6 @@ export {
   useLikes,
   useComments,
   useFavorites,
-  useNotifications
+  useNotifications,
+  useFollow,
 };
