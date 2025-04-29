@@ -181,16 +181,6 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
           </TouchableOpacity>
         )}
 
-        {user && user.user_level_id === 1 && (
-          <TouchableOpacity onPress={() => handleDelete(comment.comment_id)}>
-            <Text
-              style={styles.deleteText}
-            >
-              Delete
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {replyToCommentId === comment.comment_id && (
           <View
             style={{
@@ -221,12 +211,21 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
           </View>
         )}
 
-        <View style={{width: '100%'}}>
+        <View style={{width: '100%', flexDirection: 'row', justifyContent: 'space-between'}}>
           <Text style={{color: HexColors['light-grey']}}>
             {comment.created_at
               ? formatDateToTimePassed(comment.created_at.toString())
               : 'Unknown date'}
           </Text>
+          {user && user.user_level_id === 1 && (
+          <TouchableOpacity onPress={() => handleDelete(comment.comment_id)}>
+            <Text
+              style={styles.deleteText}
+            >
+              Delete
+            </Text>
+          </TouchableOpacity>
+        )}
         </View>
 
         {comment.replies && comment.replies.length > 0 && (
@@ -384,11 +383,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   deleteText: {
-    color: '#ef4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    color: HexColors['light-purple'],
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   replyInput: {
     width: '100%',
