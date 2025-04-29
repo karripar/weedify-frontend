@@ -188,7 +188,7 @@ const EditRecipeForm = ({
       }
 
       // only user who owns the recipe can edit (TODO: admin needs to be added)
-      if (user.user_id !== recipe.user_id) {
+      if (user.user_id !== recipe.user_id && user.user_level_id !== 1) {
         Alert.alert('Error', 'You can only edit your own recipes.');
         return;
       }
