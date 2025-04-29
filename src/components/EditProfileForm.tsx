@@ -44,8 +44,13 @@ const EditProfileForm = ({
     getUsernameAvailable,
     getEmailAvailable,
     getUserDietaryRestrictions,
+    getUserWithProfileImage,
   } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
+    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+  );
+
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
@@ -147,6 +152,24 @@ const EditProfileForm = ({
     }
   }, [selectedDiets]);
 
+  // fetch user's existing profile picture
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      try {
+        if (user) {
+          const profileData = await getUserWithProfileImage(user.user_id);
+          if (profileData && profileData.filename) {
+            setProfileImageUrl(profileData.filename);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load profile image:', error);
+      }
+    };
+
+    loadProfileImage();
+  }, [user]);
+
   // select image for the post
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -194,8 +217,6 @@ const EditProfileForm = ({
         return dietOption ? Number(dietOption.key) : null;
       })
       .filter((id) => id !== null);
-
-    console.log('selected diettype ids', dietTypeIds);
 
     // add dietary info if not empty
     if (dietTypeIds.length > 0) {
@@ -259,7 +280,6 @@ const EditProfileForm = ({
 
           setImage(null);
           setUpdatedUser(formattedUser);
-          console.log('formatted user', formattedUser);
         }
       } catch (fetchError) {
         console.error('Error fetching updated user:', fetchError);
@@ -303,15 +323,21 @@ const EditProfileForm = ({
             component: (
               <>
                 <Image
-                  source={{
-                    uri:
-                      image?.assets![0].uri ||
-                      process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-                  }}
+                  containerStyle={{margin: 'auto'}}
+                  source={
+                    image?.assets && image.assets[0]
+                      ? {uri: image.assets[0].uri}
+                      : {
+                          uri:
+                            profileImageUrl ||
+                            `${process.env.EXPO_PUBLIC_UPLOADS}/uploadimage.png`,
+                        }
+                  }
                   style={[
                     styles.image,
                     {
                       objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+                      margin: 'auto',
                     },
                   ]}
                   onPress={pickImage}
@@ -608,9 +634,10 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   image: {
+    marginVertical: 10,
     height: 200,
-    margin: 10,
-    borderRadius: 10,
+    width: 200,
+    borderRadius: 100,
     borderWidth: 1,
     borderColor: HexColors['light-grey'],
   },

@@ -76,7 +76,6 @@ const useUser = () => {
       const profile_picture = await fetchData<ProfilePicture>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture/' + user_id,
       );
-      console.log('user profile image', profile_picture);
       return profile_picture;
     } catch (error) {
       throw new Error((error as Error).message);
@@ -195,7 +194,6 @@ const useUser = () => {
       );
 
       // update the profile image if image uploaded
-      console.log(filename.data?.filename);
       if (filename.data?.filename) {
         const picData = {
           filename: filename.data.filename,
@@ -391,7 +389,7 @@ const useRecipes = (user_id?: number) => {
   // post a new recipe
   const postRecipe = async (
     file: UploadResponse,
-    inputs: Record<string, string | number | string[]>,
+    inputs: Record<string, string | number | number[] | string[]>,
     token: string,
   ) => {
     // format the ingredients to sent them to db
@@ -433,8 +431,11 @@ const useRecipes = (user_id?: number) => {
       filesize: file.data.filesize,
       difficulty_level_id: Number(inputs.difficulty_level_id),
       ingredients: formattedIngredients,
-      dietary_info: dietaryInfo.map((id) => Number(id)),
     };
+
+    if (dietaryInfo.length > 0) {
+      recipe.dietary_info = dietaryInfo.map((id) => Number(id));
+    }
 
     // post the data to Media API and get the data as MessageResponse
     const options = {
@@ -781,9 +782,7 @@ const useFavorites = () => {
             };
           }),
         );
-        console.log(favoritesWithUsernames)
         return favoritesWithUsernames;
-
       }
       return fetchedFavorites || [];
     } catch (error) {
@@ -1212,8 +1211,6 @@ const useRatings = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-
-      console.log('deleting rating', rating_id);
 
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/recipe/${rating_id}`,

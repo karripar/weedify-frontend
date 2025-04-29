@@ -9,21 +9,15 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
-import {Card, Icon, Divider, Overlay, Button} from '@rneui/base';
-import {useRecipes, useUser} from '../hooks/apiHooks';
+import {Card, Icon, Divider, Button} from '@rneui/base';
+import {useUser} from '../hooks/apiHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
-import {
-  NavigationProp,
-  ParamListBase,
-  useNavigation,
-} from '@react-navigation/native';
+import {useUserContext} from '../hooks/contextHooks';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
 import Comments from '../components/Comments';
 import {ArrowUp, ArrowDown} from 'lucide-react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useRatings} from '../hooks/apiHooks';
 import RatingForm from '../components/RatingForm';
 import RatingsDisplay from '../components/RatingsDisplay';
@@ -32,9 +26,6 @@ const Single = ({route}: any) => {
   const item: RecipeWithAllFields & {username: string} = route.params.item;
   const {user} = useUserContext();
   const {getUserWithProfileImage, getUserById} = useUser();
-  const {update, setUpdate} = useUpdateContext();
-  const {deleteRecipe} = useRecipes();
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
@@ -45,9 +36,6 @@ const Single = ({route}: any) => {
   const [userHasRated, setUserHasRated] = useState(false);
   const {postRating, getRatingsByRecipeId, checkRatingExists, deleteRating} =
     useRatings();
-
-  // recipe edit/delete overlay
-  const [recipeOverlay, setRecipeOverlay] = useState(false);
 
   // load ratings for the recipe
   const loadRatings = async () => {
@@ -142,52 +130,6 @@ const Single = ({route}: any) => {
     checkUserRating();
   }, [item.recipe_id, user]);
 
-  // toggle the visibilty of the overlay
-  const toggleRecipeOverlay = () => {
-    setRecipeOverlay(!recipeOverlay);
-  };
-
-  // handle edit recipe button click
-  const handleEditRecipe = () => {
-    setRecipeOverlay(false);
-    navigation.navigate('Edit Recipe', {item});
-  };
-
-  // handle delete recipe button click
-  const handleDeleteRecipe = () => {
-    setRecipeOverlay(false);
-    // confirmation alert
-    Alert.alert(
-      'Delete Recipe',
-      'Are you sure you want to delete this recipe? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            // delete recipe
-            try {
-              const token = await AsyncStorage.getItem('token');
-              if (!token) return;
-
-              const deleteResponse = await deleteRecipe(item.recipe_id, token);
-              console.log('recipe deleted', deleteResponse);
-              setUpdate(!update);
-              Alert.alert('Success', 'Recipe deleted successfully');
-            } catch (error) {
-              console.error('Delete error:', error);
-              Alert.alert('Error', 'Failed to delete recipe');
-            }
-          },
-        },
-      ],
-    );
-  };
-
   useEffect(() => {
     const loadProfileImage = async () => {
       try {
@@ -235,54 +177,6 @@ const Single = ({route}: any) => {
                 {new Date(item.created_at).toLocaleDateString('fi-FI')}
               </Text>
             </View>
-
-            {user && user.user_id === item.user_id && (
-              <TouchableOpacity
-                onPress={toggleRecipeOverlay}
-                style={{position: 'absolute', top: 30, right: 15}}
-              >
-                <Ionicons
-                  name="ellipsis-vertical"
-                  size={24}
-                  color={HexColors['dark-grey']}
-                />
-              </TouchableOpacity>
-            )}
-
-            <Overlay
-              isVisible={recipeOverlay}
-              onBackdropPress={toggleRecipeOverlay}
-              overlayStyle={styles.overlay}
-            >
-              <View>
-                <TouchableOpacity
-                  style={styles.overlayItem}
-                  onPress={handleEditRecipe}
-                >
-                  <Ionicons
-                    name="create-outline"
-                    size={24}
-                    color={HexColors['dark-grey']}
-                    style={{width: 30}}
-                  />
-                  <Text style={styles.overlayText}>Edit Recipe</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.overlayItem}
-                  onPress={handleDeleteRecipe}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={24}
-                    color="red"
-                    style={{width: 30}}
-                  />
-                  <Text style={[styles.overlayText, {color: 'red'}]}>
-                    Delete Recipe
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </Overlay>
           </View>
 
           {item.media_type.includes('image') ? (
@@ -411,16 +305,23 @@ const Single = ({route}: any) => {
             </View>
           </View>
 
-          <Divider style={styles.divider} />
+          <Divider
+            style={[
+              styles.divider,
+              {borderWidth: 0.5, borderColor: HexColors['light-green']},
+            ]}
+          />
           <View style={styles.ratingsSection}>
-            <Text style={styles.sectionTitle}>Ratings</Text>
+            <Text style={[styles.sectionTitle, {marginHorizontal: 10}]}>
+              Ratings
+            </Text>
 
             <RatingsDisplay
               ratings={ratings}
               currentUserId={user?.user_id}
               onDeleteRating={handleDeleteRating}
             />
-            {user && (
+            {user ? (
               <Button
                 title={
                   userHasRated ? "You've rated this recipe" : 'Rate this recipe'
@@ -429,6 +330,16 @@ const Single = ({route}: any) => {
                 disabled={userHasRated}
                 onPress={() => setShowRatingForm(true)}
               />
+            ) : (
+              <Text
+                style={{
+                  textAlign: 'center',
+                  margin: 10,
+                  color: HexColors['medium-green'],
+                }}
+              >
+                Login to rate this recipe
+              </Text>
             )}
 
             <RatingForm
@@ -472,36 +383,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 0,
     margin: 20,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 120,
-    right: 15,
-    width: 250,
-    padding: 0,
-    borderRadius: 10,
-    backgroundColor: HexColors['light-purple'],
-  },
-  overlayItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderRadius: 10,
-    borderBottomColor: HexColors['light-grey'],
-  },
-  overlayText: {
-    fontFamily: 'InriaSans-Regular',
-    fontSize: 16,
-    marginLeft: 10,
-    color: HexColors['dark-grey'],
+    borderWidth: 0,
   },
   imageContainer: {
     height: 50,
     width: 50,
     borderRadius: 25,
     backgroundColor: HexColors['light-purple'],
+    borderWidth: 0,
   },
   image: {
     width: '100%',

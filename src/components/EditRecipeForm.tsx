@@ -28,7 +28,7 @@ const EditRecipeForm = ({
 }) => {
   const {user} = useUserContext();
   const {updateRecipe, loading} = useRecipes();
-  const {triggerUpdate, update} = useUpdateContext();
+  const {triggerUpdate} = useUpdateContext();
   const {getAllDietTypes} = useDietTypes();
 
   // get the recipe data
@@ -207,16 +207,18 @@ const EditRecipeForm = ({
         unit: ing.unit,
       }));
 
-      const dietTypeIds = selectedDiets
-        .map((dietName) => {
-          const dietOption = dietTypeOptions.find(
-            (option) => option.value === dietName,
-          );
-          return dietOption ? Number(dietOption.key) : null;
-        })
-        .filter((id) => id !== null);
+      if (selectedDiets.length > 0) {
+        const dietTypeIds = selectedDiets
+          .map((dietName) => {
+            const dietOption = dietTypeOptions.find(
+              (option) => option.value === dietName,
+            );
+            return dietOption ? Number(dietOption.key) : null;
+          })
+          .filter((id) => id !== null);
 
-      updateData.dietary_info = dietTypeIds;
+        updateData.dietary_info = dietTypeIds;
+      }
 
       const response = await updateRecipe(token, recipe.recipe_id, updateData);
 

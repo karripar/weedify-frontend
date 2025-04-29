@@ -57,7 +57,7 @@ type PostRecipeData = {
   filesize: number;
   difficulty_level_id: number;
   ingredients: RecipeIngredient[];
-  dietary_info: number[];
+  dietary_info?: number[];
 };
 
 // Hakutoimintoa varten
@@ -105,5 +105,5 @@ export type {
   DietTypeWithName,
   RecipeWithPossibleLikes,
   UpdateUserResponse,
-  EditRecipeInputs
+  EditRecipeInputs,
 };

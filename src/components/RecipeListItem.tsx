@@ -91,7 +91,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
               if (!token) return;
 
               const deleteResponse = await deleteRecipe(item.recipe_id, token);
-              console.log('recipe deleted', deleteResponse);
               setUpdate(!update);
               Alert.alert('Success', 'Recipe deleted successfully');
             } catch (error) {
@@ -417,7 +416,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     width: 300,
-    marginTop: -350,
+    marginTop: -100,
     padding: 0,
     borderRadius: 10,
     backgroundColor: HexColors['light-purple'],

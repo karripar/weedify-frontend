@@ -76,7 +76,7 @@ const RatingsDisplay = ({
           showRating={false}
           defaultRating={item.rating}
           isDisabled={true}
-          selectedColor={HexColors['dark-green']}
+          selectedColor={HexColors['medium-green']}
         />
       </View>
 
@@ -97,9 +97,30 @@ const RatingsDisplay = ({
   return (
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
-        <Text style={styles.summaryText}>
-          Average rating: {averageRating.toFixed(1)}/5
-        </Text>
+        <View style={styles.ratingAverage}>
+          <AirbnbRating
+            count={5}
+            defaultRating={averageRating}
+            size={24}
+            showRating={false}
+            isDisabled={true}
+            selectedColor={HexColors['medium-green']}
+          />
+          <View>
+            <Text style={{color: HexColors['dark-green'], fontWeight: 'bold'}}>
+              {averageRating.toFixed(1)} / 5
+            </Text>
+            {ratings.length === 1 ? (
+              <Text style={{color: HexColors['dark-green']}}>
+                {ratings.length} rating
+              </Text>
+            ) : (
+              <Text style={{color: HexColors['dark-green']}}>
+                {ratings.length} ratings
+              </Text>
+            )}
+          </View>
+        </View>
       </View>
       <Divider style={styles.divider} />
       <TouchableOpacity
@@ -156,18 +177,25 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   ratingCard: {
     borderRadius: 10,
     padding: 15,
     marginHorizontal: 0,
-    marginVertical: 5,
+    marginVertical: 10,
   },
   ratingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+  },
+  ratingAverage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginHorizontal: 30,
   },
   username: {
     fontFamily: 'InriaSans-Bold',

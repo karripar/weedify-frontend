@@ -36,7 +36,7 @@ declare global {
 type PostInputs = {
   title: string;
   ingredients: string[];
-  dietary_info: string;
+  dietary_info?: number[];
   instructions: string;
   cooking_time: number;
   portions: number;
@@ -136,10 +136,9 @@ const Post = () => {
   const initValues: PostInputs = {
     title: '',
     ingredients: [],
-    dietary_info: '',
     instructions: '',
-    cooking_time: Number(),
-    portions: Number(),
+    cooking_time: '' as unknown as number,
+    portions: '' as unknown as number,
     difficulty_level_id: Number(),
   };
   const {
@@ -230,9 +229,10 @@ const Post = () => {
       difficulty_level_id: Number(selectedDifficultyLevel),
     };
 
-    // add dietary info if not empty
-    if (dietTypeIds.length > 0) {
-      recipeData.dietary_info = dietTypeIds.join(',');
+    if (dietTypeIds.length !== 0) {
+      recipeData.dietary_info = dietTypeIds;
+     } else {
+      delete recipeData.dietary_info;
     }
 
     try {
@@ -699,7 +699,12 @@ const Post = () => {
                   containerStyle={styles.buttonContainer}
                   onPress={handleSubmit(doUpload)}
                   loading={loading}
-                  disabled={!isValid || image === null || loading}
+                  disabled={
+                    !isValid ||
+                    image === null ||
+                    loading ||
+                    selectedDifficultyLevel === ''
+                  }
                   testID="post-button"
                 />
                 <Button

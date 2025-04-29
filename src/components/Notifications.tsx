@@ -241,13 +241,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     zIndex: 100,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-
   modal: {
     width: '90%',
     maxHeight: '70%',
@@ -259,7 +257,6 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     marginTop: 50,
   },
-
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -291,7 +288,7 @@ const styles = StyleSheet.create({
     color: HexColors['green'],
   },
   notificationsList: {
-    marginBottom: 16,
+    marginBottom: 10,
     maxHeight: 350,
   },
   notificationItem: {
@@ -306,6 +303,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     borderWidth: 0,
+    marginHorizontal: 10,
   },
   notificationText: {
     fontSize: 16,
