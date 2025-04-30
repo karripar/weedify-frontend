@@ -5,12 +5,13 @@ import {
   TouchableOpacity,
   View,
   FlatList,
+  ScrollView,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Input, ListItem, Icon} from '@rneui/base';
 import MultiSelect from 'react-native-multiple-select';
-import {useDietTypes, useRecipes} from '../hooks/apiHooks';
+import {useDietTypes, useRecipes, useIngredients} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +19,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {LinearGradient} from 'expo-linear-gradient';
 import {SelectList} from 'react-native-dropdown-select-list';
 import {EditRecipeInputs} from '../types/LocalTypes';
+import NutritionInfo from '../components/NutritionInfo';
 
 const EditRecipeForm = ({
   navigation,
@@ -30,6 +32,7 @@ const EditRecipeForm = ({
   const {updateRecipe, loading} = useRecipes();
   const {triggerUpdate} = useUpdateContext();
   const {getAllDietTypes} = useDietTypes();
+  const {searchIngredients, getIngredientById} = useIngredients();
 
   // get the recipe data
   const recipe = route.params.item;
@@ -40,7 +43,18 @@ const EditRecipeForm = ({
   >([]);
 
   const [ingredients, setIngredients] = useState<
-    {name: string; amount: string; unit: string}[]
+    {
+      name: string;
+      amount: string;
+      unit: string;
+      fineli_id?: number;
+      energy_kcal?: number;
+      protein?: number;
+      fat?: number;
+      carbohydrate?: number;
+      fiber?: number;
+      sugar?: number;
+    }[]
   >([]);
 
   const [instructionsLength, setInstructionsLength] = useState(
@@ -59,15 +73,30 @@ const EditRecipeForm = ({
     return '1';
   });
 
-  // data for the unit selector (TODO: emt näille vois kattoo viel mitkä olis eniten käytetyimmät ja universaalit)
+  const [selectedIngredientData, setSelectedIngredientData] =
+    useState<any>(null);
+  const [ingredientSearchResults, setIngredientSearchResults] = useState<any[]>(
+    [],
+  );
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
+  const [recipeTotals, setRecipeTotals] = useState({
+    energy: 0,
+    protein: 0,
+    fat: 0,
+    carbohydrate: 0,
+    fiber: 0,
+    sugar: 0,
+  });
+
+  // data for the unit selector
   const unitData = [
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
     {key: 'ml', value: 'ml'},
     {key: 'l', value: 'l'},
-    {key: 'tsp', value: 'tsp'},
-    {key: 'tbsp', value: 'tbsp'},
-    {key: 'cup', value: 'cup'},
+    {key: 'tl', value: 'tl'},
+    {key: 'rkl', value: 'rkl'},
+    {key: 'kpl', value: 'kpl'},
     {key: 'pcs', value: 'pcs'},
   ];
 
@@ -82,6 +111,7 @@ const EditRecipeForm = ({
   const {
     control,
     handleSubmit,
+    getValues,
     formState: {errors, isValid},
   } = useForm<EditRecipeInputs>({
     defaultValues: {
@@ -92,6 +122,72 @@ const EditRecipeForm = ({
       difficulty_level: recipe.difficulty_level,
     },
   });
+
+  const handleIngredientSearch = async (text: string) => {
+    setIngredientSearchTerm(text);
+    if (text.length >= 2) {
+      const results = await searchIngredients(text);
+      setIngredientSearchResults(results);
+    } else {
+      setIngredientSearchResults([]);
+    }
+  };
+
+  const selectIngredient = (ingredient: any) => {
+    setSelectedIngredientData(ingredient);
+    setCurrentIngredient(ingredient.name.fi);
+    setIngredientSearchResults([]);
+  };
+
+  const calculateAmountInGrams = (amount: number, unit: string): number => {
+    switch (unit.toLowerCase()) {
+      case 'g':
+        return amount;
+      case 'kg':
+        return amount * 1000;
+      case 'mg':
+        return amount / 1000;
+      case 'dl':
+        return amount * 100; // Approx for water-based
+      case 'l':
+        return amount * 1000;
+      case 'tl':
+        return amount * 5; // Approx
+      case 'rkl':
+        return amount * 15; // Approx
+      case 'kpl':
+        return amount * 100; // Very rough estimate
+      default:
+        return amount;
+    }
+  };
+
+  const updateRecipeNutrition = (ingredients: any[]) => {
+    const totals = ingredients.reduce(
+      (acc, ingredient) => {
+        if (!ingredient.energy_kcal) return acc;
+
+        return {
+          energy: acc.energy + (ingredient.energy_kcal || 0),
+          protein: acc.protein + (ingredient.protein || 0),
+          fat: acc.fat + (ingredient.fat || 0),
+          carbohydrate: acc.carbohydrate + (ingredient.carbohydrate || 0),
+          fiber: acc.fiber + (ingredient.fiber || 0),
+          sugar: acc.sugar + (ingredient.sugar || 0),
+        };
+      },
+      {
+        energy: 0,
+        protein: 0,
+        fat: 0,
+        carbohydrate: 0,
+        fiber: 0,
+        sugar: 0,
+      },
+    );
+
+    setRecipeTotals(totals);
+  };
 
   // get the dietypes
   useEffect(() => {
@@ -125,8 +221,16 @@ const EditRecipeForm = ({
         name: ing.name,
         amount: ing.amount.toString(),
         unit: ing.unit,
+        fineli_id: ing.fineli_id,
+        energy_kcal: ing.energy_kcal,
+        protein: ing.protein,
+        fat: ing.fat,
+        carbohydrate: ing.carbohydrate,
+        fiber: ing.fiber,
+        sugar: ing.sugar,
       }));
       setIngredients(formattedIngredients);
+      updateRecipeNutrition(formattedIngredients);
 
       const recipeDietTypes = Array.isArray(recipe.diet_types)
         ? recipe.diet_types
@@ -157,17 +261,51 @@ const EditRecipeForm = ({
       amount !== '' &&
       selectedUnit !== ''
     ) {
-      const newIngredient = {
+      let newIngredient: {
+        name: string;
+        amount: string;
+        unit: string;
+        fineli_id?: number;
+        energy_kcal?: number;
+        protein?: number;
+        fat?: number;
+        carbohydrate?: number;
+        fiber?: number;
+        sugar?: number;
+      } = {
         name: currentIngredient.trim(),
         amount: amount,
         unit: selectedUnit,
       };
 
-      setIngredients([...ingredients, newIngredient]);
+      // Jos valittu Finelin data, lisää ravintotiedot
+      if (selectedIngredientData) {
+        const amountInGrams = calculateAmountInGrams(
+          parseFloat(amount),
+          selectedUnit,
+        );
+        const factor = amountInGrams / 100;
+
+        newIngredient = {
+          ...newIngredient,
+          fineli_id: selectedIngredientData.id,
+          energy_kcal: selectedIngredientData.energyKcal * factor,
+          protein: selectedIngredientData.protein * factor,
+          fat: selectedIngredientData.fat * factor,
+          carbohydrate: selectedIngredientData.carbohydrate * factor,
+          fiber: selectedIngredientData.fiber * factor,
+          sugar: selectedIngredientData.sugar * factor,
+        };
+      }
+
+      const newIngredients = [...ingredients, newIngredient];
+      setIngredients(newIngredients);
+      updateRecipeNutrition(newIngredients);
 
       setCurrentIngredient('');
       setAmount('');
       setSelectedUnit('');
+      setSelectedIngredientData(null);
     }
   };
 
@@ -176,6 +314,7 @@ const EditRecipeForm = ({
     const newIngredients = [...ingredients];
     newIngredients.splice(index, 1);
     setIngredients(newIngredients);
+    updateRecipeNutrition(newIngredients);
   };
 
   // edit recipe with the updated data
@@ -201,11 +340,28 @@ const EditRecipeForm = ({
         difficulty_level_id: parseInt(selectedDifficultyLevel),
       };
 
-      updateData.ingredients = ingredients.map((ing) => ({
-        name: ing.name,
-        amount: parseFloat(ing.amount),
-        unit: ing.unit,
-      }));
+      updateData.ingredients = ingredients.map((ing) => {
+        const baseIngredient = {
+          name: ing.name,
+          amount: parseFloat(ing.amount),
+          unit: ing.unit,
+        };
+
+        if ('energy_kcal' in ing) {
+          return {
+            ...baseIngredient,
+            fineli_id: ing.fineli_id || 0,
+            energy_kcal: ing.energy_kcal || 0,
+            protein: ing.protein || 0,
+            fat: ing.fat || 0,
+            carbohydrate: ing.carbohydrate || 0,
+            fiber: ing.fiber || 0,
+            sugar: ing.sugar || 0,
+          };
+        }
+
+        return baseIngredient;
+      });
 
       if (selectedDiets.length > 0) {
         const dietTypeIds = selectedDiets
@@ -277,6 +433,54 @@ const EditRecipeForm = ({
                 />
 
                 <Text style={styles.text}>Ingredients</Text>
+
+                <Text style={styles.text}>
+                  Lisää aines Fineli-tietokannasta
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                  }}
+                >
+                  <Input
+                    placeholder="Hae aineksia..."
+                    value={ingredientSearchTerm}
+                    onChangeText={handleIngredientSearch}
+                    containerStyle={{flex: 1}}
+                  />
+                </View>
+
+                {ingredientSearchResults.length > 0 && (
+                  <View style={styles.searchResultsContainer}>
+                    <ScrollView style={{maxHeight: 200}}>
+                      {ingredientSearchResults.map((ingredient, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.searchResultItem}
+                          onPress={() => selectIngredient(ingredient)}
+                        >
+                          <Text>{ingredient.name.fi}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {selectedIngredientData && (
+                  <View style={styles.selectedIngredientContainer}>
+                    <Text style={styles.selectedIngredientText}>
+                      Valittu: {selectedIngredientData.name.fi}
+                    </Text>
+                    <Text style={styles.nutritionText}>
+                      Ravintoarvot/100g: {selectedIngredientData.energyKcal}{' '}
+                      kcal,
+                      {selectedIngredientData.protein}g proteiinia
+                    </Text>
+                  </View>
+                )}
+
                 <Input
                   style={styles.input}
                   inputContainerStyle={styles.inputContainer}
@@ -346,6 +550,12 @@ const EditRecipeForm = ({
                     >
                       <ListItem.Content>
                         <ListItem.Title>{`${ingredient.amount} ${ingredient.unit} ${ingredient.name}`}</ListItem.Title>
+                        {ingredient.energy_kcal && (
+                          <ListItem.Subtitle style={styles.nutritionText}>
+                            {ingredient.energy_kcal.toFixed(0)} kcal,{' '}
+                            {ingredient.protein?.toFixed(1)}g prot
+                          </ListItem.Subtitle>
+                        )}
                       </ListItem.Content>
                       <TouchableOpacity onPress={() => removeIngredient(index)}>
                         <Icon
@@ -357,6 +567,51 @@ const EditRecipeForm = ({
                     </ListItem>
                   ))}
                 </View>
+
+                {recipeTotals.energy > 0 && (
+                  <View style={styles.nutritionSummaryContainer}>
+                    <Text style={styles.sectionTitle}>
+                      Ravintosisältö per annos
+                    </Text>
+                    <View style={styles.nutritionRow}>
+                      <Text style={styles.nutritionLabel}>Energia:</Text>
+                      <Text style={styles.nutritionValue}>
+                        {(
+                          recipeTotals.energy / Number(getValues('portions'))
+                        ).toFixed(1)}{' '}
+                        kcal
+                      </Text>
+                    </View>
+                    <View style={styles.nutritionRow}>
+                      <Text style={styles.nutritionLabel}>Proteiini:</Text>
+                      <Text style={styles.nutritionValue}>
+                        {(
+                          recipeTotals.protein / Number(getValues('portions'))
+                        ).toFixed(1)}{' '}
+                        g
+                      </Text>
+                    </View>
+                    <View style={styles.nutritionRow}>
+                      <Text style={styles.nutritionLabel}>Rasva:</Text>
+                      <Text style={styles.nutritionValue}>
+                        {(
+                          recipeTotals.fat / Number(getValues('portions'))
+                        ).toFixed(1)}{' '}
+                        g
+                      </Text>
+                    </View>
+                    <View style={styles.nutritionRow}>
+                      <Text style={styles.nutritionLabel}>Hiilihydraatit:</Text>
+                      <Text style={styles.nutritionValue}>
+                        {(
+                          recipeTotals.carbohydrate /
+                          Number(getValues('portions'))
+                        ).toFixed(1)}{' '}
+                        g
+                      </Text>
+                    </View>
+                  </View>
+                )}
 
                 <Text style={styles.text}>Dietary info</Text>
                 <View style={{marginHorizontal: 10, marginBottom: 20}}>
@@ -681,6 +936,61 @@ const styles = StyleSheet.create({
     marginTop: -10,
     marginBottom: 10,
     fontFamily: 'InriaSans-Regular',
+  },
+  searchResultsContainer: {
+    marginHorizontal: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: HexColors['light-grey'],
+    borderRadius: 5,
+  },
+  searchResultItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: HexColors['light-grey'],
+  },
+  selectedIngredientContainer: {
+    marginHorizontal: 10,
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: HexColors['light-green'],
+    borderRadius: 5,
+  },
+  selectedIngredientText: {
+    fontWeight: 'bold',
+  },
+  nutritionText: {
+    fontSize: 12,
+    color: HexColors['dark-grey'],
+  },
+  nutritionSummaryContainer: {
+    marginHorizontal: 10,
+    marginVertical: 15,
+    padding: 15,
+    backgroundColor: HexColors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: HexColors['light-grey'],
+  },
+  nutritionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 2,
+  },
+  nutritionLabel: {
+    fontSize: 14,
+    color: HexColors['dark-grey'],
+  },
+  nutritionValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: HexColors['medium-green'],
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: HexColors['dark-green'],
   },
 });
 
