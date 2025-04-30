@@ -1,21 +1,22 @@
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  FlatList,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
-import {Button, Card, Chip, Image, Input} from '@rneui/base';
+import {Button, Card, Image, Input} from '@rneui/base';
+import MultiSelect from 'react-native-multiple-select';
+
 import {useDietTypes, useFile, useUser} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Controller, useForm} from 'react-hook-form';
-import {MultipleSelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {UserWithDietaryInfo} from 'hybrid-types/DBTypes';
@@ -42,8 +43,14 @@ const EditProfileForm = ({
     getUserById,
     getUsernameAvailable,
     getEmailAvailable,
+    getUserDietaryRestrictions,
+    getUserWithProfileImage,
   } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
+    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+  );
+
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
@@ -54,11 +61,8 @@ const EditProfileForm = ({
     {key: string; value: string}[]
   >([]);
 
-  const [dietList, setDietList] = useState<string[]>([]);
-  const [dietResetKey, setDietResetKey] = useState(0);
-
-  // TODO: update the edit user profile form with user's existing diets
-  const [userDiets, setUserDiets] = useState<string[] | null>([]);
+  // user's existing diets
+  const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
 
   // toggle the visibility of the password
   const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
@@ -79,7 +83,7 @@ const EditProfileForm = ({
     current_password: '',
     new_password: '',
     bio: '',
-    dietary_restrictions: user?.dietary_restrictions || '',
+    dietary_restrictions: '',
   };
   const {
     control,
@@ -118,7 +122,6 @@ const EditProfileForm = ({
           }));
           setDietTypeOptions(dietTypes);
         } else {
-          console.log('Diet types not in expected format:', allDietTypes);
           setDietTypeOptions([]);
         }
       } catch (error) {
@@ -127,6 +130,45 @@ const EditProfileForm = ({
     };
     fetchDietTypes();
   }, []);
+
+  // fetch user's existing diets to add them to the form
+  useEffect(() => {
+    const fetchUserDiets = async () => {
+      if (user) {
+        try {
+          const userDiets = await getUserDietaryRestrictions(user?.user_id);
+          setSelectedDiets(userDiets);
+        } catch (error) {
+          console.error('Error fetching diets:', error);
+        }
+      }
+    };
+    fetchUserDiets();
+  }, [user, update]);
+
+  // set new selected diets if user adds/removes diets from the diet list
+  useEffect(() => {
+    if (selectedDiets?.length > 0) {
+    }
+  }, [selectedDiets]);
+
+  // fetch user's existing profile picture
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      try {
+        if (user) {
+          const profileData = await getUserWithProfileImage(user.user_id);
+          if (profileData && profileData.filename) {
+            setProfileImageUrl(profileData.filename);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load profile image:', error);
+      }
+    };
+
+    loadProfileImage();
+  }, [user]);
 
   // select image for the post
   const pickImage = async () => {
@@ -166,7 +208,7 @@ const EditProfileForm = ({
     updateData.bio = inputs.bio !== undefined ? inputs.bio.trim() : '';
 
     // get diet type ids from the selected names
-    const dietTypeIds = dietList
+    const dietTypeIds = selectedDiets
       .map((dietName) => {
         // find the id that corresponds to the selected diet name
         const dietOption = dietTypeOptions.find(
@@ -175,8 +217,6 @@ const EditProfileForm = ({
         return dietOption ? Number(dietOption.key) : null;
       })
       .filter((id) => id !== null);
-
-    console.log('selected diettype ids', dietTypeIds);
 
     // add dietary info if not empty
     if (dietTypeIds.length > 0) {
@@ -212,30 +252,14 @@ const EditProfileForm = ({
       // handle password change if current and new password is set
       if (inputs.current_password && inputs.new_password) {
         try {
-          console.log(
-            'change password',
-            inputs.current_password,
-            inputs.new_password,
-          );
           await changePassword(inputs.current_password, inputs.new_password);
-          console.log(
-            'change password',
-            inputs.current_password,
-            inputs.new_password,
-          );
         } catch (error) {
           console.error('Password change error:', error);
         }
       }
 
-      console.log('Sending update data:', JSON.stringify(editResponse));
-
       try {
         const updatedUserData = await getUserById(user.user_id);
-        console.log(
-          'Updated user data structure:',
-          JSON.stringify(updatedUserData),
-        );
 
         if (updatedUserData) {
           // format the user data to include the profile image
@@ -256,7 +280,6 @@ const EditProfileForm = ({
 
           setImage(null);
           setUpdatedUser(formattedUser);
-          console.log(formattedUser);
         }
       } catch (fetchError) {
         console.error('Error fetching updated user:', fetchError);
@@ -294,255 +317,307 @@ const EditProfileForm = ({
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      <ScrollView>
-        <Card containerStyle={styles.card}>
-          <Image
-            source={{
-              uri:
-                image?.assets![0].uri ||
-                process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
-            }}
-            style={[
-              styles.image,
-              {
-                objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
-              },
-            ]}
-            onPress={pickImage}
-          />
-          <Text style={styles.text}>Username</Text>
-
-          <Controller
-            control={control}
-            rules={{
-              maxLength: {value: 20, message: 'maximum 20 characters'},
-              minLength: {value: 3, message: 'minimum 3 characters'},
-              validate: async (value) => {
-                // the current user's username wont be checked
-                if (user && value === user.username) {
-                  return true;
-                }
-                try {
-                  const {available} = await getUsernameAvailable(value);
-                  console.log('username available?: ', available);
-                  return available ? true : 'username not available';
-                } catch (error) {
-                  console.error((error as Error).message);
-                }
-              },
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                onChangeText={(input) => {
-                  onChange(input);
-                  if (input.length >= 3) {
-                    trigger('username');
+      <FlatList
+        data={[
+          {
+            component: (
+              <>
+                <Image
+                  containerStyle={{margin: 'auto'}}
+                  source={
+                    image?.assets && image.assets[0]
+                      ? {uri: image.assets[0].uri}
+                      : {
+                          uri:
+                            profileImageUrl ||
+                            `${process.env.EXPO_PUBLIC_UPLOADS}/uploadimage.png`,
+                        }
                   }
-                }}
-                value={value}
-                autoCapitalize="none"
-                errorMessage={errors.username?.message}
-              />
-            )}
-            name="username"
-          />
+                  style={[
+                    styles.image,
+                    {
+                      objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+                      margin: 'auto',
+                    },
+                  ]}
+                  onPress={pickImage}
+                />
+                <Text style={styles.text}>Username</Text>
 
-          <Text style={styles.text}>Email</Text>
-          <Controller
-            control={control}
-            rules={{
-              pattern: {
-                value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                message: 'not a valid email',
-              },
-              minLength: {value: 3, message: 'minimum length is 3'},
-              maxLength: 50,
-              validate: async (value) => {
-                // the current user's email wont be checked
-                if (user && value === user.email) {
-                  return true;
-                }
-                try {
-                  const {available} = await getEmailAvailable(value);
-                  console.log('email available?: ', available);
-                  return available ? true : 'email not available';
-                } catch (error) {
-                  console.error((error as Error).message);
-                }
-              },
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                onChangeText={(input) => {
-                  onChange(input);
-                  if (input.length >= 3) {
-                    trigger('email');
-                  }
-                }}
-                value={value}
-                autoCapitalize="none"
-                errorMessage={errors.email?.message}
-              />
-            )}
-            name="email"
-          />
-
-          <Text style={styles.text}>Bio</Text>
-          <Controller
-            control={control}
-            rules={{
-              maxLength: {value: 200, message: 'maximum 200 characters'},
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={[styles.input, styles.instructionsInput]}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                errorMessage={errors.bio?.message}
-                multiline={true}
-                numberOfLines={6}
-                textAlignVertical="top"
-                testID="bio-input"
-              />
-            )}
-            name="bio"
-          />
-
-          <Text style={[styles.text, {marginTop: 20}]}>Diet restrictions</Text>
-          <View style={{flex: 5}}>
-            <MultipleSelectList
-              key={`diet-selector-${dietResetKey}`}
-              setSelected={(val: string[]) => {
-                setDietList(val);
-              }}
-              data={dietTypeOptions}
-              save="value"
-              onSelect={() => {
-                console.log('Selected items: ', dietList);
-              }}
-              label="Selected Diets"
-              boxStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-                margin: 10,
-              }}
-              dropdownStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-                marginBottom: 10,
-                marginHorizontal: 10,
-                maxHeight: 200,
-              }}
-              dropdownItemStyles={{marginVertical: 3}}
-              badgeStyles={{backgroundColor: HexColors['light-green']}}
-              placeholder="Diets"
-            />
-          </View>
-          <Text
-            style={{
-              margin: 5,
-              marginTop: 30,
-              marginVertical: 20,
-              fontSize: 20,
-              color: HexColors['medium-green'],
-            }}
-          >
-            Change Password
-          </Text>
-          <Text
-            style={{marginHorizontal: 10, fontWeight: '200', marginBottom: 10}}
-          >
-            Fill in your current and new password to change your password
-          </Text>
-          <Text style={styles.text}>Current password</Text>
-          <Controller
-            control={control}
-            rules={{
-              minLength: {value: 8, message: 'minimum 8 characters'},
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                secureTextEntry={isCurrentPasswordVisible}
-                value={value}
-                onChangeText={onChange}
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                rightIcon={
-                  <TouchableOpacity onPress={toggleCurrentPasswordVisibility}>
-                    <Ionicons
-                      name={
-                        isCurrentPasswordVisible
-                          ? 'eye-outline'
-                          : 'eye-off-outline'
+                <Controller
+                  control={control}
+                  rules={{
+                    maxLength: {value: 20, message: 'maximum 20 characters'},
+                    minLength: {value: 3, message: 'minimum 3 characters'},
+                    validate: async (value) => {
+                      if (!value || value.length < 3) {
+                        return 'minimum 3 characters';
                       }
-                      size={25}
-                      style={{paddingHorizontal: 10}}
-                      color={HexColors['dark-grey']}
+                      // the current user's username wont be checked
+                      if (user && value === user.username) {
+                        return true;
+                      }
+                      try {
+                        const {available} = await getUsernameAvailable(value);
+                        return available ? true : 'username not available';
+                      } catch (error) {
+                        console.error((error as Error).message);
+                      }
+                    },
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      onBlur={onBlur}
+                      onChangeText={(input) => {
+                        onChange(input);
+                        if (input.length >= 3) {
+                          trigger('username');
+                        }
+                      }}
+                      value={value}
+                      autoCapitalize="none"
+                      errorMessage={errors.username?.message}
+                      testID="username-input"
                     />
-                  </TouchableOpacity>
-                }
-                onBlur={onBlur}
-                errorMessage={errors.current_password?.message}
-                autoCapitalize="none"
-              />
-            )}
-            name="current_password"
-          />
-          <Text style={styles.text}>New password</Text>
-          <Controller
-            control={control}
-            rules={{
-              minLength: {value: 8, message: 'minimum 8 characters'},
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                secureTextEntry={isNewPasswordVisible}
-                rightIcon={
-                  <TouchableOpacity onPress={toggleNewPasswordVisibility}>
-                    <Ionicons
-                      name={
-                        isNewPasswordVisible ? 'eye-outline' : 'eye-off-outline'
-                      }
-                      size={25}
-                      style={{paddingHorizontal: 10}}
-                      color={HexColors['dark-grey']}
-                    ></Ionicons>
-                  </TouchableOpacity>
-                }
-                value={value}
-                onChangeText={onChange}
-                autoCapitalize="none"
-                errorMessage={errors.new_password?.message}
-              />
-            )}
-            name="new_password"
-          />
+                  )}
+                  name="username"
+                />
 
-          <Button
-            title="Save"
-            buttonStyle={[
-              styles.button,
-              {backgroundColor: HexColors['medium-green'], marginTop: 20},
-            ]}
-            titleStyle={styles.buttonTitle}
-            containerStyle={styles.buttonContainer}
-            onPress={handleSubmit(doEditProfile)}
-            loading={loading}
-            disabled={!isValid || loading}
-          />
-        </Card>
-      </ScrollView>
+                <Text style={styles.text}>Email</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    pattern: {
+                      value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                      message: 'not a valid email',
+                    },
+                    minLength: {value: 3, message: 'minimum length is 3'},
+                    maxLength: 50,
+                    validate: async (value) => {
+                      if (!value || value.length < 3) {
+                        return 'minimum 3 characters';
+                      }
+                      // the current user's email wont be checked
+                      if (user && value === user.email) {
+                        return true;
+                      }
+                      try {
+                        const {available} = await getEmailAvailable(value);
+                        return available ? true : 'email not available';
+                      } catch (error) {
+                        console.error((error as Error).message);
+                      }
+                    },
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      onBlur={onBlur}
+                      onChangeText={(input) => {
+                        onChange(input);
+                        if (input.length >= 3) {
+                          trigger('email');
+                        }
+                      }}
+                      value={value}
+                      autoCapitalize="none"
+                      errorMessage={errors.email?.message}
+                      testID="email-input"
+                    />
+                  )}
+                  name="email"
+                />
+
+                <Text style={styles.text}>Bio</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    maxLength: {value: 200, message: 'maximum 200 characters'},
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      style={[styles.input, styles.instructionsInput]}
+                      inputContainerStyle={styles.inputContainer}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      errorMessage={errors.bio?.message}
+                      multiline={true}
+                      numberOfLines={6}
+                      textAlignVertical="top"
+                      testID="bio-input"
+                    />
+                  )}
+                  name="bio"
+                />
+
+                <Text style={[styles.text, {marginTop: 20}]}>
+                  Diet restrictions
+                </Text>
+                <View style={{flex: 5}}>
+                  <MultiSelect
+                    items={dietTypeOptions}
+                    uniqueKey="value"
+                    displayKey="value"
+                    onSelectedItemsChange={(items) => {
+                      // 5 is the limit for diet restrictions
+                      if (items.length > 5) {
+                        Alert.alert(
+                          'Selection limit reached',
+                          'You can select a maximum of 5 dietary restrictions.',
+                          [{text: 'OK'}],
+                        );
+                        return;
+                      }
+                      setSelectedDiets(items);
+                    }}
+                    selectedItems={selectedDiets}
+                    selectText="Select dietary destrictions"
+                    searchInputPlaceholderText="Search diets..."
+                    tagRemoveIconColor={HexColors['grey']}
+                    tagTextColor={HexColors['dark-green']}
+                    tagBorderColor={HexColors['light-green']}
+                    selectedItemTextColor={HexColors['light-green']}
+                    selectedItemIconColor={HexColors['light-green']}
+                    itemTextColor={HexColors['dark-grey']}
+                    styleRowList={{
+                      paddingVertical: 5,
+                    }}
+                    styleItemsContainer={{
+                      paddingVertical: 10,
+                    }}
+                    searchInputStyle={{
+                      color: HexColors['dark-grey'],
+                      marginBottom: 20,
+                      marginTop: 10,
+                    }}
+                    styleMainWrapper={{
+                      marginHorizontal: 10,
+                      overflow: 'hidden',
+                      borderRadius: 10,
+                    }}
+                    submitButtonColor={HexColors['light-green']}
+                    submitButtonText="Add"
+                  />
+                </View>
+                <Text
+                  style={{
+                    margin: 5,
+                    marginTop: 30,
+                    marginVertical: 20,
+                    fontSize: 20,
+                    color: HexColors['medium-green'],
+                  }}
+                >
+                  Change Password
+                </Text>
+                <Text
+                  style={{
+                    marginHorizontal: 10,
+                    fontWeight: '200',
+                    marginBottom: 10,
+                  }}
+                >
+                  Fill in your current and new password to change your password
+                </Text>
+                <Text style={styles.text}>Current password</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    minLength: {value: 8, message: 'minimum 8 characters'},
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      secureTextEntry={isCurrentPasswordVisible}
+                      value={value}
+                      onChangeText={onChange}
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      rightIcon={
+                        <TouchableOpacity
+                          onPress={toggleCurrentPasswordVisibility}
+                        >
+                          <Ionicons
+                            name={
+                              isCurrentPasswordVisible
+                                ? 'eye-outline'
+                                : 'eye-off-outline'
+                            }
+                            size={25}
+                            style={{paddingHorizontal: 10}}
+                            color={HexColors['dark-grey']}
+                          />
+                        </TouchableOpacity>
+                      }
+                      onBlur={onBlur}
+                      errorMessage={errors.current_password?.message}
+                      autoCapitalize="none"
+                      testID="current-password"
+                    />
+                  )}
+                  name="current_password"
+                />
+                <Text style={styles.text}>New password</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    minLength: {value: 8, message: 'minimum 8 characters'},
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      onBlur={onBlur}
+                      secureTextEntry={isNewPasswordVisible}
+                      rightIcon={
+                        <TouchableOpacity onPress={toggleNewPasswordVisibility}>
+                          <Ionicons
+                            name={
+                              isNewPasswordVisible
+                                ? 'eye-outline'
+                                : 'eye-off-outline'
+                            }
+                            size={25}
+                            style={{paddingHorizontal: 10}}
+                            color={HexColors['dark-grey']}
+                          ></Ionicons>
+                        </TouchableOpacity>
+                      }
+                      value={value}
+                      onChangeText={onChange}
+                      autoCapitalize="none"
+                      errorMessage={errors.new_password?.message}
+                      testID="new-password"
+                    />
+                  )}
+                  name="new_password"
+                />
+
+                <Button
+                  title="Save"
+                  buttonStyle={[
+                    styles.button,
+                    {backgroundColor: HexColors['medium-green'], marginTop: 20},
+                  ]}
+                  titleStyle={styles.buttonTitle}
+                  containerStyle={styles.buttonContainer}
+                  onPress={handleSubmit(doEditProfile)}
+                  loading={loading}
+                  disabled={!isValid || loading}
+                  testID="save-button"
+                />
+              </>
+            ),
+          },
+        ]}
+        keyExtractor={(_, index) => `key-${index}`}
+        renderItem={({item}) => (
+          <Card containerStyle={styles.card}>{item.component}</Card>
+        )}
+      ></FlatList>
     </LinearGradient>
   );
 };
@@ -559,9 +634,10 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   image: {
+    marginVertical: 10,
     height: 200,
-    margin: 10,
-    borderRadius: 10,
+    width: 200,
+    borderRadius: 100,
     borderWidth: 1,
     borderColor: HexColors['light-grey'],
   },
@@ -635,28 +711,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginHorizontal: 10,
     marginBottom: 10,
-  },
-  chipButton: {
-    backgroundColor: HexColors['light-grey'],
-    marginRight: 10,
-    marginVertical: 5,
-  },
-  chipTitle: {
-    color: HexColors['dark-grey'],
-    fontSize: 12,
-  },
-  chipContainer: {
-    borderRadius: 20,
-    // iOS shadow
-    shadowColor: HexColors['dark-grey'],
-    shadowOffset: {
-      width: 1,
-      height: 2,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    // Android shadow
-    elevation: 5,
   },
 });
 

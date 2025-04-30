@@ -38,7 +38,7 @@ const RegisterForm = ({
     try {
       const registerResult = await postRegister(inputs as RegisterCredentials);
       console.log('doRegister result', registerResult);
-      Alert.alert('User created');
+      Alert.alert('User created, you may now log in with your credentials.');
       setDisplayRegister(false);
     } catch (error) {
       console.error((error as Error).message);
@@ -70,6 +70,9 @@ const RegisterForm = ({
             maxLength: {value: 20, message: 'maximum 20 characters'},
             required: {value: true, message: 'is required'},
             validate: async (value) => {
+              if (!value || value.length < 3) {
+                return 'minimum 3 characters';
+              }
               try {
                 const {available} = await getUsernameAvailable(value);
                 console.log('username available?: ', available);
@@ -106,6 +109,9 @@ const RegisterForm = ({
             maxLength: 50,
             required: {value: true, message: 'is required'},
             validate: async (value) => {
+              if (!value || value.length < 3) {
+                return 'minimum 3 characters';
+              }
               try {
                 const {available} = await getEmailAvailable(value);
                 console.log('email available?: ', available);

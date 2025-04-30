@@ -4,10 +4,10 @@ import {Button, Card, Chip, Image, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
+  ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import VideoPlayer from './VideoPlayer';
@@ -18,13 +18,11 @@ import {NavigatorType} from '../types/LocalTypes';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useUpdateContext} from '../hooks/contextHooks';
 import {HexColors} from '../utils/colors';
-import {
-  MultipleSelectList,
-  SelectList,
-} from 'react-native-dropdown-select-list';
+import {SelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 import IngredientSearch from './IngredientSearch';
 import NutritionInfo from './NutritionInfo';
+import MultiSelect from 'react-native-multiple-select';
 
 // this is for testing
 declare global {
@@ -40,7 +38,7 @@ declare global {
 type PostInputs = {
   title: string;
   ingredients: string[];
-  dietary_info: string;
+  dietary_info?: number[];
   instructions: string;
   cooking_time: number;
   portions: number;
@@ -73,14 +71,13 @@ const Post = () => {
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
   >([]);
-  const [dietList, setDietList] = useState<string[]>([]);
+  const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
   const [currentIngredient, setCurrentIngredient] = useState('');
   const [instructionsLength, setInstructionsLength] = useState(0);
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
     null,
   );
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
-  const [dietResetKey, setDietResetKey] = useState(0);
   const [showMockPicker, setShowMockPicker] = useState(false);
   const [selectedIngredients, setSelectedIngredients] = useState<any[]>([]);
   const [recipeTotals, setRecipeTotals] = useState({
@@ -99,7 +96,6 @@ const Post = () => {
     if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
       // add a unit to the ingredient list
       window.setTestUnit = (unit) => {
-        console.log('Setting unit to:', unit);
         setSelectedUnit(unit);
       };
     }
@@ -110,12 +106,10 @@ const Post = () => {
       window.testHelpers = {
         // set diet types
         setTestDiets: (diets: string[]) => {
-          console.log('Setting test diets:', diets);
-          setDietList(diets);
+          setSelectedDiets(diets);
         },
         // set difficulty level
         setTestDifficulty: (level: string) => {
-          console.log('Setting test difficulty:', level);
           setSelectedDifficultyLevel(level);
         },
       };
@@ -125,12 +119,13 @@ const Post = () => {
   // data for the units for now, these will come from db later
   const data = [
     {key: 'g', value: 'g'},
-    {key: 'mg', value: 'mg'},
-    {key: 'tl', value: 'tl'},
-    {key: 'rkl', value: 'rkl'},
-    {key: 'dl', value: 'dl'},
+    {key: 'kg', value: 'kg'},
+    {key: 'ml', value: 'ml'},
     {key: 'l', value: 'l'},
-    {key: 'kpl', value: 'kpl'},
+    {key: 'tsp', value: 'tsp'},
+    {key: 'tbsp', value: 'tbsp'},
+    {key: 'cup', value: 'cup'},
+    {key: 'pcs', value: 'pcs'},
   ];
 
   // data for difficulty levels
@@ -155,7 +150,6 @@ const Post = () => {
           }));
           setDietTypeOptions(dietTypes);
         } else {
-          console.log('Diet types not in expected format:', allDietTypes);
           setDietTypeOptions([]);
         }
       } catch (error) {
@@ -169,10 +163,9 @@ const Post = () => {
   const initValues: PostInputs = {
     title: '',
     ingredients: [],
-    dietary_info: '',
     instructions: '',
-    cooking_time: Number(),
-    portions: Number(),
+    cooking_time: '' as unknown as number,
+    portions: '' as unknown as number,
     difficulty_level_id: Number(),
   };
   const {
@@ -187,14 +180,13 @@ const Post = () => {
   // clear all the inputs fields and selected ingredients and dietypes
   const resetForm = () => {
     setImage(null);
-    setDietList([]);
+    setSelectedDiets([]);
     setIngredientsList([]);
     setCurrentIngredient('');
     setAmount('');
     setSelectedUnit('');
     setSelectedDifficultyLevel('');
     setInstructionsLength(0);
-    setDietResetKey((prev) => prev + 1);
     reset(initValues);
 
     // Lisää nämä rivit:
@@ -337,10 +329,8 @@ const Post = () => {
       return;
     }
 
-    console.log('file response', fileResponse);
-
     // get diet type ids from the selected names
-    const dietTypeIds = dietList
+    const dietTypeIds = selectedDiets
       .map((dietName) => {
         // find the id that corresponds to the selected diet name
         const dietOption = dietTypeOptions.find(
@@ -350,8 +340,7 @@ const Post = () => {
       })
       .filter((id) => id !== null);
 
-    console.log('selected diettype ids', dietTypeIds);
-
+    // post with the required data
     const recipeData = {
       ...inputs,
       cooking_time: Number(inputs.cooking_time),
@@ -375,17 +364,15 @@ const Post = () => {
       })),
     };
 
-    if (dietTypeIds.length > 0) {
-      recipeData.dietary_info = dietTypeIds.join(',');
+    if (dietTypeIds.length !== 0) {
+      recipeData.dietary_info = dietTypeIds;
+    } else {
+      delete recipeData.dietary_info;
     }
-
-    console.log('recipe data', recipeData);
 
     try {
       // post a new recipe
       const postResponse = await postRecipe(fileResponse, recipeData, token);
-
-      console.log('new recipe', postResponse);
 
       // Success handling
       resetForm();
@@ -402,7 +389,6 @@ const Post = () => {
   const pickImage = async () => {
     // testing the image upload with a mock image (maestro doesn't allow picking media from devices gallery...)
     if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
-      console.log('Showing mock picker for test mode');
       setShowMockPicker(true);
 
       // set the mock image data for testing
@@ -427,8 +413,6 @@ const Post = () => {
       aspect: [4, 3],
       quality: 0.4,
     });
-
-    console.log(result);
 
     if (!result.canceled) {
       setImage(result);
@@ -461,53 +445,52 @@ const Post = () => {
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      <ScrollView contentContainerStyle={{flexGrow: 1}}>
-        {showMockPicker && (
-          <View
-            testID="mock-image-picker"
+      {showMockPicker && (
+        <View
+          testID="mock-image-picker"
+          style={{
+            position: 'absolute',
+            top: 100,
+            left: 20,
+            right: 20,
+            zIndex: 999,
+            backgroundColor: HexColors['medium-green'],
+            padding: 20,
+            borderRadius: 10,
+            borderWidth: 2,
+            borderColor: 'white',
+          }}
+        >
+          <TouchableOpacity
+            testID="mock-image-option"
             style={{
-              position: 'absolute',
-              top: 100,
-              left: 20,
-              right: 20,
-              zIndex: 999,
-              backgroundColor: HexColors['medium-green'],
-              padding: 20,
-              borderRadius: 10,
-              borderWidth: 2,
-              borderColor: 'white',
+              backgroundColor: HexColors['light-grey'],
+              padding: 15,
+              borderRadius: 5,
+              alignItems: 'center',
+              marginVertical: 10,
+            }}
+            onPress={() => {
+              setImage({
+                canceled: false,
+                assets: [
+                  {
+                    uri: 'mock-image.jpg',
+                    width: 500,
+                    height: 500,
+                    type: 'image',
+                  },
+                ],
+              });
+              setShowMockPicker(false);
             }}
           >
-            <TouchableOpacity
-              testID="mock-image-option"
-              style={{
-                backgroundColor: HexColors['light-grey'],
-                padding: 15,
-                borderRadius: 5,
-                alignItems: 'center',
-                marginVertical: 10,
-              }}
-              onPress={() => {
-                setImage({
-                  canceled: false,
-                  assets: [
-                    {
-                      uri: 'mock-image.jpg',
-                      width: 500,
-                      height: 500,
-                      type: 'image',
-                    },
-                  ],
-                });
-                setShowMockPicker(false);
-              }}
-            >
-              <Text style={{fontSize: 18, fontWeight: 'bold'}}>
-                Mock Image 1
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            <Text style={{fontSize: 18, fontWeight: 'bold'}}>Mock Image 1</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <ScrollView>
         <Card containerStyle={styles.card}>
           {image?.assets && image.assets[0].type === 'video' ? (
             <VideoPlayer videoFile={image.assets[0].uri} style={styles.image} />
@@ -555,7 +538,6 @@ const Post = () => {
           <Text style={styles.text}>Ingredients</Text>
           <IngredientSearch onSelectIngredient={handleIngredientSelect} />
 
-          {/* Tämä on uusi osio valitun ainesosan näyttämiseen */}
           {selectedIngredientData && (
             <View style={styles.selectedIngredientContainer}>
               <View style={styles.selectedIngredientHeader}>
@@ -633,7 +615,8 @@ const Post = () => {
             disabled={
               currentIngredient.trim() === '' ||
               amount === '' ||
-              selectedUnit === ''
+              selectedUnit === '' ||
+              !selectedIngredientData
             }
           >
             Add
@@ -672,32 +655,48 @@ const Post = () => {
           <Text style={[styles.text, {marginTop: 20}]}>
             Select special diets
           </Text>
-          <View style={{flex: 5}} testID="diet-input">
-            <MultipleSelectList
-              key={`diet-selector-${dietResetKey}`}
-              setSelected={(val: string[]) => {
-                setDietList(val);
+          <View
+            style={{marginHorizontal: 10, marginBottom: 20}}
+            testID="diet-input"
+          >
+            <MultiSelect
+              items={dietTypeOptions}
+              uniqueKey="value"
+              displayKey="value"
+              onSelectedItemsChange={(items) => {
+                // 5 is the limit for diet types
+                if (items.length > 5) {
+                  Alert.alert(
+                    'Selection limit reached',
+                    'You can select a maximum of 5 special diets.',
+                    [{text: 'OK'}],
+                  );
+                  return;
+                }
+                setSelectedDiets(items);
               }}
-              data={dietTypeOptions}
-              save="value"
-              onSelect={() => {
-                console.log('Selected items: ', dietList);
+              selectedItems={selectedDiets}
+              selectText="Select special diets"
+              searchInputPlaceholderText="Search diets..."
+              tagRemoveIconColor={HexColors['grey']}
+              tagTextColor={HexColors['dark-green']}
+              tagBorderColor={HexColors['light-green']}
+              selectedItemTextColor={HexColors['light-green']}
+              selectedItemIconColor={HexColors['light-green']}
+              itemTextColor={HexColors['dark-grey']}
+              styleRowList={{paddingVertical: 5}}
+              styleItemsContainer={{paddingVertical: 10}}
+              searchInputStyle={{
+                color: HexColors['dark-grey'],
+                marginBottom: 20,
+                marginTop: 10,
               }}
-              label="Selected Diets"
-              boxStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-                margin: 10,
+              styleMainWrapper={{
+                overflow: 'hidden',
+                borderRadius: 10,
               }}
-              dropdownStyles={{
-                borderColor: HexColors['light-grey'],
-                borderWidth: 1.5,
-                marginBottom: 10,
-                marginHorizontal: 10,
-              }}
-              dropdownItemStyles={{marginVertical: 3}}
-              badgeStyles={{backgroundColor: HexColors['light-green']}}
-              placeholder="Diets"
+              submitButtonColor={HexColors['light-green']}
+              submitButtonText="Add"
             />
           </View>
           <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
@@ -782,7 +781,7 @@ const Post = () => {
               <Controller
                 control={control}
                 rules={{
-                  required: {value: true, message: 'Porpotions is required'},
+                  required: {value: true, message: 'Portions is required'},
                   maxLength: {value: 10, message: 'maximum 10 numbers'},
                   minLength: {value: 1, message: 'minimum 1 numbers'},
                   pattern: {
@@ -839,7 +838,10 @@ const Post = () => {
                 save="key"
                 defaultOption={{
                   key: selectedDifficultyLevel,
-                  value: selectedDifficultyLevel,
+                  value:
+                    difficultyData.find(
+                      (d) => d.key === selectedDifficultyLevel,
+                    )?.value || selectedDifficultyLevel,
                 }}
                 boxStyles={{
                   borderColor: HexColors['light-grey'],
@@ -865,7 +867,12 @@ const Post = () => {
             containerStyle={styles.buttonContainer}
             onPress={handleSubmit(doUpload)}
             loading={loading}
-            disabled={!isValid || image === null || loading}
+            disabled={
+              !isValid ||
+              image === null ||
+              loading ||
+              selectedDifficultyLevel === ''
+            }
             testID="post-button"
           />
           <Button

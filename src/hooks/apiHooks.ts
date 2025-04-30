@@ -17,11 +17,18 @@ import {
   Like,
   RecipeWithAllFields,
   UserWithDietaryInfo,
+  Notification,
+  Follow,
 } from 'hybrid-types/DBTypes';
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
-import {RecipeWithProfileImage, UpdateUserResponse} from '../types/LocalTypes';
+import {
+  EditRecipeInputs,
+  // PostRecipeData, // Commented out as it is not used
+  RecipeWithProfileImage,
+  UpdateUserResponse,
+} from '../types/LocalTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useAuthentication = () => {
@@ -69,7 +76,6 @@ const useUser = () => {
       const profile_picture = await fetchData<ProfilePicture>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/profilepicture/' + user_id,
       );
-      console.log('user profile image', profile_picture);
       return profile_picture;
     } catch (error) {
       throw new Error((error as Error).message);
@@ -78,27 +84,39 @@ const useUser = () => {
 
   // get users's dietary restrictions
   const getUserDietaryRestrictions = async (user_id: number) => {
+    const {getAllDietTypes} = useDietTypes();
     try {
       // get the user with their dietary info
+      // TODO: tän tyypin vois vaihtaa johonki...
       const userWithDietary = await fetchData<any>(
         process.env.EXPO_PUBLIC_AUTH_API + '/users/user/byuserid/' + user_id,
       );
 
-      // Use dietary_restrictions property instead of dietary
-      if (userWithDietary && userWithDietary.dietary_restrictions) {
-        // Convert the array of objects to an array of IDs
-        const dietaryInfo = Array.isArray(userWithDietary.dietary_restrictions)
-          ? userWithDietary.dietary_restrictions.map(
-              (diet: {dietary_restriction_id: number}) =>
-                diet.dietary_restriction_id.toString(),
-            )
-          : [
-              userWithDietary.dietary_restrictions.dietary_restriction_id.toString(),
-            ];
-
-        return dietaryInfo;
+      // return an empty array if no diets selected
+      if (!userWithDietary?.dietary_restrictions) {
+        return [];
       }
-      return [];
+
+      const dietIds = Array.isArray(userWithDietary.dietary_restrictions)
+        ? userWithDietary.dietary_restrictions.map(
+            (diet: {dietary_restriction_id: number}) =>
+              diet.dietary_restriction_id.toString(),
+          )
+        : [
+            userWithDietary.dietary_restrictions.dietary_restriction_id.toString(),
+          ];
+
+      // fetch all the diets to convert the ids to diet names
+      const allDiets = await getAllDietTypes();
+
+      // map the diet ids to names
+      const userDiets = dietIds
+        .map((id: string) => {
+          const diet = allDiets.find((d) => d.diet_type_id.toString() === id);
+          return diet?.diet_type_name;
+        })
+        .filter(Boolean);
+      return userDiets;
     } catch (error) {
       console.error('Error fetching dietary restrictions:', error);
       return [];
@@ -112,8 +130,6 @@ const useUser = () => {
       body: JSON.stringify(credentials),
       headers: {'Content-Type': 'application/json'},
     };
-    console.log('Auth API: ', process.env.EXPO_PUBLIC_AUTH_API);
-    console.log('Media API: ', process.env.EXPO_PUBLIC_MEDIA_API);
     try {
       // return created user without password
       return await fetchData<UserResponse>(
@@ -178,7 +194,6 @@ const useUser = () => {
       );
 
       // update the profile image if image uploaded
-      console.log(filename.data?.filename);
       if (filename.data?.filename) {
         const picData = {
           filename: filename.data.filename,
@@ -374,30 +389,76 @@ const useRecipes = (user_id?: number) => {
   // post a new recipe
   const postRecipe = async (
     file: UploadResponse,
-    inputs: Record<string, any>,
+    inputs: {
+      title: string;
+      instructions: string;
+      cooking_time: number | string;
+      portions: number | string;
+      difficulty_level_id: number | string;
+      dietary_info?: number[] | string;
+      ingredients:
+        | Array<{
+            name: string;
+            amount: number;
+            unit: string;
+            fineli_id?: number;
+            energy_kcal?: number;
+            protein?: number;
+            fat?: number;
+            carbohydrate?: number;
+            fiber?: number;
+            sugar?: number;
+          }>
+        | string[];
+      [key: string]: any;
+    },
     token: string,
   ) => {
-    const formattedIngredients =
-      Array.isArray(inputs.ingredients) &&
-      typeof inputs.ingredients[0] === 'object' &&
-      'name' in inputs.ingredients[0]
-        ? inputs.ingredients // Käytä suoraan jos jo oikea muoto
+    // Check if ingredients is an array of objects with name property
+    const formattedIngredients = Array.isArray(inputs.ingredients)
+      ? typeof inputs.ingredients[0] === 'object' &&
+        inputs.ingredients[0] !== null &&
+        'name' in inputs.ingredients[0]
+        ? (inputs.ingredients as Array<{
+            name: string;
+            amount: number;
+            unit: string;
+            fineli_id?: number;
+            energy_kcal?: number;
+            protein?: number;
+            fat?: number;
+            carbohydrate?: number;
+            fiber?: number;
+            sugar?: number;
+          }>)
         : (inputs.ingredients as string[]).map((ingredient) => {
             const parts = ingredient.toString().trim().split(' ');
             const amount = parseFloat(parts[0]);
             const unit = parts[1];
             const name = parts.slice(2).join(' ');
             return {name, amount, unit};
-          });
+          })
+      : [];
 
+    // Process dietary info with proper type checking
     const dietaryInfo = Array.isArray(inputs.dietary_info)
       ? inputs.dietary_info
-      : typeof inputs.dietary_info === 'string' &&
-          inputs.dietary_info.length > 0
-        ? inputs.dietary_info.split(',').map((id) => Number(id))
+      : typeof inputs.dietary_info === 'string' && inputs.dietary_info
+        ? inputs.dietary_info.split(',').map((id: string) => Number(id))
         : [];
 
-    const recipe = {
+    const recipe: {
+      title: string;
+      instructions: string;
+      cooking_time: number;
+      portions: number;
+      media_type: any;
+      filename: any;
+      filesize: any;
+      difficulty_level_id: number;
+      ingredients: any[];
+      dietary_info?: number[];
+    } = {
       title: inputs.title,
       instructions: inputs.instructions,
       cooking_time: Number(inputs.cooking_time),
@@ -406,20 +467,32 @@ const useRecipes = (user_id?: number) => {
       filename: inputs.filename || file.data.filename,
       filesize: inputs.filesize || file.data.filesize,
       difficulty_level_id: Number(inputs.difficulty_level_id),
-      ingredients: formattedIngredients.map((ingredient) => ({
-        name: ingredient.name,
-        amount: ingredient.amount,
-        unit: ingredient.unit,
-        energy_kcal: ingredient.energy_kcal || 0,
-        protein: ingredient.protein || 0,
-        fat: ingredient.fat || 0,
-        carbohydrate: ingredient.carbohydrate || 0,
-        fiber: ingredient.fiber || 0,
-        sugar: ingredient.sugar || 0,
-        fineli_id: ingredient.fineli_id || 0,
-      })),
-      dietary_info: dietaryInfo,
+      ingredients: formattedIngredients.map((ingredient) => {
+        // Create base ingredient object with properties that exist
+        const baseIngredient = {
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit,
+        };
+
+        // Add nutritional properties if they exist
+        return {
+          ...baseIngredient,
+          energy_kcal: 'energy_kcal' in ingredient ? ingredient.energy_kcal : 0,
+          protein: 'protein' in ingredient ? ingredient.protein : 0,
+          fat: 'fat' in ingredient ? ingredient.fat : 0,
+          carbohydrate:
+            'carbohydrate' in ingredient ? ingredient.carbohydrate : 0,
+          fiber: 'fiber' in ingredient ? ingredient.fiber : 0,
+          sugar: 'sugar' in ingredient ? ingredient.sugar : 0,
+          fineli_id: 'fineli_id' in ingredient ? ingredient.fineli_id : 0,
+        };
+      }),
     };
+
+    if (dietaryInfo.length > 0) {
+      recipe.dietary_info = dietaryInfo;
+    }
 
     // post the data to Media API and get the data as MessageResponse
     const options = {
@@ -437,6 +510,32 @@ const useRecipes = (user_id?: number) => {
     );
   };
 
+  // update recipe
+  const updateRecipe = async (
+    token: string,
+    recipe_id: number,
+    updateData: EditRecipeInputs,
+  ) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      };
+
+      return await fetchData(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/recipes/' + recipe_id,
+        options,
+      );
+    } catch (error) {
+      console.error('Error updating recipe:', error);
+      throw error;
+    }
+  };
+
   // delete recipe
   const deleteRecipe = async (recipe_id: number, token: string) => {
     const options = {
@@ -451,7 +550,7 @@ const useRecipes = (user_id?: number) => {
     );
   };
 
-  return {recipeArray, postRecipe, deleteRecipe, loading};
+  return {recipeArray, postRecipe, updateRecipe, deleteRecipe, loading};
 };
 
 const useFile = () => {
@@ -479,8 +578,6 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body);
-    console.log('parsed file result', JSON.parse(fileResult.body));
     return JSON.parse(fileResult.body);
   };
 
@@ -506,8 +603,6 @@ const useFile = () => {
     if (!fileResult.body) {
       throw new Error('File upload failed');
     }
-    console.log('file result', fileResult.body);
-    console.log('parsed file result', JSON.parse(fileResult.body));
 
     const response = JSON.parse(fileResult.body);
 
@@ -656,13 +751,11 @@ const useComments = () => {
       const comments = await fetchData<Comment[]>(
         process.env.EXPO_PUBLIC_MEDIA_API + '/comments/byrecipe/' + recipe_id,
       );
-      console.log('comments', comments);
 
       // fetch usernames for each comment
       const commentsWithUsernames = await Promise.all(
         comments.map(async (comment) => {
           const user = await getUserById(comment.user_id);
-          console.log('user', user);
           return {
             ...comment,
             username: user.username,
@@ -705,6 +798,7 @@ const useComments = () => {
 // favorites
 const useFavorites = () => {
   const {update, setUpdate} = useUpdateContext();
+  const {getUserById} = useUser();
 
   // get all user's favorites to display then on favorites page
   const getAllFavorites = async () => {
@@ -721,23 +815,34 @@ const useFavorites = () => {
         },
       };
 
-      const favorites = await fetchData<RecipeWithAllFields[]>(
+      const fetchedFavorites = await fetchData<RecipeWithAllFields[]>(
         `${process.env.EXPO_PUBLIC_MEDIA_API}/favorites/byuser`,
         options,
       );
-      // return the favorites
-      return favorites?.map((recipe) => ({
-        ...recipe,
-        // parse the diettypes and ingredients to an object array
-        diet_types:
-          typeof recipe.diet_types === 'string'
-            ? JSON.parse(recipe.diet_types)
-            : recipe.diet_types || [],
-        ingredients:
-          typeof recipe.ingredients === 'string'
-            ? JSON.parse(recipe.ingredients)
-            : recipe.ingredients || [],
-      }));
+
+      if (fetchedFavorites && fetchedFavorites.length > 0) {
+        // fetch usernames for the favorite recipes
+        const favoritesWithUsernames = await Promise.all(
+          fetchedFavorites.map(async (favorite) => {
+            const userData = await getUserById(favorite.user_id);
+
+            return {
+              ...favorite,
+              username: userData?.username || `User ${favorite.user_id}`,
+              diet_types:
+                typeof favorite.diet_types === 'string'
+                  ? JSON.parse(favorite.diet_types)
+                  : favorite.diet_types || [],
+              ingredients:
+                typeof favorite.ingredients === 'string'
+                  ? JSON.parse(favorite.ingredients)
+                  : favorite.ingredients || [],
+            };
+          }),
+        );
+        return favoritesWithUsernames;
+      }
+      return fetchedFavorites || [];
     } catch (error) {
       return null;
     }
@@ -791,7 +896,6 @@ const useFavorites = () => {
         options,
       );
 
-      console.log('added to', added);
       setUpdate(!update);
       return added;
     } catch (error) {
@@ -832,7 +936,6 @@ const useFavorites = () => {
 };
 
 // Add a new hook for ingredient search
-
 export const useIngredients = () => {
   const [loading, setLoading] = useState(false);
 
@@ -883,6 +986,368 @@ export const useIngredients = () => {
   };
 };
 
+// notifications
+const useNotifications = () => {
+  const {update, setUpdate} = useUpdateContext();
+  const getAllNotificationsForUser = async (token: string) => {
+    try {
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      // fetch all notifications for the user (unread notifications)
+      const notifications = await fetchData<Notification[]>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user`,
+        options,
+      );
+      return notifications;
+    } catch (error) {
+      console.log('Error fetching notifications:', error);
+      return null;
+    }
+  };
+
+  // mark a notification as read
+  const markNotificationAsRead = async (
+    notification_id: number,
+    token: string,
+  ) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/${notification_id}/mark-read`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return null;
+    }
+  };
+
+  // mark all notifications as read
+  const markAllNotificationsAsRead = async (token: string) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/mark-read/all`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return null;
+    }
+  };
+
+  // toggle notifications enabled
+  const toggleNotificationsEnabled = async (token: string) => {
+    try {
+      const options = {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/settings/toggle-enabled`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error toggling notifications enabled:', error);
+      return null;
+    }
+  };
+
+  // check if notifications are enabled for the user
+  const checkNotificationsEnabled = async (user_id: number) => {
+    try {
+      const response = await fetchData<{enabled: boolean}>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/user/enabled/${user_id}`,
+      );
+      return response.enabled;
+    } catch (error) {
+      console.error('Error checking notifications enabled:', error);
+      return null;
+    }
+  };
+
+  // delete old notifications (older than 30 days)
+  const deleteOldNotifications = async (token: string) => {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/notifications/delete/old`,
+        options,
+      );
+      setUpdate(!update);
+      return response;
+    } catch (error) {
+      console.error('Error deleting old notifications:', error);
+      return null;
+    }
+  };
+
+  return {
+    getAllNotificationsForUser,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    toggleNotificationsEnabled,
+    checkNotificationsEnabled,
+    deleteOldNotifications,
+  };
+};
+
+const useFollow = () => {
+  const [followArray, setFollowArray] = useState<Follow[]>([]);
+
+  // post a new follow
+  const postFollow = async (user_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({user_id}),
+      };
+      return await fetchData<Follow>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/follows',
+        options,
+      );
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // remove a follow
+  const removeFollow = async (follow_id: number, token: string) => {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<MessageResponse>(
+        process.env.EXPO_PUBLIC_MEDIA_API + '/follows/' + follow_id,
+        options,
+      );
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // get all followed users for a user
+  const getFollowedUsers = async (token?: string, username?: string) => {
+    let url;
+    if (username) {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/byusername/followed/${username}`;
+    } else {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/bytoken/followed`;
+    }
+
+    try {
+      const options = {
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<Follow[]>(url, options);
+      setFollowArray(response);
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  // get all followers for a user
+  const getFollowers = async (token?: string, username?: string) => {
+    let url;
+    // check if the user is logged in and if not, use the username to get the followers
+    if (username) {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/byusername/followers/${username}`;
+    } else {
+      url = `${process.env.EXPO_PUBLIC_MEDIA_API}/follows/bytoken/followers`;
+    }
+
+    try {
+      const options = {
+        headers: {
+          Authorization: token ? 'Bearer ' + token : '',
+        },
+      };
+      const response = await fetchData<Follow[]>(url, options);
+      return response;
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  };
+
+  return {
+    followArray,
+    postFollow,
+    removeFollow,
+    getFollowedUsers,
+    getFollowers,
+  };
+};
+
+// use ratings
+const useRatings = () => {
+  const [loading, setLoading] = useState(false);
+
+  // post a new rating for a recipe
+  const postRating = async (
+    recipeId: number,
+    rating: number,
+    review: string,
+    token: string,
+  ) => {
+    setLoading(true);
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipe_id: recipeId,
+          rating: {
+            rating: rating,
+            review: review.trim(),
+          },
+        }),
+      };
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to submit rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in postRating:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // get all the rating for the recipe to display them
+  const getRatingsByRecipeId = async (recipe_id: number) => {
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/recipe/${recipe_id}`,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch ratings');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getRatingsByRecipeId:', error);
+      return [];
+    }
+  };
+
+  // check if user has already rated the recipe
+  const checkRatingExists = async (recipeId: number, token: string) => {
+    try {
+      const options = {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/check-exists/${recipeId}`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to check rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking if rating exists:', error);
+      return false;
+    }
+  };
+
+  // delete a rating
+  const deleteRating = async (rating_id: number, token: string) => {
+    setLoading(true);
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ratings/recipe/${rating_id}`,
+        options,
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete rating');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in deleteRating:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    postRating,
+    getRatingsByRecipeId,
+    checkRatingExists,
+    deleteRating,
+    loading,
+  };
+};
+
 export {
   useAuthentication,
   useUser,
@@ -892,4 +1357,7 @@ export {
   useLikes,
   useComments,
   useFavorites,
+  useNotifications,
+  useFollow,
+  useRatings,
 };

@@ -1,0 +1,26 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# first open the app and login
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@01.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+- scrollUntilVisible:
+    element:
+      id: 'add-favorite-button'
+    direction: DOWN
+- tapOn:
+    id: 'add-favorite-button'
+- tapOn: 'Favorites'
+- tapOn:
+    id: 'view-recipe'
+- back
+- assertVisible: 'Favorites'
+- takeScreenshot: 'Added to favorites successful'

@@ -39,7 +39,11 @@ const LoginForm = () => {
         <Controller
           control={control}
           rules={{
-            minLength: 3,
+            pattern: {
+              value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+              message: 'not a valid email',
+            },
+            minLength: {value: 3, message: 'minimum length is 3'},
             maxLength: 50,
             required: {value: true, message: 'is required'},
           }}
@@ -62,7 +66,7 @@ const LoginForm = () => {
         <Controller
           control={control}
           rules={{
-            minLength: 8,
+            minLength: {value: 8, message: 'minimum length is 8'},
             required: {value: true, message: 'is required'},
           }}
           render={({field: {onChange, onBlur, value}}) => (

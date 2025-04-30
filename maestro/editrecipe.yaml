@@ -1,0 +1,46 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# first open the app and login
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@01.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+
+# after login navigate to own profile to see own posts
+- tapOn: 'Profile'
+- tapOn:
+    id: 'recipe-overlay'
+- tapOn:
+    id: 'edit-recipe-button'
+# edit the recipe
+- tapOn:
+    id: 'title-input'
+- eraseText: 15
+- inputText: 'Puuro'
+- scrollUntilVisible:
+    element:
+      id: 'instructions-input'
+    direction: DOWN
+- tapOn:
+    id: 'instructions-input'
+- eraseText: 100
+- inputText: 'Laita kaurahiutaleet astiaan, laita suolaa, sekoita ja laita mikroon 2 minuutiksi'
+- tapOn:
+    id: 'time-input'
+- eraseText: 15
+- inputText: '20'
+- tapOn:
+    id: 'portions-input'
+- eraseText: 15
+- inputText: '4'
+- tapOn:
+    id: 'save-changes-button'
+- assertVisible: 'Recipe updated successfully'
+- takeScreenshot: 'Edit recipe successful'

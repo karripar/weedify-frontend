@@ -12,6 +12,7 @@ import {useUserContext} from '../hooks/contextHooks';
 import Login from '../views/Login';
 import EditProfileForm from '../components/EditProfileForm';
 import Single from '../views/Single';
+import EditRecipeForm from '../components/EditRecipeForm';
 
 const Tab = createBottomTabNavigator<NavigatorType>();
 const Stack = createNativeStackNavigator<NavigatorType>();
@@ -99,7 +100,14 @@ const StackScreen = () => {
           options={{
             headerStyle: {backgroundColor: HexColors['medium-green']},
             headerTintColor: HexColors['light-purple'],
-
+          }}
+        />
+        <Stack.Screen
+          name="Edit Recipe"
+          component={EditRecipeForm}
+          options={{
+            headerStyle: {backgroundColor: HexColors['medium-green']},
+            headerTintColor: HexColors['light-purple'],
           }}
         />
         <Stack.Screen
@@ -108,9 +116,8 @@ const StackScreen = () => {
           options={{
             headerStyle: {backgroundColor: HexColors['medium-green']},
             headerTintColor: HexColors['light-purple'],
-
           }}
-          />
+        />
       </>
     </Stack.Navigator>
   );

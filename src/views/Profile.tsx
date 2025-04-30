@@ -14,6 +14,9 @@ import {Card, Icon, Image, Overlay, Text} from '@rneui/base';
 import {View} from 'react-native';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import RecipeListItem from '../components/RecipeListItem';
+import {Bell} from 'lucide-react-native';
+import Notifications from '../components/Notifications';
+import { useNotificationContext } from '../contexts/NotificationContext';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
@@ -24,6 +27,9 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
+  const {notificationCount} = useNotificationContext();
+  const [notificationsVisible, setNotificationsVisible] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -99,6 +105,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={triggerUpdate} />
         }
+        scrollEnabled={notificationsVisible ? false : true}
       >
         <Card
           containerStyle={{
@@ -113,6 +120,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               type="ionicon"
               color={HexColors['dark-grey']}
               size={24}
+              testID="profile-buttons"
             />
           </TouchableOpacity>
 
@@ -130,6 +138,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
                   name="edit"
                   type="material"
                   color={HexColors['dark-grey']}
+                  testID="edit-profile-button"
                 />
                 <Text style={styles.menuText}>Edit Profile</Text>
               </TouchableOpacity>
@@ -137,6 +146,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={handleDeleteProfile}
+                testID="delete-profile-button"
               >
                 <Icon name="delete" type="material" color="red" />
                 <Text style={[styles.menuText, {color: 'red'}]}>
@@ -149,6 +159,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
                   name="logout"
                   type="material"
                   color={HexColors['dark-grey']}
+                  testID="logout-button"
                 />
                 <Text style={styles.menuText}>Logout</Text>
               </TouchableOpacity>
@@ -167,30 +178,77 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
             </Text>
           </View>
         </Card>
-        <Text
+
+        <TouchableOpacity
+          aria-label="Toggle Notifications"
+          style={styles.notiVisibilityToggle}
+          onPress={() => {
+            setNotificationsVisible(!notificationsVisible);
+          }}
+        >
+          <Bell
+            size={24}
+            color={HexColors['dark-grey']}
+            style={{marginRight: 10}}
+          />
+          <Text
             style={{
-              fontSize: 20,
-              fontWeight: '600',
-              color: HexColors['darker-green'],
-              marginLeft: 20,
-              marginVertical: 10,
-              marginTop: 20
+              fontSize: 16,
+              color: HexColors['dark-grey'],
+              fontWeight: '500',
             }}
           >
-            User bio
+            Show Notifications
           </Text>
+          {notificationCount > 0 && (
+            <View
+              style={{
+                backgroundColor: HexColors['green'],
+                borderRadius: 10,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+                position: 'absolute',
+                right: -3,
+                top: -8
+              }}
+            >
+              <Text
+                style={{
+                  color: HexColors['almost-white'],
+                  fontSize: 12,
+                  fontWeight: '600',
+                }}
+              >
+                {notificationCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <Notifications
+          visible={notificationsVisible}
+          onClose={() => setNotificationsVisible(false)}/>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: '600',
+            color: HexColors['darker-green'],
+            marginLeft: 20,
+            marginVertical: 10,
+            marginTop: 20,
+          }}
+        >
+          User bio
+        </Text>
         <View
           style={{
             maxWidth: '100%',
             backgroundColor: HexColors['almost-white'],
             borderRadius: 10,
             padding: 20,
-            marginHorizontal: 20
+            marginHorizontal: 20,
           }}
         >
-          <Text>
-            {user ? user.bio : 'Nothing on your user bio yet'}
-          </Text>
+          <Text>{user ? user.bio : 'Nothing on your user bio yet'}</Text>
         </View>
         <View
           style={{
@@ -278,5 +336,22 @@ const styles = StyleSheet.create({
     fontFamily: 'InriaSans-Regular',
     fontSize: 16,
     color: HexColors['dark-grey'],
+  },
+  notiVisibilityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: HexColors['almost-white'],
+    borderRadius: 50,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
 });

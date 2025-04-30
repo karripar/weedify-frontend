@@ -30,6 +30,7 @@ type NavigatorType = {
   // stack screen
   Back: undefined;
   'Edit Profile': undefined;
+  'Edit Recipe': undefined;
   Recipe: undefined;
 };
 
@@ -56,7 +57,7 @@ type PostRecipeData = {
   filesize: number;
   difficulty_level_id: number;
   ingredients: RecipeIngredient[];
-  dietary_info: number[];
+  dietary_info?: number[];
 };
 
 // Hakutoimintoa varten
@@ -87,6 +88,14 @@ type UpdateUserResponse = MessageResponse & {
   user: UserWithDietaryInfo;
 };
 
+type EditRecipeInputs = {
+  title: string;
+  instructions: string;
+  cooking_time: string;
+  portions: string;
+  difficulty_level: string;
+};
+
 export type {
   AuthContextType,
   NavigatorType,
@@ -96,4 +105,5 @@ export type {
   DietTypeWithName,
   RecipeWithPossibleLikes,
   UpdateUserResponse,
+  EditRecipeInputs,
 };

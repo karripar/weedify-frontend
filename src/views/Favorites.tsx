@@ -40,7 +40,7 @@ const Favorites = ({
         const userFavorites = await getAllFavorites();
         if (userFavorites !== null) {
           // if favorites, return them in a list
-          setFavoriteRecipes(userFavorites);
+          setFavoriteRecipes(userFavorites.reverse());
         } else {
           // if no favorites return empty list
           setFavoriteRecipes([]);
@@ -178,6 +178,7 @@ const Favorites = ({
                     titleStyle={styles.openButtonText}
                     containerStyle={styles.buttonContainer}
                     onPress={() => navigation.navigate('Recipe', {item})}
+                    testID="view-recipe"
                   />
                 </ListItem.Content>
               </ListItem>

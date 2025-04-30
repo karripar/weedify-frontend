@@ -7,12 +7,14 @@ import {
   Alert,
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
-import {Button, Card} from '@rneui/base';
+import {Button, Card, Overlay} from '@rneui/base';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useState, useEffect} from 'react';
-import {useLikes, useUser, useFavorites} from '../hooks/apiHooks';
+import {useLikes, useUser, useFavorites, useRecipes} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Follows from './Follows';
 
 type RecipeListItemProps = {
   item: {
@@ -33,16 +35,12 @@ type RecipeListItemProps = {
   navigation: NavigationProp<ParamListBase>;
 };
 
-
-
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   // Profile image loading logic
   const {getUserWithProfileImage} = useUser();
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
-
-  console.log('RecipeListItem', item);
 
   // Like functionality state and hooks
   const [isLiked, setIsLiked] = useState(false);
@@ -51,10 +49,59 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   const {checkIfLiked, likeRecipe, unlikeRecipe} = useLikes();
   const {user} = useUserContext();
   const {update, setUpdate} = useUpdateContext();
+  const {deleteRecipe} = useRecipes();
 
   // check if favorite, add and remove favorites
   const [isFavorite, setIsFavorite] = useState(false);
   const {checkFavorite, addToFavorites, removeFromFavorites} = useFavorites();
+
+  // recipe edit/delete overlay
+  const [recipeOverlay, setRecipeOverlay] = useState(false);
+
+  // toggle the visibilty of the overlay
+  const toggleRecipeOverlay = () => {
+    setRecipeOverlay(!recipeOverlay);
+  };
+
+  // handle edit recipe button click
+  const handleEditRecipe = () => {
+    setRecipeOverlay(false);
+    navigation.navigate('Edit Recipe', {item});
+  };
+
+  // handle delete recipe button click
+  const handleDeleteRecipe = () => {
+    setRecipeOverlay(false);
+    // confirmation alert
+    Alert.alert(
+      'Delete Recipe',
+      'Are you sure you want to delete this recipe? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // delete recipe
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) return;
+
+              const deleteResponse = await deleteRecipe(item.recipe_id, token);
+              setUpdate(!update);
+              Alert.alert('Success', 'Recipe deleted successfully');
+            } catch (error) {
+              console.error('Delete error:', error);
+              Alert.alert('Error', 'Failed to delete recipe');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   // Load profile image
   useEffect(() => {
@@ -88,7 +135,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           setIsLiked(response !== null);
           if (response) {
             setLikeId(response.like_id);
-            console.log(response.like_id);
           }
         } catch (error) {
           console.error('Error fetching like status:', error);
@@ -212,26 +258,73 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
         </View>
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons
-            name="ellipsis-vertical"
-            size={20}
-            color={HexColors['dark-grey']}
-          />
-        </TouchableOpacity>
-      </View>
+        {user && user.user_id !== item.user_id && (
+          <Follows
+            userId={item.user_id}>
 
+            </Follows>
+        )}
+        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={toggleRecipeOverlay}
+            testID="recipe-overlay"
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={20}
+              color={HexColors['dark-grey']}
+            />
+          </TouchableOpacity>
+        )}
+        <Overlay
+          isVisible={recipeOverlay}
+          onBackdropPress={toggleRecipeOverlay}
+          overlayStyle={styles.overlay}
+        >
+          <View>
+            <TouchableOpacity
+              style={styles.overlayItem}
+              onPress={handleEditRecipe}
+            >
+              <Ionicons
+                name="create-outline"
+                size={24}
+                color={HexColors['dark-grey']}
+                style={{width: 30}}
+              />
+              <Text style={styles.overlayText} testID="edit-recipe-button">
+                Edit Recipe
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.overlayItem}
+              onPress={handleDeleteRecipe}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={24}
+                color="red"
+                style={{width: 30}}
+              />
+              <Text style={[styles.overlayText, {color: 'red'}]}>
+                Delete Recipe
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Overlay>
+      </View>
       <TouchableOpacity onPress={() => navigation.navigate('Recipe', {item})}>
         <Image
           style={styles.recipeImage}
           source={{
-            uri:
-            item.media_type.includes('image')
-            ? item.filename
-            : item.media_type.includes('video') && item.screenshots?.[0]
-              ? item.screenshots[0]
-              : process.env.EXPO_PUBLIC_UPLOADS + '/defaultrecipeimage.png'
-            }}
+            uri: item.media_type.includes('image')
+              ? item.filename
+              : item.media_type.includes('video') && item.screenshots?.[0]
+                ? item.screenshots[0]
+                : process.env.EXPO_PUBLIC_UPLOADS + '/defaultrecipeimage.png',
+          }}
         />
       </TouchableOpacity>
 
@@ -276,11 +369,9 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         </View>
         {item.diet_types && item.diet_types.length > 0 && (
           <View style={styles.dietContainer}>
-            {item.diet_types.map((diet, index) => (
-              <View key={index} style={styles.dietChip}>
-                <Text style={styles.dietText}>{diet.name}</Text>
-              </View>
-            ))}
+            <Text style={styles.dietText}>
+              {item.diet_types.map((diet) => diet.name).join(', ')}
+            </Text>
           </View>
         )}
         <Text style={styles.recipeDescription}>{getDescriptionPreview()}</Text>
@@ -295,6 +386,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           titleStyle={styles.favoriteButtonText}
           containerStyle={styles.buttonContainer}
           onPress={handleAddToFavorite}
+          testID="add-favorite-button"
         />
         <Button
           title="Open"
@@ -321,6 +413,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     borderWidth: 0,
+  },
+  overlay: {
+    width: 300,
+    marginTop: -100,
+    padding: 0,
+    borderRadius: 10,
+    backgroundColor: HexColors['light-purple'],
+  },
+  overlayItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderRadius: 10,
+    borderBottomColor: HexColors['light-grey'],
+  },
+  overlayText: {
+    fontFamily: 'InriaSans-Regular',
+    fontSize: 16,
+    marginLeft: 10,
+    color: HexColors['dark-grey'],
   },
   userContainer: {
     flexDirection: 'row',
@@ -385,10 +499,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 15,
-  },
-  dietChip: {
-    marginRight: 6,
-    paddingRight: 5,
   },
   dietText: {
     color: HexColors['darker-green'],
