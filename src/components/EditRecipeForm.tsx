@@ -358,6 +358,16 @@ const EditRecipeForm = ({
         difficulty_level_id: parseInt(selectedDifficultyLevel),
       };
 
+      // Add nutrition information for the entire recipe
+      updateData.nutrition = {
+        energy_kcal: recipeTotals.energy / Number(inputs.portions || 1),
+        protein: recipeTotals.protein / Number(inputs.portions || 1),
+        fat: recipeTotals.fat / Number(inputs.portions || 1),
+        carbohydrate: recipeTotals.carbohydrate / Number(inputs.portions || 1),
+        fiber: recipeTotals.fiber / Number(inputs.portions || 1),
+        sugar: recipeTotals.sugar / Number(inputs.portions || 1),
+      };
+
       updateData.ingredients = ingredients.map((ing) => {
         const baseIngredient = {
           name: ing.name,
