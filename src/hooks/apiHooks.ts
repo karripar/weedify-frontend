@@ -21,11 +21,7 @@ import {
 import {useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
 import {useUpdateContext} from './contextHooks';
-import {
-  PostRecipeData,
-  RecipeWithProfileImage,
-  UpdateUserResponse,
-} from '../types/LocalTypes';
+import {RecipeWithProfileImage, UpdateUserResponse} from '../types/LocalTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useAuthentication = () => {
@@ -378,24 +374,21 @@ const useRecipes = (user_id?: number) => {
   // post a new recipe
   const postRecipe = async (
     file: UploadResponse,
-    inputs: Record<string, string | number | string[]>,
+    inputs: Record<string, any>,
     token: string,
   ) => {
-    // format the ingredients to sent them to db
-    const formattedIngredients = (inputs.ingredients as string[]).map(
-      (ingredient) => {
-        const parts = ingredient.toString().trim().split(' ');
-        const amount = parseFloat(parts[0]);
-        const unit = parts[1];
-        const name = parts.slice(2).join(' ');
-
-        return {
-          name,
-          amount,
-          unit,
-        };
-      },
-    );
+    const formattedIngredients =
+      Array.isArray(inputs.ingredients) &&
+      typeof inputs.ingredients[0] === 'object' &&
+      'name' in inputs.ingredients[0]
+        ? inputs.ingredients // Käytä suoraan jos jo oikea muoto
+        : (inputs.ingredients as string[]).map((ingredient) => {
+            const parts = ingredient.toString().trim().split(' ');
+            const amount = parseFloat(parts[0]);
+            const unit = parts[1];
+            const name = parts.slice(2).join(' ');
+            return {name, amount, unit};
+          });
 
     const dietaryInfo = Array.isArray(inputs.dietary_info)
       ? inputs.dietary_info
@@ -404,23 +397,28 @@ const useRecipes = (user_id?: number) => {
         ? inputs.dietary_info.split(',').map((id) => Number(id))
         : [];
 
-    const recipe: PostRecipeData = {
-      title: inputs.title as string,
-      instructions: inputs.instructions as string,
-      cooking_time:
-        typeof inputs.cooking_time === 'number'
-          ? inputs.cooking_time
-          : Number(inputs.cooking_time),
-      portions:
-        typeof inputs.portions === 'number'
-          ? inputs.portions
-          : Number(inputs.portions),
-      media_type: file.data.media_type,
-      filename: file.data.filename,
-      filesize: file.data.filesize,
+    const recipe = {
+      title: inputs.title,
+      instructions: inputs.instructions,
+      cooking_time: Number(inputs.cooking_time),
+      portions: Number(inputs.portions),
+      media_type: inputs.media_type || file.data.media_type,
+      filename: inputs.filename || file.data.filename,
+      filesize: inputs.filesize || file.data.filesize,
       difficulty_level_id: Number(inputs.difficulty_level_id),
-      ingredients: formattedIngredients,
-      dietary_info: dietaryInfo.map((id) => Number(id)),
+      ingredients: formattedIngredients.map((ingredient) => ({
+        name: ingredient.name,
+        amount: ingredient.amount,
+        unit: ingredient.unit,
+        energy_kcal: ingredient.energy_kcal || 0,
+        protein: ingredient.protein || 0,
+        fat: ingredient.fat || 0,
+        carbohydrate: ingredient.carbohydrate || 0,
+        fiber: ingredient.fiber || 0,
+        sugar: ingredient.sugar || 0,
+        fineli_id: ingredient.fineli_id || 0,
+      })),
+      dietary_info: dietaryInfo,
     };
 
     // post the data to Media API and get the data as MessageResponse
@@ -432,6 +430,7 @@ const useRecipes = (user_id?: number) => {
       },
       body: JSON.stringify(recipe),
     };
+
     return await fetchData<MessageResponse>(
       process.env.EXPO_PUBLIC_MEDIA_API + '/recipes',
       options,
@@ -830,6 +829,58 @@ const useFavorites = () => {
   };
 
   return {getAllFavorites, checkFavorite, addToFavorites, removeFromFavorites};
+};
+
+// Add a new hook for ingredient search
+
+export const useIngredients = () => {
+  const [loading, setLoading] = useState(false);
+
+  const searchIngredients = async (searchTerm: string): Promise<any[]> => {
+    if (!searchTerm || searchTerm.length < 2) {
+      return [];
+    }
+
+    setLoading(true);
+
+    try {
+      const results = await fetchData<{ingredients: any[]}>(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ingredients/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+      );
+
+      return results.ingredients || [];
+    } catch (error) {
+      console.error('Error searching ingredients:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIngredientById = async (id: number): Promise<any | null> => {
+    if (!id) return null;
+
+    setLoading(true);
+
+    try {
+      const ingredient = await fetchData(
+        `${process.env.EXPO_PUBLIC_MEDIA_API}/ingredients/${id}`,
+      );
+
+      return ingredient;
+    } catch (error) {
+      console.error('Error fetching ingredient:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    searchIngredients,
+    getIngredientById,
+    loading,
+  };
 };
 
 export {

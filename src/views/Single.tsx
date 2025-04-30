@@ -1,5 +1,13 @@
 import {RecipeWithAllFields, User} from 'hybrid-types/DBTypes';
-import {Alert, Image, ScrollView, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+} from 'react-native';
 import VideoPlayer from '../components/VideoPlayer';
 import {Card, Icon, Divider} from '@rneui/base';
 import {useRecipes, useUser} from '../hooks/apiHooks';
@@ -10,10 +18,25 @@ import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
 import Comments from '../components/Comments';
-import { ArrowUp, ArrowDown } from 'lucide-react-native';
+import {ArrowUp, ArrowDown} from 'lucide-react-native';
+import NutritionInfo from '../components/NutritionInfo';
+
+// Define an interface for nutrition data
+interface NutritionData {
+  energy_kcal: number;
+  protein: number;
+  fat: number;
+  carbohydrate: number;
+  fiber: number;
+  sugar: number;
+}
 
 const Single = ({route}: any) => {
-  const item: RecipeWithAllFields & {username: string} = route.params.item;
+  // Extend the type to include the nutrition property
+  const item: RecipeWithAllFields & {
+    username: string;
+    nutrition?: NutritionData;
+  } = route.params.item;
   const {user} = useUserContext();
   const {getUserWithProfileImage} = useUser();
   const {triggerUpdate} = useUpdateContext();
@@ -184,6 +207,41 @@ const Single = ({route}: any) => {
           </View>
           <Divider style={styles.divider} />
 
+          {item.nutrition && (
+            <>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: 1,
+                  marginVertical: 20,
+                  marginLeft: 20,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Icon
+                  name="nutrition"
+                  type="material-community"
+                  color={HexColors['dark-green']}
+                />
+                <View style={styles.nutritionSection}>
+                  <Text style={[styles.sectionTitle, {marginLeft: 5}]}>
+                    Nutrition Information
+                  </Text>
+                  <NutritionInfo
+                    energy={item.nutrition.energy_kcal}
+                    protein={item.nutrition.protein}
+                    fat={item.nutrition.fat}
+                    carbohydrate={item.nutrition.carbohydrate}
+                    fiber={item.nutrition.fiber}
+                    sugar={item.nutrition.sugar}
+                    perPortion={true}
+                  />
+                </View>
+              </View>
+              <Divider style={styles.divider} />
+            </>
+          )}
+
           <View
             style={{
               flexDirection: 'row',
@@ -220,10 +278,9 @@ const Single = ({route}: any) => {
         <View>
           <TouchableOpacity
             style={styles.commentsButton}
-            onPress={() => setShowComments(!showComments)}>
-            <Text
-            style={styles.sectionTitle}
-            >
+            onPress={() => setShowComments(!showComments)}
+          >
+            <Text style={styles.sectionTitle}>
               {showComments ? 'Hide Comments' : 'Show Comments'}
             </Text>
             {showComments ? (
@@ -334,6 +391,13 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     marginHorizontal: 20,
     alignItems: 'center',
+  },
+  nutritionSection: {
+    flexDirection: 'column',
+    marginLeft: 20,
+    gap: 1,
+    flex: 1,
+    paddingRight: 20,
   },
 });
 

@@ -1,3 +1,4 @@
+import React, {useState, useEffect} from 'react';
 import {Controller, useForm} from 'react-hook-form';
 import {Button, Card, Chip, Image, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
@@ -9,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {useEffect, useState} from 'react';
 import VideoPlayer from './VideoPlayer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDietTypes, useFile, useRecipes} from '../hooks/apiHooks';
@@ -23,6 +23,8 @@ import {
   SelectList,
 } from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
+import IngredientSearch from './IngredientSearch';
+import NutritionInfo from './NutritionInfo';
 
 // this is for testing
 declare global {
@@ -45,6 +47,20 @@ type PostInputs = {
   difficulty_level_id: number;
 };
 
+interface IngredientItem {
+  id: number;
+  name: {
+    fi: string;
+    en?: string;
+  };
+  energyKcal: number;
+  protein: number;
+  fat: number;
+  carbohydrate: number;
+  fiber: number;
+  sugar: number;
+}
+
 const Post = () => {
   const {postExpoFile, loading} = useFile();
   const {postRecipe} = useRecipes();
@@ -66,6 +82,17 @@ const Post = () => {
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
   const [dietResetKey, setDietResetKey] = useState(0);
   const [showMockPicker, setShowMockPicker] = useState(false);
+  const [selectedIngredients, setSelectedIngredients] = useState<any[]>([]);
+  const [recipeTotals, setRecipeTotals] = useState({
+    energy: 0,
+    protein: 0,
+    fat: 0,
+    carbohydrate: 0,
+    fiber: 0,
+    sugar: 0,
+  });
+  const [selectedIngredientData, setSelectedIngredientData] =
+    useState<IngredientItem | null>(null);
 
   // setting testing values for selector components
   useEffect(() => {
@@ -169,6 +196,17 @@ const Post = () => {
     setInstructionsLength(0);
     setDietResetKey((prev) => prev + 1);
     reset(initValues);
+
+    // Lisää nämä rivit:
+    setSelectedIngredients([]);
+    setRecipeTotals({
+      energy: 0,
+      protein: 0,
+      fat: 0,
+      carbohydrate: 0,
+      fiber: 0,
+      sugar: 0,
+    });
   };
 
   // add ingredients with the unit and amout to the post
@@ -177,17 +215,99 @@ const Post = () => {
       // check that none of the fields are empty
       currentIngredient.trim() !== '' &&
       amount !== '' &&
-      selectedUnit !== ''
+      selectedUnit !== '' &&
+      selectedIngredientData // Make sure we have the nutritional data
     ) {
-      // create the ingredient with the unit and amount
+      const amountInGrams = calculateAmountInGrams(
+        parseFloat(amount),
+        selectedUnit,
+      );
+      const factor = amountInGrams / 100;
+
+      const nutritionData = {
+        fineli_id: selectedIngredientData.id,
+        name: selectedIngredientData.name.fi,
+        amount: parseFloat(amount),
+        unit: selectedUnit,
+        energy_kcal: selectedIngredientData.energyKcal * factor,
+        protein: selectedIngredientData.protein * factor,
+        fat: selectedIngredientData.fat * factor,
+        carbohydrate: selectedIngredientData.carbohydrate * factor,
+        fiber: selectedIngredientData.fiber * factor,
+        sugar: selectedIngredientData.sugar * factor,
+      };
+
       const ingredient = `${amount} ${selectedUnit} ${currentIngredient.trim()}`;
 
       setIngredientsList([...ingredientsList, ingredient]);
+      setSelectedIngredients([...selectedIngredients, nutritionData]);
 
-      // clear the input and selector fields
+      updateRecipeNutrition([...selectedIngredients, nutritionData]);
+
       setCurrentIngredient('');
       setAmount('');
       setSelectedUnit('');
+      setSelectedIngredientData(null);
+    }
+  };
+
+  // Function to update recipe nutrition totals
+  const updateRecipeNutrition = (ingredients: any[]) => {
+    const totals = ingredients.reduce(
+      (
+        acc: {
+          energy: number;
+          protein: number;
+          fat: number;
+          carbohydrate: number;
+          fiber: number;
+          sugar: number;
+        },
+        ingredient: any,
+      ) => {
+        return {
+          energy: acc.energy + ingredient.energy_kcal,
+          protein: acc.protein + ingredient.protein,
+          fat: acc.fat + ingredient.fat,
+          carbohydrate: acc.carbohydrate + ingredient.carbohydrate,
+          fiber: acc.fiber + ingredient.fiber,
+          sugar: acc.sugar + ingredient.sugar,
+        };
+      },
+      {
+        energy: 0,
+        protein: 0,
+        fat: 0,
+        carbohydrate: 0,
+        fiber: 0,
+        sugar: 0,
+      },
+    );
+
+    setRecipeTotals(totals);
+  };
+
+  // Helper function to convert measurements to grams for calculation
+  const calculateAmountInGrams = (amount: number, unit: string): number => {
+    switch (unit.toLowerCase()) {
+      case 'g':
+        return amount;
+      case 'kg':
+        return amount * 1000;
+      case 'mg':
+        return amount / 1000;
+      case 'dl':
+        return amount * 100; // Approximation for water-based ingredients
+      case 'l':
+        return amount * 1000; // Approximation for water-based ingredients
+      case 'tl':
+        return amount * 5; // Approximation
+      case 'rkl':
+        return amount * 15; // Approximation
+      case 'kpl':
+        return amount * 100; // Very rough approximation, should be refined
+      default:
+        return amount;
     }
   };
 
@@ -232,16 +352,29 @@ const Post = () => {
 
     console.log('selected diettype ids', dietTypeIds);
 
-    // post with the required data
     const recipeData = {
       ...inputs,
       cooking_time: Number(inputs.cooking_time),
       portions: Number(inputs.portions),
-      ingredients: ingredientsList,
       difficulty_level_id: Number(selectedDifficultyLevel),
+      // TIEDOSTOTIEDOT MUKAAN
+      media_type: fileResponse.data.media_type,
+      filename: fileResponse.data.filename,
+      filesize: fileResponse.data.filesize,
+      ingredients: selectedIngredients.map((ingredient) => ({
+        name: ingredient.name,
+        amount: Number(ingredient.amount),
+        unit: ingredient.unit,
+        fineli_id: ingredient.fineli_id,
+        energy_kcal: Number((ingredient.energy_kcal || 0.01).toFixed(2)), // Minimiarvo
+        protein: Number((ingredient.protein || 0.01).toFixed(2)),
+        fat: Number((ingredient.fat || 0.01).toFixed(2)),
+        carbohydrate: Number((ingredient.carbohydrate || 0.01).toFixed(2)),
+        fiber: Number((ingredient.fiber || 0.01).toFixed(2)),
+        sugar: Number((ingredient.sugar || 0.01).toFixed(2)),
+      })),
     };
 
-    // add dietary info if not empty
     if (dietTypeIds.length > 0) {
       recipeData.dietary_info = dietTypeIds.join(',');
     }
@@ -310,6 +443,11 @@ const Post = () => {
       unsubscribe();
     };
   }, []);
+
+  const handleIngredientSelect = (ingredient: IngredientItem) => {
+    setCurrentIngredient(ingredient.name.fi);
+    setSelectedIngredientData(ingredient);
+  };
 
   return (
     <LinearGradient
@@ -415,15 +553,43 @@ const Post = () => {
           />
 
           <Text style={styles.text}>Ingredients</Text>
-          <Input
-            style={styles.input}
-            inputContainerStyle={styles.inputContainer}
-            value={currentIngredient}
-            onChangeText={setCurrentIngredient}
-            autoCapitalize="sentences"
-            placeholder="Ingredient"
-            testID="ingredient-input"
-          />
+          <IngredientSearch onSelectIngredient={handleIngredientSelect} />
+
+          {/* Tämä on uusi osio valitun ainesosan näyttämiseen */}
+          {selectedIngredientData && (
+            <View style={styles.selectedIngredientContainer}>
+              <View style={styles.selectedIngredientHeader}>
+                <Text style={styles.selectedIngredientTitle}>
+                  Selected ingredient
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedIngredientData(null);
+                    setCurrentIngredient('');
+                  }}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>X</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.selectedIngredientContent}>
+                <Text style={styles.selectedIngredientName}>
+                  {selectedIngredientData.name.fi}
+                </Text>
+                <Text style={styles.selectedIngredientDetails}>
+                  {selectedIngredientData.energyKcal.toFixed(1)} kcal / 100g |
+                  Proteiini: {selectedIngredientData.protein.toFixed(1)}g |
+                  Rasva: {selectedIngredientData.fat.toFixed(1)}g |
+                  Hiilihydraatit:{' '}
+                  {selectedIngredientData.carbohydrate.toFixed(1)}g
+                </Text>
+              </View>
+              <Text style={styles.selectedIngredientGuide}>
+                Select amount and unit
+              </Text>
+            </View>
+          )}
+
           <View style={styles.ingredientsContainer}>
             <View style={{flex: 1.5, marginHorizontal: 10}} testID="unit-input">
               <SelectList
@@ -488,10 +654,17 @@ const Post = () => {
                   color: HexColors['dark-grey'],
                 }}
                 onPress={() => {
-                  // remove ingredient when pressed
-                  setIngredientsList(
-                    ingredientsList.filter((_, i) => i !== index),
+                  const newIngredientsList = ingredientsList.filter(
+                    (_, i) => i !== index,
                   );
+                  const newSelectedIngredients = selectedIngredients.filter(
+                    (_, i) => i !== index,
+                  );
+
+                  setIngredientsList(newIngredientsList);
+                  setSelectedIngredients(newSelectedIngredients);
+
+                  updateRecipeNutrition(newSelectedIngredients);
                 }}
               />
             ))}
@@ -703,6 +876,37 @@ const Post = () => {
             onPress={resetForm}
           />
         </Card>
+        {recipeTotals.energy > 0 && (
+          <View style={styles.nutritionContainer}>
+            <Text style={styles.sectionTitle}>
+              Recipe Nutrition (estimated)
+            </Text>
+            <NutritionInfo
+              energy={
+                recipeTotals.energy /
+                (Number(control._formValues.portions) || 1)
+              }
+              protein={
+                recipeTotals.protein /
+                (Number(control._formValues.portions) || 1)
+              }
+              fat={
+                recipeTotals.fat / (Number(control._formValues.portions) || 1)
+              }
+              carbohydrate={
+                recipeTotals.carbohydrate /
+                (Number(control._formValues.portions) || 1)
+              }
+              fiber={
+                recipeTotals.fiber / (Number(control._formValues.portions) || 1)
+              }
+              sugar={
+                recipeTotals.sugar / (Number(control._formValues.portions) || 1)
+              }
+              perPortion={true}
+            />
+          </View>
+        )}
       </ScrollView>
     </LinearGradient>
   );
@@ -818,6 +1022,83 @@ const styles = StyleSheet.create({
     marginRight: 15,
     marginTop: -10,
     marginBottom: 10,
+    fontFamily: 'InriaSans-Regular',
+  },
+  nutritionContainer: {
+    margin: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: HexColors.white,
+    borderColor: HexColors['light-grey'],
+    borderWidth: 1,
+  },
+  sectionTitle: {
+    fontFamily: 'InriaSans-Regular',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  selectedIngredientContainer: {
+    backgroundColor: HexColors['almost-white'],
+    borderRadius: 10,
+    marginHorizontal: 10,
+    marginVertical: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: HexColors['light-green'],
+    shadowColor: HexColors['dark-grey'],
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  selectedIngredientHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  selectedIngredientTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: HexColors['dark-green'],
+    fontFamily: 'InriaSans-Regular',
+  },
+  clearButton: {
+    backgroundColor: HexColors['light-grey'],
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: HexColors['dark-grey'],
+  },
+  selectedIngredientContent: {
+    marginBottom: 8,
+  },
+  selectedIngredientName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: HexColors['dark-grey'],
+    fontFamily: 'InriaSans-Regular',
+  },
+  selectedIngredientDetails: {
+    fontSize: 12,
+    color: HexColors['dark-grey'],
+    fontFamily: 'InriaSans-Regular',
+  },
+  selectedIngredientGuide: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: HexColors['medium-green'],
     fontFamily: 'InriaSans-Regular',
   },
 });
