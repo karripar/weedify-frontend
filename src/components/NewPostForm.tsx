@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {Controller, useForm} from 'react-hook-form';
-import {Button, Card, Chip, Image, Text} from '@rneui/base';
+import {Button, Card, Chip, Image, Text, Icon} from '@rneui/base';
 import {Input} from '@rneui/themed';
 import {
   Alert,
@@ -12,7 +12,12 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import VideoPlayer from './VideoPlayer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useDietTypes, useFile, useRecipes} from '../hooks/apiHooks';
+import {
+  useDietTypes,
+  useFile,
+  useRecipes,
+  useIngredients,
+} from '../hooks/apiHooks';
 import {useNavigation} from '@react-navigation/native';
 import {NavigatorType} from '../types/LocalTypes';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -20,9 +25,9 @@ import {useUpdateContext} from '../hooks/contextHooks';
 import {HexColors} from '../utils/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
-import IngredientSearch from './IngredientSearch';
 import NutritionInfo from './NutritionInfo';
 import MultiSelect from 'react-native-multiple-select';
+import debounce from 'lodash/debounce';
 
 // this is for testing
 declare global {
@@ -62,6 +67,7 @@ interface IngredientItem {
 const Post = () => {
   const {postExpoFile, loading} = useFile();
   const {postRecipe} = useRecipes();
+  const {searchIngredients} = useIngredients();
   const navigation = useNavigation<NativeStackNavigationProp<NavigatorType>>();
   const {triggerUpdate} = useUpdateContext();
   const [selectedUnit, setSelectedUnit] = useState('');
@@ -90,6 +96,38 @@ const Post = () => {
   });
   const [selectedIngredientData, setSelectedIngredientData] =
     useState<IngredientItem | null>(null);
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
+  const [ingredientSearchResults, setIngredientSearchResults] = useState<any[]>(
+    [],
+  );
+
+  const debouncedSearch = useRef(
+    debounce(async (text: string) => {
+      if (text.length >= 2) {
+        try {
+          const results = await searchIngredients(text);
+          setIngredientSearchResults(results);
+        } catch (error) {
+          console.error('Error searching ingredients:', error);
+        }
+      } else {
+        setIngredientSearchResults([]);
+      }
+    }, 500),
+  ).current;
+
+  // Handle ingredient search with debounce
+  const handleIngredientSearch = (text: string) => {
+    setIngredientSearchTerm(text);
+    debouncedSearch(text);
+  };
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   // setting testing values for selector components
   useEffect(() => {
@@ -173,6 +211,7 @@ const Post = () => {
     handleSubmit,
     formState: {errors, isValid},
     reset,
+    getValues,
   } = useForm({
     defaultValues: initValues,
   });
@@ -187,9 +226,10 @@ const Post = () => {
     setSelectedUnit('');
     setSelectedDifficultyLevel('');
     setInstructionsLength(0);
+    setIngredientSearchTerm('');
+    setIngredientSearchResults([]);
     reset(initValues);
 
-    // Lisää nämä rivit:
     setSelectedIngredients([]);
     setRecipeTotals({
       energy: 0,
@@ -201,7 +241,7 @@ const Post = () => {
     });
   };
 
-  // add ingredients with the unit and amout to the post
+  // add ingredients with the unit and amount to the post
   const addIngredient = () => {
     if (
       // check that none of the fields are empty
@@ -355,7 +395,7 @@ const Post = () => {
         amount: Number(ingredient.amount),
         unit: ingredient.unit,
         fineli_id: ingredient.fineli_id,
-        energy_kcal: Number((ingredient.energy_kcal || 0.01).toFixed(2)), // Minimiarvo
+        energy_kcal: Number((ingredient.energy_kcal || 0.01).toFixed(2)),
         protein: Number((ingredient.protein || 0.01).toFixed(2)),
         fat: Number((ingredient.fat || 0.01).toFixed(2)),
         carbohydrate: Number((ingredient.carbohydrate || 0.01).toFixed(2)),
@@ -383,6 +423,13 @@ const Post = () => {
       console.error('Recipe post error:', error);
       Alert.alert('Upload failed', (error as Error).message || 'Unknown error');
     }
+  };
+
+  // Handle selecting ingredient from search results
+  const selectIngredient = (ingredient: any) => {
+    setSelectedIngredientData(ingredient);
+    setCurrentIngredient(ingredient.name.fi);
+    setIngredientSearchResults([]);
   };
 
   // select image for the post
@@ -427,11 +474,6 @@ const Post = () => {
       unsubscribe();
     };
   }, []);
-
-  const handleIngredientSelect = (ingredient: IngredientItem) => {
-    setCurrentIngredient(ingredient.name.fi);
-    setSelectedIngredientData(ingredient);
-  };
 
   return (
     <LinearGradient
@@ -536,7 +578,57 @@ const Post = () => {
           />
 
           <Text style={styles.text}>Ingredients</Text>
-          <IngredientSearch onSelectIngredient={handleIngredientSelect} />
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 10,
+            }}
+          >
+            <Input
+              placeholder="Search ingredients..."
+              value={ingredientSearchTerm}
+              onChangeText={handleIngredientSearch}
+              containerStyle={{flex: 1}}
+              rightIcon={
+                ingredientSearchTerm.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIngredientSearchTerm('');
+                      setIngredientSearchResults([]);
+                    }}
+                  >
+                    <Icon
+                      name="close"
+                      type="material"
+                      color={HexColors['dark-grey']}
+                    />
+                  </TouchableOpacity>
+                ) : undefined
+              }
+            />
+          </View>
+
+          {ingredientSearchResults.length > 0 && (
+            <View style={styles.searchResultsContainer}>
+              <ScrollView style={{maxHeight: 200}}>
+                {ingredientSearchResults.map((ingredient, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.searchResultItem}
+                    onPress={() => selectIngredient(ingredient)}
+                  >
+                    <Text style={styles.itemName}>{ingredient.name.fi}</Text>
+                    <Text style={styles.itemNutrition}>
+                      {ingredient.energyKcal.toFixed(1)} kcal |{' '}
+                      {ingredient.protein.toFixed(1)}g protein
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {selectedIngredientData && (
             <View style={styles.selectedIngredientContainer}>
@@ -560,9 +652,8 @@ const Post = () => {
                 </Text>
                 <Text style={styles.selectedIngredientDetails}>
                   {selectedIngredientData.energyKcal.toFixed(1)} kcal / 100g |
-                  Proteiini: {selectedIngredientData.protein.toFixed(1)}g |
-                  Rasva: {selectedIngredientData.fat.toFixed(1)}g |
-                  Hiilihydraatit:{' '}
+                  Protein: {selectedIngredientData.protein.toFixed(1)}g | Fat:{' '}
+                  {selectedIngredientData.fat.toFixed(1)}g | Carbs:{' '}
                   {selectedIngredientData.carbohydrate.toFixed(1)}g
                 </Text>
               </View>
@@ -857,6 +948,35 @@ const Post = () => {
               />
             </View>
           </View>
+
+          {recipeTotals.energy > 0 && (
+            <View style={styles.nutritionContainer}>
+              <Text style={styles.sectionTitle}>
+                Nutrition Information (estimated)
+              </Text>
+              <NutritionInfo
+                energy={
+                  recipeTotals.energy / (Number(getValues('portions')) || 1)
+                }
+                protein={
+                  recipeTotals.protein / (Number(getValues('portions')) || 1)
+                }
+                fat={recipeTotals.fat / (Number(getValues('portions')) || 1)}
+                carbohydrate={
+                  recipeTotals.carbohydrate /
+                  (Number(getValues('portions')) || 1)
+                }
+                fiber={
+                  recipeTotals.fiber / (Number(getValues('portions')) || 1)
+                }
+                sugar={
+                  recipeTotals.sugar / (Number(getValues('portions')) || 1)
+                }
+                perPortion={true}
+              />
+            </View>
+          )}
+
           <Button
             title="Post"
             buttonStyle={[
@@ -883,37 +1003,6 @@ const Post = () => {
             onPress={resetForm}
           />
         </Card>
-        {recipeTotals.energy > 0 && (
-          <View style={styles.nutritionContainer}>
-            <Text style={styles.sectionTitle}>
-              Recipe Nutrition (estimated)
-            </Text>
-            <NutritionInfo
-              energy={
-                recipeTotals.energy /
-                (Number(control._formValues.portions) || 1)
-              }
-              protein={
-                recipeTotals.protein /
-                (Number(control._formValues.portions) || 1)
-              }
-              fat={
-                recipeTotals.fat / (Number(control._formValues.portions) || 1)
-              }
-              carbohydrate={
-                recipeTotals.carbohydrate /
-                (Number(control._formValues.portions) || 1)
-              }
-              fiber={
-                recipeTotals.fiber / (Number(control._formValues.portions) || 1)
-              }
-              sugar={
-                recipeTotals.sugar / (Number(control._formValues.portions) || 1)
-              }
-              perPortion={true}
-            />
-          </View>
-        )}
       </ScrollView>
     </LinearGradient>
   );
@@ -1043,6 +1132,7 @@ const styles = StyleSheet.create({
     fontFamily: 'InriaSans-Regular',
     fontSize: 16,
     marginBottom: 10,
+    color: HexColors['dark-green'],
   },
 
   selectedIngredientContainer: {
@@ -1107,6 +1197,38 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: HexColors['medium-green'],
     fontFamily: 'InriaSans-Regular',
+  },
+  searchResultsContainer: {
+    marginHorizontal: 10,
+    maxHeight: 200,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: HexColors['light-grey'],
+    shadowColor: HexColors['dark-grey'],
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginBottom: 15,
+  },
+  searchResultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: HexColors['light-grey'],
+  },
+  itemName: {
+    fontSize: 16,
+    color: HexColors['dark-grey'],
+    fontWeight: '500',
+  },
+  itemNutrition: {
+    fontSize: 12,
+    color: HexColors['medium-green'],
+    marginTop: 2,
   },
 });
 
