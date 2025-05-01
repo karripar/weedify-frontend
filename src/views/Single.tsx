@@ -1,4 +1,4 @@
-import {RecipeWithAllFields, User} from 'hybrid-types/DBTypes';
+import {RecipeWithAllFields} from 'hybrid-types/DBTypes';
 import {
   Alert,
   Image,

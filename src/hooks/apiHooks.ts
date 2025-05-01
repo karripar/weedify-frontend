@@ -301,6 +301,12 @@ const useUser = () => {
     );
   };
 
+  const getUserByUsername = async (username: string) => {
+    return await fetchData<UserWithDietaryInfo>(
+      process.env.EXPO_PUBLIC_AUTH_API + '/users/' + username,
+    );
+  }
+
   return {
     getUserByToken,
     postRegister,
@@ -311,6 +317,7 @@ const useUser = () => {
     getUsernameAvailable,
     getEmailAvailable,
     getUserById,
+    getUserByUsername,
   };
 };
 

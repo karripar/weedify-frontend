@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Pressable,
+  TouchableWithoutFeedback
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Overlay} from '@rneui/base';
@@ -245,15 +247,25 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
 
   return (
     <Card containerStyle={styles.card}>
-      <View style={styles.userContainer}>
+      <Pressable
+      onPress={() => {
+        if (user?.user_id === item.user_id) {
+          navigation.navigate('Profile');
+        } else {
+          navigation.navigate('User Profile', { user_id: item.user_id, navigation: navigation});
+        }
+      }}
+      style={styles.userContainer}>
         <Image
           style={styles.userImage}
           source={{
             uri: profileImageUrl,
           }}
+
         />
         <View style={styles.userTextContainer}>
-          <Text style={styles.username}>{item.username}</Text>
+          <Text
+          style={styles.username}>{item.username}</Text>
           <Text style={styles.dateText}>
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
@@ -314,7 +326,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             </TouchableOpacity>
           </View>
         </Overlay>
-      </View>
+      </Pressable>
       <TouchableOpacity onPress={() => navigation.navigate('Recipe', {item})}>
         <Image
           style={styles.recipeImage}

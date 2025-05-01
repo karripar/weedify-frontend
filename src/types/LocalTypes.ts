@@ -32,6 +32,7 @@ type NavigatorType = {
   'Edit Profile': undefined;
   'Edit Recipe': undefined;
   Recipe: undefined;
+  'User Profile': {user_id: number}
 };
 
 type RecipeIngredient = {
