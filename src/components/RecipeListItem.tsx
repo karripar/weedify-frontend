@@ -252,7 +252,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         if (user?.user_id === item.user_id) {
           navigation.navigate('Profile');
         } else {
-          navigation.navigate('User Profile', { user_id: item.user_id, navigation: navigation});
+          navigation.navigate('User Profile', { user_id: item.user_id});
         }
       }}
       style={styles.userContainer}>

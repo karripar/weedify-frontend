@@ -15,13 +15,14 @@ import {useRecipes} from '../hooks/apiHooks';
 import {useUpdateContext} from '../hooks/contextHooks';
 import RecipeListItem from '../components/RecipeListItem';
 import {
+  NavigatorType,
   RecipeWithOwnerExtended,
   RecipeWithPossibleLikes,
 } from '../types/LocalTypes';
 import SearchComponent from '../components/SearchBar';
 import {fetchData} from '../lib/functions';
 
-const Home = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
+const Home = ({navigation}: {navigation: NavigationProp<NavigatorType>}) => {
   const {recipeArray, loading} = useRecipes();
   const {triggerUpdate} = useUpdateContext();
 

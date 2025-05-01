@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Image,
-  Pressable,
 } from 'react-native';
 
 import { useUserContext } from '../hooks/contextHooks';
@@ -13,9 +12,13 @@ import {UserWithNoPassword} from 'hybrid-types/DBTypes';
 import {useRecipes, useUser} from '../hooks/apiHooks';
 import {HexColors} from '../utils/colors';
 import { ScrollView } from 'react-native';
+import RecipeListItem from '../components/RecipeListItem';
+import { useNavigation } from 'expo-router';
 
 
-const VisitedProfile = ({route, navigation}: any) => {
+
+
+const VisitedProfile = ({route}: any) => {
   const {user} = useUserContext();
   const {user_id} = route.params;
   const [visitedUser, setVisitedUser] = useState<UserWithNoPassword | null>(
@@ -64,26 +67,18 @@ const VisitedProfile = ({route, navigation}: any) => {
       </View>
 
       <Text style={styles.recipeTitle}>Recipes by {visitedUser.username}</Text>
+      {/*}
 
       <ScrollView contentContainerStyle={styles.recipeList}>
         {recipeArray.map((item) => (
-          <View style={styles.recipeCard} key={item.recipe_id}>
-            <View style={styles.recipeInfo}>
-              <Text style={styles.recipeName}>{item.title}</Text>
-              <Text style={styles.recipeDate}>
-                {new Date(item.created_at).toLocaleDateString('fi-FI')}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() =>
-                navigation.navigate("Recipe", {item})
-              }>
-              <Text style={styles.recipeName}>{item.title}</Text>
-            </Pressable>
-
-          </View>
+          <RecipeListItem
+          key={item.recipe_id}
+          item={item}
+          navigation={useNavigation()}
+        />
         ))}
       </ScrollView>
+      */}
     </View>
   );
 };
