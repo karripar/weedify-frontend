@@ -405,7 +405,7 @@ const Single = ({route}: any) => {
             style={styles.commentsButton}
             onPress={() => setShowComments(!showComments)}
           >
-            <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionTitle}testID='show-comments'>
               {showComments ? 'Hide Comments' : 'Show Comments'}
             </Text>
             {showComments ? (

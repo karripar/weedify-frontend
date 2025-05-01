@@ -259,24 +259,22 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           </Text>
         </View>
         {user && user.user_id !== item.user_id && (
-          <Follows
-            userId={item.user_id}>
-
-            </Follows>
+          <Follows userId={item.user_id}></Follows>
         )}
-        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={toggleRecipeOverlay}
-            testID="recipe-overlay"
-          >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={20}
-              color={HexColors['dark-grey']}
-            />
-          </TouchableOpacity>
-        )}
+        {user &&
+          (user.user_id === item.user_id || user.user_level_id === 1) && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleRecipeOverlay}
+              testID="recipe-overlay"
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={HexColors['dark-grey']}
+              />
+            </TouchableOpacity>
+          )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}
@@ -390,6 +388,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         />
         <Button
           title="Open"
+          testID="view-recipe"
           buttonStyle={styles.openButton}
           titleStyle={styles.openButtonText}
           containerStyle={styles.buttonContainer}

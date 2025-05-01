@@ -212,6 +212,7 @@ const Post = () => {
     formState: {errors, isValid},
     reset,
     getValues,
+    trigger,
   } = useForm({
     defaultValues: initValues,
   });
@@ -279,6 +280,7 @@ const Post = () => {
       setCurrentIngredient('');
       setAmount('');
       setSelectedUnit('');
+      setIngredientSearchTerm('');
       setSelectedIngredientData(null);
     }
   };
@@ -569,7 +571,7 @@ const Post = () => {
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
-                autoCapitalize="sentences"
+                autoCapitalize="words"
                 errorMessage={errors.title?.message}
                 testID="title-input"
               />
@@ -873,11 +875,15 @@ const Post = () => {
                 control={control}
                 rules={{
                   required: {value: true, message: 'Portions is required'},
-                  maxLength: {value: 10, message: 'maximum 10 numbers'},
+                  maxLength: {value: 2, message: 'maximum 2 numbers'},
                   minLength: {value: 1, message: 'minimum 1 numbers'},
                   pattern: {
                     value: /^[0-9]+$/,
                     message: 'Please enter numbers only',
+                  },
+                  max: {
+                    value: 20,
+                    message: 'Maximum 20 portions allowed',
                   },
                 }}
                 render={({field: {onChange, onBlur, value}}) => (
@@ -890,6 +896,10 @@ const Post = () => {
                       onChange(
                         numericValue === '' ? undefined : Number(numericValue),
                       );
+
+                      if (Number(numericValue) > 20) {
+                        trigger('portions');
+                      }
                     }}
                     value={value?.toString()}
                     keyboardType="numeric"

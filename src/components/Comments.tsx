@@ -265,6 +265,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
         <View style={styles.container}>
           <TextInput
             ref={inputRef}
+            testID='comment-input'
             placeholder="Write a comment..."
             placeholderTextColor={HexColors['almost-white']}
             style={styles.commentInput}
@@ -272,6 +273,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
           />
           <TouchableOpacity onPress={handleSubmit} style={styles.commentSubmit}>
             <Text
+            testID='do-comment'
               style={styles.commentButtonText}
             >
               Comment
