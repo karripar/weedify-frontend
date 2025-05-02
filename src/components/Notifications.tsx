@@ -10,7 +10,6 @@ import {
   View,
   Animated,
   ScrollView,
-  TouchableWithoutFeedback
 } from 'react-native';
 import {Text} from '@rneui/base';
 import {HexColors} from '../utils/colors';
@@ -237,7 +236,7 @@ export default Notifications;
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
+    position: 'fixed',
     top: 0,
     left: 0,
     right: 0,

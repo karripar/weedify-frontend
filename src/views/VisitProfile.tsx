@@ -18,7 +18,7 @@ import { useNavigation } from 'expo-router';
 
 
 
-const VisitedProfile = ({route}: any) => {
+const VisitedProfile = ({route, navigation}: any) => {
   const {user} = useUserContext();
   const {user_id} = route.params;
   const [visitedUser, setVisitedUser] = useState<UserWithNoPassword | null>(
@@ -26,7 +26,6 @@ const VisitedProfile = ({route}: any) => {
   );
   const {getUserById} = useUser();
   const {recipeArray} = useRecipes(user_id);
-
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -67,18 +66,17 @@ const VisitedProfile = ({route}: any) => {
       </View>
 
       <Text style={styles.recipeTitle}>Recipes by {visitedUser.username}</Text>
-      {/*}
 
       <ScrollView contentContainerStyle={styles.recipeList}>
         {recipeArray.map((item) => (
           <RecipeListItem
           key={item.recipe_id}
           item={item}
-          navigation={useNavigation()}
+          navigation={navigation}
         />
         ))}
       </ScrollView>
-      */}
+
     </View>
   );
 };

@@ -108,6 +108,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     const loadProfileImage = async () => {
       try {
         const profileImage = await getUserWithProfileImage(item.user_id);
+        console.log('Profile image:', profileImage);
         if (profileImage && profileImage.filename) {
           setProfileImageUrl(profileImage.filename);
         }
@@ -250,7 +251,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         if (user?.user_id === item.user_id) {
           navigation.navigate('Profile');
         } else {
-          navigation.navigate('User Profile', { user_id: item.user_id});
+          navigation.navigate('User Profile', { user_id: item.user_id, navigation});
         }
       }}
       style={styles.userContainer}>
@@ -282,6 +283,20 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             />
           </TouchableOpacity>
         )}
+        {user &&
+          (user.user_id === item.user_id || user.user_level_id === 1) && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleRecipeOverlay}
+              testID="recipe-overlay"
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={HexColors['dark-grey']}
+              />
+            </TouchableOpacity>
+          )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}
@@ -395,6 +410,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         />
         <Button
           title="Open"
+          testID="view-recipe"
           buttonStyle={styles.openButton}
           titleStyle={styles.openButtonText}
           containerStyle={styles.buttonContainer}
