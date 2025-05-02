@@ -6,7 +6,6 @@ import {
   View,
   Alert,
   Pressable,
-  TouchableWithoutFeedback
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Overlay} from '@rneui/base';
