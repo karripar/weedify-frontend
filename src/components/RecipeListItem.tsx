@@ -16,7 +16,6 @@ import {useLikes, useUser, useFavorites, useRecipes} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 type RecipeListItemProps = {
   item: {
     likes_count?: number;
@@ -39,7 +38,7 @@ type RecipeListItemProps = {
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   // Profile image loading logic
   const {getUserWithProfileImage} = useUser();
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
 
@@ -123,8 +122,8 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
 
   // Set likes count when it changes
   useEffect(() => {
-    if (item && item.likes_count !== undefined) {
-      setLikesCount(item.likes_count);
+    if (item && item.likes_count !== null) {
+      setLikesCount(item.likes_count ?? 0);
     }
   }, [item.likes_count]);
 
@@ -259,7 +258,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.userImage}
           source={{
-            uri: profileImageUrl,
+            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
           }}
 
         />
