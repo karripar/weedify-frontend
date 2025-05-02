@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Pressable,
+  TouchableWithoutFeedback
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Overlay} from '@rneui/base';
@@ -14,7 +16,7 @@ import {useState, useEffect} from 'react';
 import {useLikes, useUser, useFavorites, useRecipes} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Follows from './Follows';
+
 
 type RecipeListItemProps = {
   item: {
@@ -108,6 +110,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     const loadProfileImage = async () => {
       try {
         const profileImage = await getUserWithProfileImage(item.user_id);
+        console.log('Profile image:', profileImage);
         if (profileImage && profileImage.filename) {
           setProfileImageUrl(profileImage.filename);
         }
@@ -245,21 +248,47 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
 
   return (
     <Card containerStyle={styles.card}>
-      <View style={styles.userContainer}>
+      <Pressable
+      onPress={() => {
+        if (user?.user_id === item.user_id) {
+          navigation.navigate('Profile');
+        } else {
+          navigation.navigate('User Profile', { user_id: item.user_id, navigation});
+        }
+      }}
+      style={styles.userContainer}>
         <Image
           style={styles.userImage}
           source={{
             uri: profileImageUrl,
           }}
+
         />
         <View style={styles.userTextContainer}>
-          <Text style={styles.username}>{item.username}</Text>
+          <Text
+          style={styles.username}>{item.username}</Text>
           <Text style={styles.dateText}>
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
         </View>
+<<<<<<< HEAD
         {user && user.user_id !== item.user_id && (
           <Follows userId={item.user_id}></Follows>
+=======
+        
+        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={toggleRecipeOverlay}
+            testID="recipe-overlay"
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={20}
+              color={HexColors['dark-grey']}
+            />
+          </TouchableOpacity>
+>>>>>>> b1d5dff0ebbcd069f55efea64a2be883ec5d4b48
         )}
         {user &&
           (user.user_id === item.user_id || user.user_level_id === 1) && (
@@ -312,7 +341,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             </TouchableOpacity>
           </View>
         </Overlay>
-      </View>
+      </Pressable>
       <TouchableOpacity onPress={() => navigation.navigate('Recipe', {item})}>
         <Image
           style={styles.recipeImage}

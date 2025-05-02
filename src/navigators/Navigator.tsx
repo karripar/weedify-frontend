@@ -13,6 +13,7 @@ import Login from '../views/Login';
 import EditProfileForm from '../components/EditProfileForm';
 import Single from '../views/Single';
 import EditRecipeForm from '../components/EditRecipeForm';
+import VisitedProfile from '../views/VisitProfile';
 
 const Tab = createBottomTabNavigator<NavigatorType>();
 const Stack = createNativeStackNavigator<NavigatorType>();
@@ -113,6 +114,14 @@ const StackScreen = () => {
         <Stack.Screen
           name="Recipe"
           component={Single}
+          options={{
+            headerStyle: {backgroundColor: HexColors['medium-green']},
+            headerTintColor: HexColors['light-purple'],
+          }}
+        />
+        <Stack.Screen
+          name="User Profile"
+          component={VisitedProfile}
           options={{
             headerStyle: {backgroundColor: HexColors['medium-green']},
             headerTintColor: HexColors['light-purple'],
