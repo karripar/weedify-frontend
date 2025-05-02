@@ -198,7 +198,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               fontWeight: '500',
             }}
           >
-            Show Notifications
+            Notifications
           </Text>
           {notificationCount > 0 && (
             <View

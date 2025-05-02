@@ -531,7 +531,6 @@ const Post = () => {
           </TouchableOpacity>
         </View>
       )}
-
       <ScrollView>
         <Card containerStyle={styles.card}>
           {image?.assets && image.assets[0].type === 'video' ? (
