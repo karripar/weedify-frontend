@@ -10,7 +10,6 @@ import {
   View,
   Animated,
   ScrollView,
-  TouchableWithoutFeedback
 } from 'react-native';
 import {Text} from '@rneui/base';
 import {HexColors} from '../utils/colors';

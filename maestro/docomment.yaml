@@ -1,0 +1,35 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# Login first
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@01.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora01'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+
+# Navigate to a recipe
+- scrollUntilVisible:
+    element:
+      id: 'view-recipe'
+    direction: DOWN
+- tapOn:
+    id: 'view-recipe'
+
+- scrollUntilVisible:
+    element:
+      id: 'show-comments'
+    direction: DOWN
+- tapOn:
+    id: 'show-comments'
+- tapOn:
+    id: 'comment-input'
+- inputText: 'This recipe looks amazing! I will try it this weekend.'
+- tapOn: 'do-comment'
+- assertVisible: 'This recipe looks amazing!'
+- takeScreenshot: 'Comment added successfully'

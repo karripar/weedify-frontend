@@ -271,7 +271,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
         </View>
-        
+
         {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
           <TouchableOpacity
             style={styles.menuButton}
@@ -285,6 +285,20 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             />
           </TouchableOpacity>
         )}
+        {user &&
+          (user.user_id === item.user_id || user.user_level_id === 1) && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleRecipeOverlay}
+              testID="recipe-overlay"
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={HexColors['dark-grey']}
+              />
+            </TouchableOpacity>
+          )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}
@@ -398,6 +412,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         />
         <Button
           title="Open"
+          testID="view-recipe"
           buttonStyle={styles.openButton}
           titleStyle={styles.openButtonText}
           containerStyle={styles.buttonContainer}
