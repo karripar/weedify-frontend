@@ -148,7 +148,7 @@ const Single = ({route}: any) => {
   useEffect(() => {
     const loadProfileImage = async () => {
       try {
-        if (user) {
+        if (item) {
           const profileImage = await getUserWithProfileImage(item.user_id);
           if (profileImage && profileImage.filename) {
             setProfileImageUrl(profileImage.filename);
@@ -160,7 +160,7 @@ const Single = ({route}: any) => {
     };
 
     loadProfileImage();
-  }, [user]);
+  }, [item.user_id]);
 
   return (
     <LinearGradient
