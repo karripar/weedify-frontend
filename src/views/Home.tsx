@@ -38,7 +38,7 @@ const Home = ({navigation}: {navigation: NavigationProp<NavigatorType>}) => {
   const recipesWithLikes: RecipeWithOwnerExtended[] =
     recipeArray?.map((recipe: RecipeWithPossibleLikes) => ({
       ...recipe,
-      likes_count: recipe.likes_count !== undefined ? recipe.likes_count : 0,
+      likes_count: recipe.likes_count ?? 0,
     })) || [];
 
   // Handler for when filters change in SearchComponent
@@ -61,8 +61,7 @@ const Home = ({navigation}: {navigation: NavigationProp<NavigatorType>}) => {
         const recipesWithLikes: RecipeWithOwnerExtended[] = recipesData.map(
           (recipe) => ({
             ...recipe,
-            likes_count:
-              recipe.likes_count !== undefined ? recipe.likes_count : 0,
+            likes_count: recipe.likes_count ?? 0,
           }),
         );
 

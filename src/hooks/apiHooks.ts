@@ -612,7 +612,7 @@ const useFile = () => {
     }
 
     const response = JSON.parse(fileResult.body);
-
+    console.log('File upload response:', response);
     return response;
   };
 

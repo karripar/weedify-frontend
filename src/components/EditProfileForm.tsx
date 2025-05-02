@@ -47,7 +47,7 @@ const EditProfileForm = ({
     getUserWithProfileImage,
   } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
 
@@ -205,7 +205,7 @@ const EditProfileForm = ({
     }
 
     // send the text in the bio field or an empty string
-    updateData.bio = inputs.bio !== undefined ? inputs.bio.trim() : '';
+    updateData.bio = inputs.bio != null ? inputs.bio.trim() : '';
 
     // get diet type ids from the selected names
     const dietTypeIds = selectedDiets
