@@ -605,6 +605,7 @@ const useFile = () => {
         },
       },
     );
+    console.log('Profile image upload result:', fileResult);
 
     setLoading(false);
     if (!fileResult.body) {

@@ -42,6 +42,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
 
+  console.log('RecipeListItem:', item);
   // Like functionality state and hooks
   const [isLiked, setIsLiked] = useState(false);
   const [likeId, setLikeId] = useState<number | null>(null);
