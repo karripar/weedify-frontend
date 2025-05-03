@@ -244,10 +244,11 @@ const styles = StyleSheet.create({
     zIndex: 100,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    maxHeight: '100%',
   },
   modal: {
     width: '90%',
-    maxHeight: '70%',
+    maxHeight: '80%',
     backgroundColor: HexColors['white'],
     borderRadius: 10,
     padding: 20,
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     marginBottom: 10,
-    maxHeight: 350,
+    maxHeight: 400,
   },
   notificationItem: {
     backgroundColor: HexColors['almost-white'],

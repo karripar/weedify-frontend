@@ -259,7 +259,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.userImage}
           source={{
-            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
           }}
 
         />
@@ -284,20 +284,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             />
           </TouchableOpacity>
         )}
-        {user &&
-          (user.user_id === item.user_id || user.user_level_id === 1) && (
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={toggleRecipeOverlay}
-              testID="recipe-overlay"
-            >
-              <Ionicons
-                name="ellipsis-vertical"
-                size={20}
-                color={HexColors['dark-grey']}
-              />
-            </TouchableOpacity>
-          )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}
