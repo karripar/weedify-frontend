@@ -39,10 +39,9 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   // Profile image loading logic
   const {getUserWithProfileImage} = useUser();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
 
-  console.log('RecipeListItem:', item);
   // Like functionality state and hooks
   const [isLiked, setIsLiked] = useState(false);
   const [likeId, setLikeId] = useState<number | null>(null);
@@ -109,7 +108,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     const loadProfileImage = async () => {
       try {
         const profileImage = await getUserWithProfileImage(item.user_id);
-        console.log('Profile image:', profileImage);
         if (profileImage && profileImage.filename) {
           setProfileImageUrl(profileImage.filename);
         }

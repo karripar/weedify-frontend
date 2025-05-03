@@ -49,14 +49,12 @@ const VisitedProfile = ({route, navigation}: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {visitedUser.filename && (
           <Image
             source={{
               uri: profileImageURL,
             }}
             style={styles.avatar}
           />
-        )}
         <View style={styles.userInfo}>
           <Text style={styles.username}>{visitedUser.username}</Text>
         </View>

@@ -48,7 +48,7 @@ const EditProfileForm = ({
   } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
 
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
