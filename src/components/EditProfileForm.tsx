@@ -46,8 +46,8 @@ const EditProfileForm = ({
     getUserWithProfileImage,
   } = useUser();
   const {triggerUpdate, update} = useUpdateContext();
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
 
   const [image, setImage] = useState<ImagePicker.ImagePickerResult | null>(
@@ -204,7 +204,7 @@ const EditProfileForm = ({
     }
 
     // send the text in the bio field or an empty string
-    updateData.bio = inputs.bio !== undefined ? inputs.bio.trim() : '';
+    updateData.bio = inputs.bio != null ? inputs.bio.trim() : '';
 
     // get diet type ids from the selected names
     const dietTypeIds = selectedDiets
@@ -224,8 +224,10 @@ const EditProfileForm = ({
 
     // handle profile image (both with and without new image)
     let fileResponse;
+    console.log('Image after clicking update:', image);
     if (image && image.assets) {
       fileResponse = await postProfileImageFile(image.assets[0].uri, token);
+      console.log('File response:', fileResponse);
       if (!fileResponse) {
         Alert.alert('Upload failed');
         return;

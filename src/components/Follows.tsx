@@ -1,8 +1,8 @@
 import {Follow} from 'hybrid-types/DBTypes';
-import {useEffect, useReducer, useRef} from 'react';
+import {useEffect, useReducer, useRef, useState} from 'react';
 import {useFollow} from '../hooks/apiHooks';
-import { StyleSheet, Text, View, Animated, Pressable} from 'react-native';
-import { HexColors } from '../utils/colors';
+import {StyleSheet, Text, View, Animated, Pressable} from 'react-native';
+import {HexColors} from '../utils/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type FollowState = {
@@ -58,7 +58,6 @@ const Follows = ({userId}: {userId: number}) => {
 
       followDispatch({type: 'follow', follow: userFollow});
     } catch (error) {
-      followDispatch({type: 'follow', follow: null});
       console.error((error as Error).message);
     }
   };
@@ -69,31 +68,24 @@ const Follows = ({userId}: {userId: number}) => {
   }, [userId]);
 
   const handleFollow = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token || !userId) return;
+    const token = await AsyncStorage.getItem('token');
+    if (!token || !userId) return;
 
-      if (followState.userFollow) {
-        // Remove follow
-        await removeFollow(followState.userFollow.follow_id, token);
-
-        followDispatch({type: 'follow', follow: null});
-        followDispatch({type: 'setFollowCount', count: followState.count - 1});
-      } else {
-        // Add follow
-        const response = await postFollow(userId, token);
-        const newFollow = {
-          follow_id: response.follow_id,
-          follower_id: response.follower_id,
-          followed_id: response.followed_id,
-        };
-        followDispatch({type: 'follow', follow: newFollow});
-        followDispatch({type: 'setFollowCount', count: followState.count + 1});
-      }
-    } catch (error) {
-      console.error((error as Error).message);
-    } finally {
-      fetchFollowData();
+    if (followState.userFollow) {
+      // Remove follow
+      await removeFollow(followState.userFollow.follow_id, token);
+      followDispatch({ type: 'follow', follow: null });
+      followDispatch({ type: 'setFollowCount', count: followState.count - 1 });
+    } else {
+      // Add follow
+      const response = await postFollow(userId, token);
+      const newFollow = {
+        follow_id: response.follow_id,
+        follower_id: response.follower_id,
+        followed_id: response.followed_id,
+      };
+      followDispatch({ type: 'follow', follow: newFollow });
+      followDispatch({ type: 'setFollowCount', count: followState.count + 1 });
     }
   };
 
@@ -115,14 +107,16 @@ const Follows = ({userId}: {userId: number}) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={{ transform: [{ scale: scaleAnimation }] }}>
+      <Animated.View style={{transform: [{scale: scaleAnimation}]}}>
         <Pressable
           onPress={handleFollow}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
-          style={({ pressed }) => [
+          style={({pressed}) => [
             styles.button,
-            followState.userFollow ? styles.unfollowButton : styles.followButton,
+            followState.userFollow
+              ? styles.unfollowButton
+              : styles.followButton,
             pressed && styles.pressedButton,
           ]}
         >

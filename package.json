@@ -9,7 +9,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@kolking/react-native-rating": "^1.4.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.1",
     "@react-navigation/native": "^7.0.15",
@@ -33,18 +32,12 @@
     "nativewind": "^4.1.23",
     "react": "^18.2.0",
     "react-hook-form": "^7.54.2",
-    "react-native": "0.76.7",
-    "react-native-asset": "^2.1.1",
+    "react-native": "^0.76.7",
     "react-native-dropdown-select-list": "^2.0.5",
     "react-native-multiple-select": "^0.5.12",
-    "react-native-multiselect": "^3.0.2",
     "react-native-ratings": "^8.1.0",
-    "react-native-reanimated": "^3.16.2",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
-    "react-native-sectioned-multi-select": "^0.10.0",
-    "react-native-star-rating": "^1.1.0",
-    "react-native-star-rating-widget": "^1.9.2",
     "react-native-svg": "^15.11.2",
     "tailwindcss": "^3.4.17",
     "zustand": "^5.0.3"

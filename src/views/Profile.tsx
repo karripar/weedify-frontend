@@ -24,8 +24,8 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {triggerUpdate} = useUpdateContext();
   const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
   const {notificationCount} = useNotificationContext();
   const [notificationsVisible, setNotificationsVisible] =
@@ -87,6 +87,8 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
     setProfileMenu(false);
     handleLogout();
   };
+
+  console.log('profileImageUrl', profileImageUrl);
 
   return (
     <LinearGradient
@@ -170,7 +172,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               style={styles.image}
               containerStyle={styles.imageContainer}
               source={{
-                uri: profileImageUrl,
+                uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
               }}
             />
             <Text style={{marginHorizontal: 20, fontSize: 20}}>

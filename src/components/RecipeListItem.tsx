@@ -6,7 +6,6 @@ import {
   View,
   Alert,
   Pressable,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Overlay} from '@rneui/base';
@@ -39,8 +38,8 @@ type RecipeListItemProps = {
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   // Profile image loading logic
   const {getUserWithProfileImage} = useUser();
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
 
   // Like functionality state and hooks
@@ -109,7 +108,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
     const loadProfileImage = async () => {
       try {
         const profileImage = await getUserWithProfileImage(item.user_id);
-        console.log('Profile image:', profileImage);
         if (profileImage && profileImage.filename) {
           setProfileImageUrl(profileImage.filename);
         }
@@ -123,8 +121,8 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
 
   // Set likes count when it changes
   useEffect(() => {
-    if (item && item.likes_count !== undefined) {
-      setLikesCount(item.likes_count);
+    if (item && item.likes_count !== null) {
+      setLikesCount(item.likes_count ?? 0);
     }
   }, [item.likes_count]);
 
@@ -263,7 +261,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.userImage}
           source={{
-            uri: profileImageUrl,
+            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
           }}
         />
         <View style={styles.userTextContainer}>
@@ -273,34 +271,19 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           </Text>
         </View>
 
-        {user &&
-          (user.user_id === item.user_id || user.user_level_id === 1) && (
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={toggleRecipeOverlay}
-              testID="recipe-overlay"
-            >
-              <Ionicons
-                name="ellipsis-vertical"
-                size={20}
-                color={HexColors['dark-grey']}
-              />
-            </TouchableOpacity>
-          )}
-        {user &&
-          (user.user_id === item.user_id || user.user_level_id === 1) && (
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={toggleRecipeOverlay}
-              testID="recipe-overlay"
-            >
-              <Ionicons
-                name="ellipsis-vertical"
-                size={20}
-                color={HexColors['dark-grey']}
-              />
-            </TouchableOpacity>
-          )}
+        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={toggleRecipeOverlay}
+            testID="recipe-overlay"
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={20}
+              color={HexColors['dark-grey']}
+            />
+          </TouchableOpacity>
+        )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}

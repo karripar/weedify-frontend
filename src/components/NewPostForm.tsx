@@ -849,7 +849,7 @@ const Post = () => {
                     onChangeText={(text) => {
                       const numericValue = text.replace(/[^0-9]/g, '');
                       onChange(
-                        numericValue === '' ? undefined : Number(numericValue),
+                        numericValue === '' ? null : Number(numericValue), // fix type undef
                       );
                     }}
                     value={value?.toString()}
@@ -893,7 +893,7 @@ const Post = () => {
                     onChangeText={(text) => {
                       const numericValue = text.replace(/[^0-9]/g, '');
                       onChange(
-                        numericValue === '' ? undefined : Number(numericValue),
+                        numericValue === '' ? null : Number(numericValue), // fix type undef
                       );
 
                       if (Number(numericValue) > 20) {

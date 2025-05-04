@@ -126,8 +126,8 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
         }
       } else if (sortOrder === 'likes') {
         // Varmista että likes_count on numero
-        const likesA = a.likes_count !== undefined ? Number(a.likes_count) : 0;
-        const likesB = b.likes_count !== undefined ? Number(b.likes_count) : 0;
+        const likesA = a.likes_count !== null ? Number(a.likes_count) : 0;
+        const likesB = b.likes_count !== null ? Number(b.likes_count) : 0;
         return likesB - likesA; // Eniten tykätyt ensin
       }
 

@@ -42,7 +42,7 @@ const Single = ({route}: any) => {
   const {user} = useUserContext();
   const {getUserWithProfileImage, getUserById} = useUser();
   const [showComments, setShowComments] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
     process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
   );
   // handle ratings and their display
@@ -182,7 +182,7 @@ const Single = ({route}: any) => {
             <Image
               style={styles.imageContainer}
               source={{
-                uri: profileImageUrl,
+                uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
               }}
             />
             <View style={{flexDirection: 'column', marginLeft: 20, gap: 1}}>

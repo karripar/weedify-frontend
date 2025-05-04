@@ -605,6 +605,7 @@ const useFile = () => {
         },
       },
     );
+    console.log('Profile image upload result:', fileResult);
 
     setLoading(false);
     if (!fileResult.body) {
@@ -612,7 +613,7 @@ const useFile = () => {
     }
 
     const response = JSON.parse(fileResult.body);
-
+    console.log('File upload response:', response);
     return response;
   };
 
