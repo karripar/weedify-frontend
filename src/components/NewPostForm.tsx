@@ -543,7 +543,7 @@ const Post = () => {
               source={{
                 uri:
                   image?.assets![0].uri ||
-                  process.env.EXPO_PUBLIC_UPLOADS + '/uploadimage.png',
+                  'https://dummyimage.com/600x400/ffffff/112926&text=upload+image/video',
               }}
               style={[
                 styles.image,

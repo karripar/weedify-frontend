@@ -6,7 +6,7 @@ import {
   View,
   Alert,
   Pressable,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {Button, Card, Overlay} from '@rneui/base';
@@ -16,7 +16,6 @@ import {useState, useEffect} from 'react';
 import {useLikes, useUser, useFavorites, useRecipes} from '../hooks/apiHooks';
 import {useUserContext, useUpdateContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 type RecipeListItemProps = {
   item: {
@@ -92,7 +91,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
               const token = await AsyncStorage.getItem('token');
               if (!token) return;
 
-              const deleteResponse = await deleteRecipe(item.recipe_id, token);
+              await deleteRecipe(item.recipe_id, token);
               setUpdate(!update);
               Alert.alert('Success', 'Recipe deleted successfully');
             } catch (error) {
@@ -249,42 +248,45 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   return (
     <Card containerStyle={styles.card}>
       <Pressable
-      onPress={() => {
-        if (user?.user_id === item.user_id) {
-          navigation.navigate('Profile');
-        } else {
-          navigation.navigate('User Profile', { user_id: item.user_id, navigation});
-        }
-      }}
-      style={styles.userContainer}>
+        onPress={() => {
+          if (user?.user_id === item.user_id) {
+            navigation.navigate('Profile');
+          } else {
+            navigation.navigate('User Profile', {
+              user_id: item.user_id,
+              navigation,
+            });
+          }
+        }}
+        style={styles.userContainer}
+      >
         <Image
           style={styles.userImage}
           source={{
             uri: profileImageUrl,
           }}
-
         />
         <View style={styles.userTextContainer}>
-          <Text
-          style={styles.username}>{item.username}</Text>
+          <Text style={styles.username}>{item.username}</Text>
           <Text style={styles.dateText}>
             Posted on {new Date(item.created_at).toLocaleDateString('fi-FI')}
           </Text>
         </View>
 
-        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={toggleRecipeOverlay}
-            testID="recipe-overlay"
-          >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={20}
-              color={HexColors['dark-grey']}
-            />
-          </TouchableOpacity>
-        )}
+        {user &&
+          (user.user_id === item.user_id || user.user_level_id === 1) && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleRecipeOverlay}
+              testID="recipe-overlay"
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={HexColors['dark-grey']}
+              />
+            </TouchableOpacity>
+          )}
         {user &&
           (user.user_id === item.user_id || user.user_level_id === 1) && (
             <TouchableOpacity

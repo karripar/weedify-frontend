@@ -9,8 +9,6 @@ import {
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Image, Input} from '@rneui/base';
-import MultiSelect from 'react-native-multiple-select';
-
 import {useDietTypes, useFile, useUser} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
@@ -20,6 +18,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {UserWithDietaryInfo} from 'hybrid-types/DBTypes';
+import MultiSelect from 'react-native-multiple-select';
 
 type UpdateInputs = {
   username: string;
@@ -638,7 +637,6 @@ const styles = StyleSheet.create({
     height: 200,
     width: 200,
     borderRadius: 100,
-    borderWidth: 1,
     borderColor: HexColors['light-grey'],
   },
   buttonTitle: {
