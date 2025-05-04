@@ -98,12 +98,10 @@
 
 3. Set Environment Variables Create a .env file with the following variables:
 
-```json
-EXPO_PUBLIC_AUTH_API=<backend-auth-api-url>
-EXPO_PUBLIC_MEDIA_API=<backend-media-api-url>
-EXPO_PUBLIC_UPLOAD_API=<backend-upload-api-url>
-EXPO_PUBLIC_UPLOADS=<media-uploads-url>
-```
+`EXPO_PUBLIC_AUTH_API=<backend-auth-api-url> `<br>
+`EXPO_PUBLIC_MEDIA_API=<backend-media-api-url> `<br>
+`EXPO_PUBLIC_UPLOAD_API=<backend-upload-api-url> `<br>
+`EXPO_PUBLIC_UPLOADS=<media-uploads-url> `<br>
 
 4. Start the Development Server
 
