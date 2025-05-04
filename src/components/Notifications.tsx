@@ -248,14 +248,15 @@ const styles = StyleSheet.create({
   },
   modal: {
     width: '90%',
-    maxHeight: '80%',
+    maxHeight: '100%',
     backgroundColor: HexColors['white'],
     borderRadius: 10,
     padding: 20,
     flexShrink: 1,
     justifyContent: 'flex-start',
     alignItems: 'stretch',
-    marginTop: 50,
+    marginTop: 20,
+    marginBottom: 20
   },
   title: {
     fontSize: 24,
@@ -297,6 +298,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 20,
     marginBottom: 14,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.12,

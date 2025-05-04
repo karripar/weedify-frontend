@@ -1,18 +1,115 @@
 # Weedify Frontend Repository
 
+# Weedify - Recipe Sharing Application
+
+## Description
+### Weedify is a mobile recipe-sharing platform where users can discover, share, and save recipes. The application serves as a community space for food enthusiasts to explore diverse culinary creations, find recipes based on their dietary preferences and get inspiration for new cooking ideas. Users can create personalized profiles, share their own recipes, and interact with content through comments, ratings, and favorites.
+
+## Key Features and Functionality
+
+### User Profile and Community
+- User Profiles: Create and customize personal profiles with profile picture and bio information
+- Dietary Preferences: Users can set their dietary restrictions/preferences
+- Recipe Management: Post, edit, and delete your own recipes
+- Social Interactions: Follow other users and view their recipes
+
+### Recipe Sharing
+- Recipe Creation: Add recipes with title, image/video, ingredients, instructions, dietary information, estimated cooking time, portions and difficulty level.
+- Ingredients Management: Detailed ingredient lists with measurements, units and nutrition informaion.
+- Dietary info: Tag recipes with appropriate dietary categories (vegan, gluten-free, etc.)
+
+### Discovery and Interaction
+- Main feed: Browse recipes from other users in a scrollable feed
+- Rating System: Rate recipes and view average ratings
+- Comments: Discuss or ask questions about recipes through a comment system with reply functionality
+- Favorites: Save your favorite recipes for quick access
+- Like: Like recipes.
+
+### Search and filtering
+- Recipe Search: Find recipes based on ingredients, dietary restrictions, or keywords
+- Ingredient Search: Look for recipes that use specific ingredients
+- Filtering Options: Filter content based on dietary preferences, cooking time or difficulty level.
+- Sorting: Sort recipes based on likes, ratings or timestamp.
+
+### Security and User Control
+- Authentication: Secure login and registration system
+- Profile Management: Update personal information and preferences
+- Content Moderation: Users can manage their content.
+
 ---
 
-## Installation
+## Technical Requirements
 
-1. Clone the repository using `git clone <repository url>` in your terminal (eg. Git Bash or whatever)
+### Frontend
+- React Native: Cross-platform mobile application framework
+- Expo: Development toolchain for React Native
+- React Navigation: Navigation library for screen management
+- Context API: For state management across components
+
+### UI Components
+- React Native Elements (@rneui): UI component library
+- Expo Linear Gradient: For gradient backgrounds
+- React Native Vector Icons: Icon library
+- Custom Components: Specialized components for recipes, comments, etc.
+
+### Form Handling & Validation
+- React Hook Form: For managing form state and validation
+- Custom validation logic for recipes, user profiles, and comments
+- Input control patterns for different data types (numeric, text, etc.)
+
+### Media Processing
+- Image picker integration for recipe photos
+- Video player component for recipe videos
+- Nutrition data calculation and display
+
+### Backend Integration
+- REST API Integration: Communication with backend services
+- AsyncStorage: Local data persistence
+- File/Image Upload: Support for uploading media content
+
+### Testing
+- Maestro: UI testing framework for automated test scenarios
+
+---
+
+## Setup Instructions
+
+### Installation
+
+1. Clone the repository using `git clone https://github.com/karripar/weedify-frontend.git` in your terminal.
 
 2. Install the required packages: <br>
 Make sure you have node.js installed and run: <br>
-`npm install` to install all the necessary packages.
+`npm install` (may need '--legacy-peer-deps' to resolve dependency issues) to install all the necessary packages.
+
+3. Set Environment Variables Create a .env file with the following variables:
+
+EXPO_PUBLIC_AUTH_API=<backend-auth-api-url>
+EXPO_PUBLIC_MEDIA_API=<backend-media-api-url>
+EXPO_PUBLIC_UPLOAD_API=<backend-upload-api-url>
+EXPO_PUBLIC_UPLOADS=<media-uploads-url>
+
+4. Start the Development Server
+
+npx expo start
 
 ---
 
-## Links: <br>
+## Testing
+
+### Run automated tests using Maestro:
+
+maestro test ./maestro/<test-file>.yaml
+
+## Available test scenarios:
+
+- Login/Registration
+- Recipe posting and editing
+- Adding favorites
+- User profile updates
+- Commenting on recipes
+
+## Related Repositories: <br>
 **[Backend Repository](https://github.com/karripar/weedify-backend)** <br>
 **[Hybrid TypeScript Types](https://github.com/karripar/weedify-types)** <br>
 

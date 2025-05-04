@@ -153,19 +153,17 @@ const Favorites = ({
                         }}
                       >
                         {item.diet_types && item.diet_types.length > 0 ? (
-                          item.diet_types.map((dietType) => (
-                            <Text
-                              style={{
-                                marginRight: 10,
-                                paddingVertical: 3,
-                                color: HexColors['medium-green'],
-                                fontFamily: 'InriaSans-Regular',
-                              }}
-                              key={dietType.diet_type_id}
-                            >
-                              {dietType.name}
-                            </Text>
-                          ))
+                          <Text
+                            style={{
+                              paddingVertical: 3,
+                              color: HexColors['medium-green'],
+                              fontFamily: 'InriaSans-Regular',
+                            }}
+                          >
+                            {item.diet_types
+                              .map((dietType) => dietType.name)
+                              .join(', ')}
+                          </Text>
                         ) : (
                           <Text>No special diets</Text>
                         )}

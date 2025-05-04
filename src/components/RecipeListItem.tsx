@@ -261,7 +261,10 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.userImage}
           source={{
-            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
+            uri: profileImageUrl
+              ? profileImageUrl
+              : process.env.EXPO_PUBLIC_UPLOADS_DIR +
+                '/default/defaultprofileimage.png',
           }}
         />
         <View style={styles.userTextContainer}>
@@ -271,19 +274,20 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
           </Text>
         </View>
 
-        {user && (user.user_id === item.user_id || user.user_level_id === 1) && (
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={toggleRecipeOverlay}
-            testID="recipe-overlay"
-          >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={20}
-              color={HexColors['dark-grey']}
-            />
-          </TouchableOpacity>
-        )}
+        {user &&
+          (user.user_id === item.user_id || user.user_level_id === 1) && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleRecipeOverlay}
+              testID="recipe-overlay"
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={HexColors['dark-grey']}
+              />
+            </TouchableOpacity>
+          )}
         <Overlay
           isVisible={recipeOverlay}
           onBackdropPress={toggleRecipeOverlay}
@@ -341,38 +345,26 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             {item.title}{' '}
             <Text style={styles.cookingTime}>({item.cooking_time}min)</Text>
           </Text>
-          <View style={styles.iconGroup}>
-            <TouchableOpacity
-              onPress={handleLikePress}
-              style={styles.iconButton}
+          <TouchableOpacity onPress={handleLikePress} style={styles.iconButton}>
+            <Ionicons
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={24}
+              color={
+                isLiked ? HexColors['darkest-green'] : HexColors['dark-grey']
+              }
+            />
+            <Text
+              style={[
+                styles.likeCount,
+                isLiked && {
+                  color: HexColors['darkest-green'],
+                  fontWeight: 'bold',
+                },
+              ]}
             >
-              <Ionicons
-                name={isLiked ? 'heart' : 'heart-outline'}
-                size={24}
-                color={
-                  isLiked ? HexColors['darkest-green'] : HexColors['dark-grey']
-                }
-              />
-              <Text
-                style={[
-                  styles.likeCount,
-                  isLiked && {
-                    color: HexColors['darkest-green'],
-                    fontWeight: 'bold',
-                  },
-                ]}
-              >
-                {likesCount}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons
-                name="chatbubble-outline"
-                size={22}
-                color={HexColors['dark-grey']}
-              />
-            </TouchableOpacity>
-          </View>
+              {likesCount}
+            </Text>
+          </TouchableOpacity>
         </View>
         {item.diet_types && item.diet_types.length > 0 && (
           <View style={styles.dietContainer}>
@@ -499,7 +491,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    marginLeft: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },

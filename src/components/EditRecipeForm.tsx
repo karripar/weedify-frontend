@@ -461,38 +461,28 @@ const EditRecipeForm = ({
                 />
 
                 <Text style={styles.text}>Ingredients</Text>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                  }}
-                >
-                  <Input
-                    placeholder="Search ingredients..."
-                    value={ingredientSearchTerm}
-                    onChangeText={handleIngredientSearch}
-                    containerStyle={{flex: 1}}
-                    rightIcon={
-                      ingredientSearchTerm.length > 0 ? (
-                        <TouchableOpacity
-                          onPress={() => {
-                            setIngredientSearchTerm('');
-                            setIngredientSearchResults([]);
-                          }}
-                        >
-                          <Icon
-                            name="close"
-                            type="material"
-                            color={HexColors['dark-grey']}
-                          />
-                        </TouchableOpacity>
-                      ) : undefined
-                    }
-                  />
-                </View>
-
+                <Input
+                  placeholder="Search ingredients..."
+                  value={ingredientSearchTerm}
+                  onChangeText={handleIngredientSearch}
+                  containerStyle={{flex: 1}}
+                  rightIcon={
+                    ingredientSearchTerm.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setIngredientSearchTerm('');
+                          setIngredientSearchResults([]);
+                        }}
+                      >
+                        <Icon
+                          name="close"
+                          type="material"
+                          color={HexColors['dark-grey']}
+                        />
+                      </TouchableOpacity>
+                    ) : undefined
+                  }
+                />
                 {ingredientSearchResults.length > 0 && (
                   <View style={styles.searchResultsContainer}>
                     <ScrollView style={{maxHeight: 200}}>
@@ -986,7 +976,6 @@ const styles = StyleSheet.create({
   },
   searchResultsContainer: {
     marginHorizontal: 10,
-    maxHeight: 200,
     backgroundColor: 'white',
     borderRadius: 10,
     borderWidth: 1,
@@ -1020,7 +1009,7 @@ const styles = StyleSheet.create({
     backgroundColor: HexColors['almost-white'],
     borderRadius: 10,
     marginHorizontal: 10,
-    marginVertical: 8,
+    marginBottom: 15,
     padding: 12,
     borderWidth: 1,
     borderColor: HexColors['light-green'],

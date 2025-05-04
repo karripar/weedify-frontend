@@ -3,7 +3,6 @@ import {
   Credentials,
   UserWithDietaryInfo,
   UserWithNoPassword,
-  UserWithProfilePicture,
 } from 'hybrid-types/DBTypes';
 import {useAuthentication, useUser} from '../hooks/apiHooks';
 import {AuthContextType} from '../types/LocalTypes';

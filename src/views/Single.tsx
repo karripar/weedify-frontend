@@ -43,7 +43,7 @@ const Single = ({route}: any) => {
   const {getUserWithProfileImage, getUserById} = useUser();
   const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+    process.env.EXPO_PUBLIC_UPLOADS + '/default/defaultprofileimage.png',
   );
   // handle ratings and their display
   const [showRatingForm, setShowRatingForm] = useState(false);
@@ -182,7 +182,10 @@ const Single = ({route}: any) => {
             <Image
               style={styles.imageContainer}
               source={{
-                uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+                uri: profileImageUrl
+                  ? profileImageUrl
+                  : process.env.EXPO_PUBLIC_UPLOADS +
+                    '/defaultprofileimage.png',
               }}
             />
             <View style={{flexDirection: 'column', marginLeft: 20, gap: 1}}>
@@ -272,7 +275,16 @@ const Single = ({route}: any) => {
               type="material-community"
               color={HexColors['dark-green']}
             />
-            <View style={{flexDirection: 'column', marginLeft: 20, gap: 1}}>
+            <View
+              style={{
+                flexDirection: 'column',
+                marginLeft: 20,
+                gap: 1,
+                flexWrap: 'wrap',
+                flex: 1,
+                paddingRight: 20
+              }}
+            >
               <Text style={[styles.sectionTitle, {marginLeft: 5}]}>
                 Ingredients
               </Text>
@@ -405,7 +417,7 @@ const Single = ({route}: any) => {
             style={styles.commentsButton}
             onPress={() => setShowComments(!showComments)}
           >
-            <Text style={styles.sectionTitle}testID='show-comments'>
+            <Text style={styles.sectionTitle} testID="show-comments">
               {showComments ? 'Hide Comments' : 'Show Comments'}
             </Text>
             {showComments ? (

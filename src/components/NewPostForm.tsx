@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  FlatList,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import VideoPlayer from './VideoPlayer';
@@ -489,530 +490,512 @@ const Post = () => {
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      {showMockPicker && (
-        <View
-          testID="mock-image-picker"
-          style={{
-            position: 'absolute',
-            top: 100,
-            left: 20,
-            right: 20,
-            zIndex: 999,
-            backgroundColor: HexColors['medium-green'],
-            padding: 20,
-            borderRadius: 10,
-            borderWidth: 2,
-            borderColor: 'white',
-          }}
-        >
-          <TouchableOpacity
-            testID="mock-image-option"
-            style={{
-              backgroundColor: HexColors['light-grey'],
-              padding: 15,
-              borderRadius: 5,
-              alignItems: 'center',
-              marginVertical: 10,
-            }}
-            onPress={() => {
-              setImage({
-                canceled: false,
-                assets: [
-                  {
-                    uri: 'mock-image.jpg',
-                    width: 500,
-                    height: 500,
-                    type: 'image',
-                  },
-                ],
-              });
-              setShowMockPicker(false);
-            }}
-          >
-            <Text style={{fontSize: 18, fontWeight: 'bold'}}>Mock Image 1</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <ScrollView>
-        <Card containerStyle={styles.card}>
-          {image?.assets && image.assets[0].type === 'video' ? (
-            <VideoPlayer videoFile={image.assets[0].uri} style={styles.image} />
-          ) : (
-            <Image
-              testID="image-picker"
-              source={{
-                uri:
-                  image?.assets![0].uri ||
-                  'https://dummyimage.com/600x400/ffffff/112926&text=upload+image/video',
-              }}
-              style={[
-                styles.image,
-                {
-                  objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
-                },
-              ]}
-              onPress={pickImage}
-            />
-          )}
-
-          <Text style={styles.text}>Title</Text>
-          <Controller
-            control={control}
-            rules={{
-              required: {value: true, message: 'is required'},
-              maxLength: {value: 25, message: 'maximum 25 characters'},
-              minLength: {value: 3, message: 'minimum 3 characters'},
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <Input
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                autoCapitalize="words"
-                errorMessage={errors.title?.message}
-                testID="title-input"
-              />
-            )}
-            name="title"
-          />
-
-          <Text style={styles.text}>Ingredients</Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 10,
-            }}
-          >
-            <Input
-              placeholder="Search ingredients..."
-              value={ingredientSearchTerm}
-              onChangeText={handleIngredientSearch}
-              containerStyle={{flex: 1}}
-              rightIcon={
-                ingredientSearchTerm.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setIngredientSearchTerm('');
-                      setIngredientSearchResults([]);
+      <FlatList
+        data={[
+          {
+            component: (
+              <Card containerStyle={styles.card}>
+                {image?.assets && image.assets[0].type === 'video' ? (
+                  <VideoPlayer
+                    videoFile={image.assets[0].uri}
+                    style={styles.image}
+                  />
+                ) : (
+                  <Image
+                    testID="image-picker"
+                    source={{
+                      uri:
+                        image?.assets![0].uri ||
+                        'https://dummyimage.com/600x400/ffffff/112926&text=upload+image/video',
                     }}
-                  >
-                    <Icon
-                      name="close"
-                      type="material"
-                      color={HexColors['dark-grey']}
+                    style={[
+                      styles.image,
+                      {
+                        objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+                      },
+                    ]}
+                    onPress={pickImage}
+                  />
+                )}
+
+                <Text style={styles.text}>Title</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    required: {value: true, message: 'is required'},
+                    maxLength: {value: 25, message: 'maximum 25 characters'},
+                    minLength: {value: 3, message: 'minimum 3 characters'},
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <Input
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      autoCapitalize="words"
+                      errorMessage={errors.title?.message}
+                      testID="title-input"
                     />
-                  </TouchableOpacity>
-                ) : undefined
-              }
-            />
-          </View>
-
-          {ingredientSearchResults.length > 0 && (
-            <View style={styles.searchResultsContainer}>
-              <ScrollView style={{maxHeight: 200}}>
-                {ingredientSearchResults.map((ingredient, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.searchResultItem}
-                    onPress={() => selectIngredient(ingredient)}
-                  >
-                    <Text style={styles.itemName}>{ingredient.name.fi}</Text>
-                    <Text style={styles.itemNutrition}>
-                      {ingredient.energyKcal.toFixed(1)} kcal |{' '}
-                      {ingredient.protein.toFixed(1)}g protein
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {selectedIngredientData && (
-            <View style={styles.selectedIngredientContainer}>
-              <View style={styles.selectedIngredientHeader}>
-                <Text style={styles.selectedIngredientTitle}>
-                  Selected ingredient
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedIngredientData(null);
-                    setCurrentIngredient('');
-                  }}
-                  style={styles.clearButton}
-                >
-                  <Text style={styles.clearButtonText}>X</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.selectedIngredientContent}>
-                <Text style={styles.selectedIngredientName}>
-                  {selectedIngredientData.name.fi}
-                </Text>
-                <Text style={styles.selectedIngredientDetails}>
-                  {selectedIngredientData.energyKcal.toFixed(1)} kcal / 100g |
-                  Protein: {selectedIngredientData.protein.toFixed(1)}g | Fat:{' '}
-                  {selectedIngredientData.fat.toFixed(1)}g | Carbs:{' '}
-                  {selectedIngredientData.carbohydrate.toFixed(1)}g
-                </Text>
-              </View>
-              <Text style={styles.selectedIngredientGuide}>
-                Select amount and unit
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.ingredientsContainer}>
-            <View style={{flex: 1.5, marginHorizontal: 10}} testID="unit-input">
-              <SelectList
-                data={data}
-                search={false}
-                setSelected={setSelectedUnit}
-                save="value"
-                defaultOption={{key: selectedUnit, value: selectedUnit}}
-                boxStyles={{
-                  borderColor: HexColors['light-grey'],
-                  borderWidth: 1.5,
-                }}
-                dropdownStyles={{
-                  borderColor: HexColors['light-grey'],
-                  borderWidth: 1.5,
-                  marginBottom: 10,
-                }}
-                dropdownItemStyles={{marginVertical: 3}}
-                placeholder="Unit"
-              />
-            </View>
-            <View style={{flex: 1}}>
-              <Input
-                style={styles.input}
-                inputContainerStyle={styles.inputContainer}
-                value={amount}
-                onChangeText={setAmount}
-                autoCapitalize="none"
-                placeholder="Amount"
-                testID="amount-input"
-              />
-            </View>
-          </View>
-          <Button
-            buttonStyle={styles.addButton}
-            containerStyle={styles.buttonContainer}
-            titleStyle={styles.buttonTitle}
-            title="Add"
-            testID="add-ingredient-button"
-            onPress={addIngredient}
-            disabled={
-              currentIngredient.trim() === '' ||
-              amount === '' ||
-              selectedUnit === '' ||
-              !selectedIngredientData
-            }
-          >
-            Add
-          </Button>
-
-          <View style={styles.ingredientContainer}>
-            {ingredientsList.map((ingredient, index) => (
-              <Chip
-                key={index}
-                title={ingredient}
-                buttonStyle={styles.chipButton}
-                titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
-                containerStyle={styles.chipContainer}
-                icon={{
-                  name: 'close',
-                  type: 'ionicon',
-                  size: 16,
-                  color: HexColors['dark-grey'],
-                }}
-                onPress={() => {
-                  const newIngredientsList = ingredientsList.filter(
-                    (_, i) => i !== index,
-                  );
-                  const newSelectedIngredients = selectedIngredients.filter(
-                    (_, i) => i !== index,
-                  );
-
-                  setIngredientsList(newIngredientsList);
-                  setSelectedIngredients(newSelectedIngredients);
-
-                  updateRecipeNutrition(newSelectedIngredients);
-                }}
-              />
-            ))}
-          </View>
-          <Text style={[styles.text, {marginTop: 20}]}>
-            Select special diets
-          </Text>
-          <View
-            style={{marginHorizontal: 10, marginBottom: 20}}
-            testID="diet-input"
-          >
-            <MultiSelect
-              items={dietTypeOptions}
-              uniqueKey="value"
-              displayKey="value"
-              onSelectedItemsChange={(items) => {
-                // 5 is the limit for diet types
-                if (items.length > 5) {
-                  Alert.alert(
-                    'Selection limit reached',
-                    'You can select a maximum of 5 special diets.',
-                    [{text: 'OK'}],
-                  );
-                  return;
-                }
-                setSelectedDiets(items);
-              }}
-              selectedItems={selectedDiets}
-              selectText="Select special diets"
-              searchInputPlaceholderText="Search diets..."
-              tagRemoveIconColor={HexColors['grey']}
-              tagTextColor={HexColors['dark-green']}
-              tagBorderColor={HexColors['light-green']}
-              selectedItemTextColor={HexColors['light-green']}
-              selectedItemIconColor={HexColors['light-green']}
-              itemTextColor={HexColors['dark-grey']}
-              styleRowList={{paddingVertical: 5}}
-              styleItemsContainer={{paddingVertical: 10}}
-              searchInputStyle={{
-                color: HexColors['dark-grey'],
-                marginBottom: 20,
-                marginTop: 10,
-              }}
-              styleMainWrapper={{
-                overflow: 'hidden',
-                borderRadius: 10,
-              }}
-              submitButtonColor={HexColors['light-green']}
-              submitButtonText="Add"
-            />
-          </View>
-          <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
-          <Controller
-            control={control}
-            rules={{
-              required: true,
-              maxLength: {value: 1000, message: 'maximum 1000 characters'},
-              minLength: {value: 20, message: 'minimum 20 characters'},
-            }}
-            render={({field: {onChange, onBlur, value}}) => (
-              <>
-                <Input
-                  style={[styles.input, styles.instructionsInput]}
-                  inputContainerStyle={styles.inputContainer}
-                  onBlur={onBlur}
-                  onChangeText={(text) => {
-                    onChange(text);
-                    setInstructionsLength(text.length);
-                  }}
-                  value={value}
-                  errorMessage={errors.instructions?.message}
-                  multiline={true}
-                  numberOfLines={10}
-                  textAlignVertical="top"
-                  autoCapitalize="sentences"
-                  testID="instructions-input"
+                  )}
+                  name="title"
                 />
-                <Text style={styles.counterText}>
-                  {instructionsLength < 20
-                    ? `${instructionsLength}/20 (${20 - instructionsLength} more needed)`
-                    : `${instructionsLength}/1000`}
+
+                <Text style={styles.text}>Ingredients</Text>
+                <Input
+                  placeholder="Search ingredients..."
+                  value={ingredientSearchTerm}
+                  onChangeText={handleIngredientSearch}
+                  containerStyle={{flex: 1}}
+                  rightIcon={
+                    ingredientSearchTerm.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setIngredientSearchTerm('');
+                          setIngredientSearchResults([]);
+                        }}
+                      >
+                        <Icon
+                          name="close"
+                          type="material"
+                          color={HexColors['dark-grey']}
+                        />
+                      </TouchableOpacity>
+                    ) : undefined
+                  }
+                />
+                {ingredientSearchResults.length > 0 && (
+                  <View style={styles.searchResultsContainer}>
+                    <ScrollView style={{maxHeight: 200}}>
+                      {ingredientSearchResults.map((ingredient, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.searchResultItem}
+                          onPress={() => selectIngredient(ingredient)}
+                        >
+                          <Text style={styles.itemName}>
+                            {ingredient.name.fi}
+                          </Text>
+                          <Text style={styles.itemNutrition}>
+                            {ingredient.energyKcal.toFixed(1)} kcal |{' '}
+                            {ingredient.protein.toFixed(1)}g protein
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {selectedIngredientData && (
+                  <View style={styles.selectedIngredientContainer}>
+                    <View style={styles.selectedIngredientHeader}>
+                      <Text style={styles.selectedIngredientTitle}>
+                        Selected ingredient
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedIngredientData(null);
+                          setCurrentIngredient('');
+                        }}
+                        style={styles.clearButton}
+                      >
+                        <Text style={styles.clearButtonText}>X</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.selectedIngredientContent}>
+                      <Text style={styles.selectedIngredientName}>
+                        {selectedIngredientData.name.fi}
+                      </Text>
+                      <Text style={styles.selectedIngredientDetails}>
+                        {selectedIngredientData.energyKcal.toFixed(1)} kcal /
+                        100g | Protein:{' '}
+                        {selectedIngredientData.protein.toFixed(1)}g | Fat:{' '}
+                        {selectedIngredientData.fat.toFixed(1)}g | Carbs:{' '}
+                        {selectedIngredientData.carbohydrate.toFixed(1)}g
+                      </Text>
+                    </View>
+                    <Text style={styles.selectedIngredientGuide}>
+                      Select amount and unit
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.ingredientsContainer}>
+                  <View
+                    style={{flex: 1.5, marginHorizontal: 10}}
+                    testID="unit-input"
+                  >
+                    <SelectList
+                      data={data}
+                      search={false}
+                      setSelected={setSelectedUnit}
+                      save="value"
+                      defaultOption={{key: selectedUnit, value: selectedUnit}}
+                      boxStyles={{
+                        borderColor: HexColors['light-grey'],
+                        borderWidth: 1.5,
+                      }}
+                      dropdownStyles={{
+                        borderColor: HexColors['light-grey'],
+                        borderWidth: 1.5,
+                        marginBottom: 10,
+                      }}
+                      dropdownItemStyles={{marginVertical: 3}}
+                      placeholder="Unit"
+                    />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Input
+                      style={styles.input}
+                      inputContainerStyle={styles.inputContainer}
+                      value={amount}
+                      onChangeText={setAmount}
+                      autoCapitalize="none"
+                      placeholder="Amount"
+                      testID="amount-input"
+                    />
+                  </View>
+                </View>
+                <Button
+                  buttonStyle={styles.addButton}
+                  containerStyle={styles.buttonContainer}
+                  titleStyle={styles.buttonTitle}
+                  title="Add"
+                  testID="add-ingredient-button"
+                  onPress={addIngredient}
+                  disabled={
+                    currentIngredient.trim() === '' ||
+                    amount === '' ||
+                    selectedUnit === '' ||
+                    !selectedIngredientData
+                  }
+                >
+                  Add
+                </Button>
+
+                <View style={styles.ingredientContainer}>
+                  {ingredientsList.map((ingredient, index) => (
+                    <Chip
+                      key={index}
+                      title={ingredient}
+                      buttonStyle={styles.chipButton}
+                      titleStyle={[styles.chipTitle, {paddingLeft: 0}]}
+                      containerStyle={styles.chipContainer}
+                      icon={{
+                        name: 'close',
+                        type: 'ionicon',
+                        size: 16,
+                        color: HexColors['dark-grey'],
+                      }}
+                      onPress={() => {
+                        const newIngredientsList = ingredientsList.filter(
+                          (_, i) => i !== index,
+                        );
+                        const newSelectedIngredients =
+                          selectedIngredients.filter((_, i) => i !== index);
+
+                        setIngredientsList(newIngredientsList);
+                        setSelectedIngredients(newSelectedIngredients);
+
+                        updateRecipeNutrition(newSelectedIngredients);
+                      }}
+                    />
+                  ))}
+                </View>
+                <Text style={[styles.text, {marginTop: 20}]}>
+                  Select special diets
                 </Text>
-              </>
-            )}
-            name="instructions"
-          />
-          <Text style={styles.text}>Estimated cooking time</Text>
-
-          <View style={{flexDirection: 'row', maxWidth: '60%'}}>
-            <View style={{flex: 1}}>
-              <Controller
-                control={control}
-                rules={{
-                  required: {value: true, message: 'Cooking time is required'},
-                  maxLength: {value: 10, message: 'maximum 10 numbers'},
-                  minLength: {value: 1, message: 'minimum 1 numbers'},
-                  pattern: {
-                    value: /^[0-9]+$/,
-                    message: 'Please enter numbers only',
-                  },
-                }}
-                render={({field: {onChange, onBlur, value}}) => (
-                  <Input
-                    style={styles.input}
-                    inputContainerStyle={styles.inputContainer}
-                    onBlur={onBlur}
-                    onChangeText={(text) => {
-                      const numericValue = text.replace(/[^0-9]/g, '');
-                      onChange(
-                        numericValue === '' ? null : Number(numericValue), // fix type undef
-                      );
-                    }}
-                    value={value?.toString()}
-                    keyboardType="numeric"
-                    autoCapitalize="none"
-                    errorMessage={errors.cooking_time?.message}
-                    testID="time-input"
-                  />
-                )}
-                name="cooking_time"
-              />
-            </View>
-            <View style={{flex: 1}}>
-              <Text style={[styles.text, {marginLeft: 0}]}>min</Text>
-            </View>
-          </View>
-          <Text style={styles.text}>Estimated dish portions</Text>
-
-          <View style={{flexDirection: 'row', maxWidth: '60%'}}>
-            <View style={{flex: 1}}>
-              <Controller
-                control={control}
-                rules={{
-                  required: {value: true, message: 'Portions is required'},
-                  maxLength: {value: 2, message: 'maximum 2 numbers'},
-                  minLength: {value: 1, message: 'minimum 1 numbers'},
-                  pattern: {
-                    value: /^[0-9]+$/,
-                    message: 'Please enter numbers only',
-                  },
-                  max: {
-                    value: 20,
-                    message: 'Maximum 20 portions allowed',
-                  },
-                }}
-                render={({field: {onChange, onBlur, value}}) => (
-                  <Input
-                    style={styles.input}
-                    inputContainerStyle={styles.inputContainer}
-                    onBlur={onBlur}
-                    onChangeText={(text) => {
-                      const numericValue = text.replace(/[^0-9]/g, '');
-                      onChange(
-                        numericValue === '' ? null : Number(numericValue), // fix type undef
-                      );
-
-                      if (Number(numericValue) > 20) {
-                        trigger('portions');
+                <View
+                  style={{marginHorizontal: 10, marginBottom: 20}}
+                  testID="diet-input"
+                >
+                  <MultiSelect
+                    items={dietTypeOptions}
+                    uniqueKey="value"
+                    displayKey="value"
+                    onSelectedItemsChange={(items) => {
+                      // 5 is the limit for diet types
+                      if (items.length > 5) {
+                        Alert.alert(
+                          'Selection limit reached',
+                          'You can select a maximum of 5 special diets.',
+                          [{text: 'OK'}],
+                        );
+                        return;
                       }
+                      setSelectedDiets(items);
                     }}
-                    value={value?.toString()}
-                    keyboardType="numeric"
-                    autoCapitalize="none"
-                    errorMessage={errors.portions?.message}
-                    testID="portions-input"
+                    selectedItems={selectedDiets}
+                    selectText="Select special diets"
+                    searchInputPlaceholderText="Search diets..."
+                    tagRemoveIconColor={HexColors['grey']}
+                    tagTextColor={HexColors['dark-green']}
+                    tagBorderColor={HexColors['light-green']}
+                    selectedItemTextColor={HexColors['light-green']}
+                    selectedItemIconColor={HexColors['light-green']}
+                    itemTextColor={HexColors['dark-grey']}
+                    styleRowList={{paddingVertical: 5}}
+                    styleItemsContainer={{paddingVertical: 10}}
+                    searchInputStyle={{
+                      color: HexColors['dark-grey'],
+                      marginBottom: 20,
+                      marginTop: 10,
+                    }}
+                    styleMainWrapper={{
+                      overflow: 'hidden',
+                      borderRadius: 10,
+                    }}
+                    submitButtonColor={HexColors['light-green']}
+                    submitButtonText="Add"
                   />
+                </View>
+                <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
+                <Controller
+                  control={control}
+                  rules={{
+                    required: true,
+                    maxLength: {
+                      value: 1000,
+                      message: 'maximum 1000 characters',
+                    },
+                    minLength: {value: 20, message: 'minimum 20 characters'},
+                  }}
+                  render={({field: {onChange, onBlur, value}}) => (
+                    <>
+                      <Input
+                        style={[styles.input, styles.instructionsInput]}
+                        inputContainerStyle={styles.inputContainer}
+                        onBlur={onBlur}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          setInstructionsLength(text.length);
+                        }}
+                        value={value}
+                        errorMessage={errors.instructions?.message}
+                        multiline={true}
+                        numberOfLines={10}
+                        textAlignVertical="top"
+                        autoCapitalize="sentences"
+                        testID="instructions-input"
+                      />
+                      <Text style={styles.counterText}>
+                        {instructionsLength < 20
+                          ? `${instructionsLength}/20 (${20 - instructionsLength} more needed)`
+                          : `${instructionsLength}/1000`}
+                      </Text>
+                    </>
+                  )}
+                  name="instructions"
+                />
+                <Text style={styles.text}>Estimated cooking time</Text>
+
+                <View style={{flexDirection: 'row', maxWidth: '60%'}}>
+                  <View style={{flex: 1}}>
+                    <Controller
+                      control={control}
+                      rules={{
+                        required: {
+                          value: true,
+                          message: 'Cooking time is required',
+                        },
+                        maxLength: {value: 10, message: 'maximum 10 numbers'},
+                        minLength: {value: 1, message: 'minimum 1 numbers'},
+                        pattern: {
+                          value: /^[0-9]+$/,
+                          message: 'Please enter numbers only',
+                        },
+                      }}
+                      render={({field: {onChange, onBlur, value}}) => (
+                        <Input
+                          style={styles.input}
+                          inputContainerStyle={styles.inputContainer}
+                          onBlur={onBlur}
+                          onChangeText={(text) => {
+                            const numericValue = text.replace(/[^0-9]/g, '');
+                            onChange(
+                              numericValue === '' ? null : Number(numericValue), // fix type undef
+                            );
+                          }}
+                          value={value?.toString()}
+                          keyboardType="numeric"
+                          autoCapitalize="none"
+                          errorMessage={errors.cooking_time?.message}
+                          testID="time-input"
+                        />
+                      )}
+                      name="cooking_time"
+                    />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text style={[styles.text, {marginLeft: 0}]}>min</Text>
+                  </View>
+                </View>
+                <Text style={styles.text}>Estimated dish portions</Text>
+
+                <View style={{flexDirection: 'row', maxWidth: '60%'}}>
+                  <View style={{flex: 1}}>
+                    <Controller
+                      control={control}
+                      rules={{
+                        required: {
+                          value: true,
+                          message: 'Portions is required',
+                        },
+                        maxLength: {value: 2, message: 'maximum 2 numbers'},
+                        minLength: {value: 1, message: 'minimum 1 numbers'},
+                        pattern: {
+                          value: /^[0-9]+$/,
+                          message: 'Please enter numbers only',
+                        },
+                        max: {
+                          value: 20,
+                          message: 'Maximum 20 portions allowed',
+                        },
+                      }}
+                      render={({field: {onChange, onBlur, value}}) => (
+                        <Input
+                          style={styles.input}
+                          inputContainerStyle={styles.inputContainer}
+                          onBlur={onBlur}
+                          onChangeText={(text) => {
+                            const numericValue = text.replace(/[^0-9]/g, '');
+                            onChange(
+                              numericValue === '' ? null : Number(numericValue), // fix type undef
+                            );
+
+                            if (Number(numericValue) > 20) {
+                              trigger('portions');
+                            }
+                          }}
+                          value={value?.toString()}
+                          keyboardType="numeric"
+                          autoCapitalize="none"
+                          errorMessage={errors.portions?.message}
+                          testID="portions-input"
+                        />
+                      )}
+                      name="portions"
+                    />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text
+                      style={[
+                        styles.text,
+                        {
+                          marginLeft: 0,
+                        },
+                      ]}
+                    >
+                      people
+                    </Text>
+                  </View>
+                </View>
+                <Text
+                  style={[styles.text, {marginTop: 20}]}
+                  testID="difficulty-input"
+                >
+                  Select difficulty level
+                </Text>
+                <View>
+                  <View
+                    style={{flex: 1.5, marginHorizontal: 10, marginBottom: 20}}
+                  >
+                    <SelectList
+                      data={difficultyData}
+                      search={false}
+                      setSelected={setSelectedDifficultyLevel}
+                      save="key"
+                      defaultOption={{
+                        key: selectedDifficultyLevel,
+                        value:
+                          difficultyData.find(
+                            (d) => d.key === selectedDifficultyLevel,
+                          )?.value || selectedDifficultyLevel,
+                      }}
+                      boxStyles={{
+                        borderColor: HexColors['light-grey'],
+                        borderWidth: 1.5,
+                      }}
+                      dropdownStyles={{
+                        borderColor: HexColors['light-grey'],
+                        borderWidth: 1.5,
+                        marginBottom: 10,
+                      }}
+                      dropdownItemStyles={{marginVertical: 3}}
+                      placeholder="Difficulty levels"
+                    />
+                  </View>
+                </View>
+
+                {recipeTotals.energy > 0 && (
+                  <View style={styles.nutritionContainer}>
+                    <Text style={styles.sectionTitle}>
+                      Nutrition Information (estimated)
+                    </Text>
+                    <NutritionInfo
+                      energy={
+                        recipeTotals.energy /
+                        (Number(getValues('portions')) || 1)
+                      }
+                      protein={
+                        recipeTotals.protein /
+                        (Number(getValues('portions')) || 1)
+                      }
+                      fat={
+                        recipeTotals.fat / (Number(getValues('portions')) || 1)
+                      }
+                      carbohydrate={
+                        recipeTotals.carbohydrate /
+                        (Number(getValues('portions')) || 1)
+                      }
+                      fiber={
+                        recipeTotals.fiber /
+                        (Number(getValues('portions')) || 1)
+                      }
+                      sugar={
+                        recipeTotals.sugar /
+                        (Number(getValues('portions')) || 1)
+                      }
+                      perPortion={true}
+                    />
+                  </View>
                 )}
-                name="portions"
-              />
-            </View>
-            <View style={{flex: 1}}>
-              <Text
-                style={[
-                  styles.text,
-                  {
-                    marginLeft: 0,
-                  },
-                ]}
-              >
-                people
-              </Text>
-            </View>
-          </View>
-          <Text
-            style={[styles.text, {marginTop: 20}]}
-            testID="difficulty-input"
-          >
-            Select difficulty level
-          </Text>
-          <View>
-            <View style={{flex: 1.5, marginHorizontal: 10, marginBottom: 20}}>
-              <SelectList
-                data={difficultyData}
-                search={false}
-                setSelected={setSelectedDifficultyLevel}
-                save="key"
-                defaultOption={{
-                  key: selectedDifficultyLevel,
-                  value:
-                    difficultyData.find(
-                      (d) => d.key === selectedDifficultyLevel,
-                    )?.value || selectedDifficultyLevel,
-                }}
-                boxStyles={{
-                  borderColor: HexColors['light-grey'],
-                  borderWidth: 1.5,
-                }}
-                dropdownStyles={{
-                  borderColor: HexColors['light-grey'],
-                  borderWidth: 1.5,
-                  marginBottom: 10,
-                }}
-                dropdownItemStyles={{marginVertical: 3}}
-                placeholder="Difficulty levels"
-              />
-            </View>
-          </View>
 
-          {recipeTotals.energy > 0 && (
-            <View style={styles.nutritionContainer}>
-              <Text style={styles.sectionTitle}>
-                Nutrition Information (estimated)
-              </Text>
-              <NutritionInfo
-                energy={
-                  recipeTotals.energy / (Number(getValues('portions')) || 1)
-                }
-                protein={
-                  recipeTotals.protein / (Number(getValues('portions')) || 1)
-                }
-                fat={recipeTotals.fat / (Number(getValues('portions')) || 1)}
-                carbohydrate={
-                  recipeTotals.carbohydrate /
-                  (Number(getValues('portions')) || 1)
-                }
-                fiber={
-                  recipeTotals.fiber / (Number(getValues('portions')) || 1)
-                }
-                sugar={
-                  recipeTotals.sugar / (Number(getValues('portions')) || 1)
-                }
-                perPortion={true}
-              />
-            </View>
-          )}
-
-          <Button
-            title="Post"
-            buttonStyle={[
-              styles.button,
-              {backgroundColor: HexColors['medium-green']},
-            ]}
-            titleStyle={styles.buttonTitle}
-            containerStyle={styles.buttonContainer}
-            onPress={handleSubmit(doUpload)}
-            loading={loading}
-            disabled={
-              !isValid ||
-              image === null ||
-              loading ||
-              selectedDifficultyLevel === ''
-            }
-            testID="post-button"
-          />
-          <Button
-            title="Reset"
-            buttonStyle={styles.button}
-            titleStyle={[styles.buttonTitle, {color: HexColors['dark-grey']}]}
-            containerStyle={styles.buttonContainer}
-            onPress={resetForm}
-          />
-        </Card>
-      </ScrollView>
+                <Button
+                  title="Post"
+                  buttonStyle={[
+                    styles.button,
+                    {backgroundColor: HexColors['medium-green']},
+                  ]}
+                  titleStyle={styles.buttonTitle}
+                  containerStyle={styles.buttonContainer}
+                  onPress={handleSubmit(doUpload)}
+                  loading={loading}
+                  disabled={
+                    !isValid ||
+                    image === null ||
+                    loading ||
+                    selectedDifficultyLevel === ''
+                  }
+                  testID="post-button"
+                />
+                <Button
+                  title="Reset"
+                  buttonStyle={styles.button}
+                  titleStyle={[
+                    styles.buttonTitle,
+                    {color: HexColors['dark-grey']},
+                  ]}
+                  containerStyle={styles.buttonContainer}
+                  onPress={resetForm}
+                />
+              </Card>
+            ),
+          },
+        ]}
+        keyExtractor={(_, index) => `key-${index}`}
+        renderItem={({item}) => <View>{item.component}</View>}
+      ></FlatList>
     </LinearGradient>
   );
 };
@@ -1148,7 +1131,7 @@ const styles = StyleSheet.create({
     backgroundColor: HexColors['almost-white'],
     borderRadius: 10,
     marginHorizontal: 10,
-    marginVertical: 8,
+    marginBottom: 15,
     padding: 12,
     borderWidth: 1,
     borderColor: HexColors['light-green'],
@@ -1209,7 +1192,8 @@ const styles = StyleSheet.create({
   },
   searchResultsContainer: {
     marginHorizontal: 10,
-    maxHeight: 200,
+    marginBottom: 15,
+    maxHeight: 300,
     backgroundColor: 'white',
     borderRadius: 10,
     borderWidth: 1,
@@ -1222,7 +1206,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    marginBottom: 15,
   },
   searchResultItem: {
     padding: 12,
