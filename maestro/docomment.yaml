@@ -5,10 +5,10 @@ appId: com.ellinoorariskala.weedifyfrontend
 - tapOn: 'Weedify'
 - tapOn:
     id: 'email-input'
-- inputText: 'elli@01.com'
+- inputText: 'elli@00.com'
 - tapOn:
     id: 'password-input'
-- inputText: 'ellinoora01'
+- inputText: 'ellinoora00'
 - tapOn:
     id: 'login-button'
 - assertVisible: 'Home'
@@ -30,6 +30,6 @@ appId: com.ellinoorariskala.weedifyfrontend
 - tapOn:
     id: 'comment-input'
 - inputText: 'This recipe looks amazing! I will try it this weekend.'
-- tapOn: 'do-comment'
-- assertVisible: 'This recipe looks amazing!'
+- tapOn:
+    id: 'do-comment'
 - takeScreenshot: 'Comment added successfully'

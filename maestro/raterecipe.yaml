@@ -1,0 +1,60 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# Login and navigate to a recipe
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@00.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora00'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+
+# Navigate to recipe details
+- scrollUntilVisible:
+    element:
+      id: 'view-recipe'
+    direction: DOWN
+- tapOn:
+    id: 'view-recipe'
+
+- scrollUntilVisible:
+    element:
+      id: 'add-rating-button'
+    direction: DOWN
+- tapOn:
+    id: 'add-rating-button'
+
+# Add a rating
+- tapOn:
+    id: 'review-input'
+- inputText: 'This recipe is amazing! The flavors work perfectly together.'
+- tapOn:
+    id: 'submit-rating'
+
+- assertVisible: 'Your rating has been submitted!'
+- tapOn: 'OK'
+
+- tapOn:
+    id: 'show-ratings'
+
+- scrollUntilVisible:
+    element:
+      text: 'This recipe is amazing! The flavors work perfectly together.'
+    direction: DOWN
+- takeScreenshot: 'Rating submitted successfully'
+
+# Test deleting the rating
+- scrollUntilVisible:
+    element:
+      id: 'delete-rating'
+    direction: DOWN
+- tapOn:
+    id: 'delete-rating'
+- assertVisible: 'Delete Rating'
+- tapOn: 'Delete'
+- assertVisible: 'Rating has been deleted'
+- takeScreenshot: 'Rating deleted successfully'

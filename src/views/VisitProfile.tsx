@@ -44,7 +44,6 @@ const VisitedProfile = ({route, navigation}: any) => {
     ? visitedUser.filename
     : `${baseUploadURL}/default/defaultprofileimage.png`;
 
-    console.log('profileImageURL', profileImageURL);
   return (
     <View style={styles.container}>
       <View style={styles.header}>

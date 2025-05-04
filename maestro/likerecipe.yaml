@@ -1,0 +1,30 @@
+appId: com.ellinoorariskala.weedifyfrontend
+---
+# Login and like a recipe
+- launchApp
+- tapOn: 'Weedify'
+- tapOn:
+    id: 'email-input'
+- inputText: 'elli@00.com'
+- tapOn:
+    id: 'password-input'
+- inputText: 'ellinoora00'
+- tapOn:
+    id: 'login-button'
+- assertVisible: 'Home'
+
+- scrollUntilVisible:
+    element:
+      id: 'like-button'
+    direction: DOWN
+- tapOn:
+    id: 'like-button'
+
+- assertVisible:
+    id: 'like-count'
+
+- takeScreenshot: 'Recipe liked successfully'
+
+- tapOn:
+    id: 'like-button'
+- takeScreenshot: 'Recipe unliked successfully'

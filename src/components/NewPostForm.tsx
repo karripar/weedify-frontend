@@ -85,7 +85,6 @@ const Post = () => {
     null,
   );
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState('');
-  const [showMockPicker, setShowMockPicker] = useState(false);
   const [selectedIngredients, setSelectedIngredients] = useState<any[]>([]);
   const [recipeTotals, setRecipeTotals] = useState({
     energy: 0,
@@ -155,15 +154,15 @@ const Post = () => {
     }
   }, []);
 
-  // data for the units for now, these will come from db later
+  // data for the units
   const data = [
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
     {key: 'ml', value: 'ml'},
     {key: 'l', value: 'l'},
-    {key: 'tsp', value: 'tsp'},
-    {key: 'tbsp', value: 'tbsp'},
-    {key: 'cup', value: 'cup'},
+    {key: 'tl', value: 'tl'},
+    {key: 'rkl', value: 'rkl'},
+    {key: 'kpl', value: 'kpl'},
     {key: 'pcs', value: 'pcs'},
   ];
 
@@ -438,23 +437,6 @@ const Post = () => {
   // select image for the post
   const pickImage = async () => {
     // testing the image upload with a mock image (maestro doesn't allow picking media from devices gallery...)
-    if (process.env.EXPO_PUBLIC_TEST_MODE === 'true') {
-      setShowMockPicker(true);
-
-      // set the mock image data for testing
-      setImage({
-        canceled: false,
-        assets: [
-          {
-            uri: 'mock-image.jpg',
-            width: 500,
-            height: 500,
-            type: 'image',
-          },
-        ],
-      });
-      return;
-    }
 
     // the image picker for the app
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -1005,7 +987,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   card: {
-    marginTop: 10,
+    marginTop: 0,
     borderRadius: 10,
     marginBottom: 10,
   },

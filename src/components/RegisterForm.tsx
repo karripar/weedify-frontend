@@ -36,8 +36,7 @@ const RegisterForm = ({
     password: string;
   }) => {
     try {
-      const registerResult = await postRegister(inputs as RegisterCredentials);
-      console.log('doRegister result', registerResult);
+      await postRegister(inputs as RegisterCredentials);
       Alert.alert('User created, you may now log in with your credentials.');
       setDisplayRegister(false);
     } catch (error) {
@@ -75,7 +74,6 @@ const RegisterForm = ({
               }
               try {
                 const {available} = await getUsernameAvailable(value);
-                console.log('username available?: ', available);
                 return available ? true : 'username not available';
               } catch (error) {
                 console.error((error as Error).message);
@@ -114,7 +112,6 @@ const RegisterForm = ({
               }
               try {
                 const {available} = await getEmailAvailable(value);
-                console.log('email available?: ', available);
                 return available ? true : 'email not available';
               } catch (error) {
                 console.error((error as Error).message);

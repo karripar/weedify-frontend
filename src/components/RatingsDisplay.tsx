@@ -6,7 +6,7 @@ import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {formatDateToTimePassed} from '../lib/functions';
 import {ArrowDown, ArrowUp} from 'lucide-react-native';
-import { useUserContext } from '../hooks/contextHooks';
+import {useUserContext} from '../hooks/contextHooks';
 
 type RatingItem = {
   rating_id: number;
@@ -83,15 +83,17 @@ const RatingsDisplay = ({
 
       {item.review && <Text style={styles.review}>{item.review}</Text>}
 
-      {(currentUserId === item.user_id || user?.user_level_id === 1) && onDeleteRating && (
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDelete(item.rating_id)}
-        >
-          <Ionicons name="trash-outline" size={16} color="red" />
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
-      )}
+      {(currentUserId === item.user_id || user?.user_level_id === 1) &&
+        onDeleteRating && (
+          <TouchableOpacity
+            testID="delete-rating"
+            style={styles.deleteButton}
+            onPress={() => handleDelete(item.rating_id)}
+          >
+            <Ionicons name="trash-outline" size={16} color="red" />
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        )}
     </Card>
   );
 
@@ -125,6 +127,7 @@ const RatingsDisplay = ({
       </View>
       <Divider style={styles.divider} />
       <TouchableOpacity
+        testID="show-ratings"
         style={styles.ratingsButton}
         onPress={() => setShowRatings(!showRatings)}
       >

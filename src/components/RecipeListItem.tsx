@@ -36,7 +36,7 @@ type RecipeListItemProps = {
 };
 
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
-  // Profile image loading logic
+  // profile image loading logic
   const {getUserWithProfileImage} = useUser();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
     process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
@@ -107,9 +107,11 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   useEffect(() => {
     const loadProfileImage = async () => {
       try {
-        const profileImage = await getUserWithProfileImage(item.user_id);
-        if (profileImage && profileImage.filename) {
-          setProfileImageUrl(profileImage.filename);
+        if (item) {
+          const profileImage = await getUserWithProfileImage(item.user_id);
+          if (profileImage && profileImage.filename) {
+            setProfileImageUrl(profileImage.filename);
+          }
         }
       } catch (error) {
         console.error('Failed to load profile image:', error);
@@ -149,7 +151,6 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
   const handleLikePress = async () => {
     if (!user) {
       Alert.alert('Login Required', 'You need to be logged in to like recipes');
-      navigation.navigate('Weedify');
       return;
     }
 
@@ -334,7 +335,8 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
               ? item.filename
               : item.media_type.includes('video') && item.screenshots?.[0]
                 ? item.screenshots[0]
-                : process.env.EXPO_PUBLIC_UPLOADS + '/defaultrecipeimage.png',
+                : process.env.EXPO_PUBLIC_UPLOADS_DIR +
+                  '/defaultrecipeimage.png',
           }}
         />
       </TouchableOpacity>
@@ -345,7 +347,11 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
             {item.title}{' '}
             <Text style={styles.cookingTime}>({item.cooking_time}min)</Text>
           </Text>
-          <TouchableOpacity onPress={handleLikePress} style={styles.iconButton}>
+          <TouchableOpacity
+            onPress={handleLikePress}
+            style={styles.iconButton}
+            testID="like-button"
+          >
             <Ionicons
               name={isLiked ? 'heart' : 'heart-outline'}
               size={24}
@@ -354,6 +360,7 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
               }
             />
             <Text
+              testID="like-count"
               style={[
                 styles.likeCount,
                 isLiked && {

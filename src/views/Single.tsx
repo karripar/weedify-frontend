@@ -43,7 +43,7 @@ const Single = ({route}: any) => {
   const {getUserWithProfileImage, getUserById} = useUser();
   const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/default/defaultprofileimage.png',
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
   // handle ratings and their display
   const [showRatingForm, setShowRatingForm] = useState(false);
@@ -184,7 +184,7 @@ const Single = ({route}: any) => {
               source={{
                 uri: profileImageUrl
                   ? profileImageUrl
-                  : process.env.EXPO_PUBLIC_UPLOADS +
+                  : process.env.EXPO_PUBLIC_UPLOADS_DIR +
                     '/defaultprofileimage.png',
               }}
             />
@@ -388,6 +388,7 @@ const Single = ({route}: any) => {
                 title={
                   userHasRated ? "You've rated this recipe" : 'Rate this recipe'
                 }
+                testID='add-rating-button'
                 buttonStyle={styles.rateButton}
                 disabled={userHasRated}
                 onPress={() => setShowRatingForm(true)}

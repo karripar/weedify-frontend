@@ -53,6 +53,7 @@ const RatingForm = ({
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>Rate this recipe</Text>
           <AirbnbRating
+            testID="star 5"
             count={5}
             defaultRating={0}
             size={30}
@@ -62,6 +63,7 @@ const RatingForm = ({
 
           <Text style={styles.reviewLabel}>Review (optional):</Text>
           <TextInput
+            testID="review-input"
             style={styles.reviewInput}
             multiline
             numberOfLines={4}
@@ -79,6 +81,7 @@ const RatingForm = ({
               titleStyle={[styles.buttonText, {color: HexColors.grey}]}
             />
             <Button
+              testID="submit-rating"
               title="Submit"
               onPress={handleSubmit}
               loading={isSubmitting}

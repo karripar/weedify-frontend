@@ -66,7 +66,7 @@ const useUser = () => {
         options,
       );
     } catch (error) {
-      throw error as Error;
+      console.log((error as Error).message);
     }
   };
 
@@ -305,7 +305,7 @@ const useUser = () => {
     return await fetchData<UserWithDietaryInfo>(
       process.env.EXPO_PUBLIC_AUTH_API + '/users/' + username,
     );
-  }
+  };
 
   return {
     getUserByToken,

@@ -31,7 +31,6 @@ const UserProvider = ({children}: {children: React.ReactNode}) => {
   const handleLogin = async (credentials: Credentials) => {
     try {
       const loginResult = await postLogin(credentials);
-      console.log('doLogin result', loginResult);
       if (loginResult) {
         await AsyncStorage.setItem('token', loginResult.token);
 

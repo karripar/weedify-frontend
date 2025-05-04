@@ -224,7 +224,6 @@ const EditProfileForm = ({
 
     // handle profile image (both with and without new image)
     let fileResponse;
-    console.log('Image after clicking update:', image);
     if (image && image.assets) {
       fileResponse = await postProfileImageFile(image.assets[0].uri, token);
       console.log('File response:', fileResponse);
@@ -337,7 +336,7 @@ const EditProfileForm = ({
                   style={[
                     styles.image,
                     {
-                      objectFit: image?.assets?.[0].uri ? 'cover' : 'contain',
+                      objectFit: 'cover',
                       margin: 'auto',
                     },
                   ]}

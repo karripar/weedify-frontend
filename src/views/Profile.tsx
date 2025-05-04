@@ -38,7 +38,6 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
           const profileData = await getUserWithProfileImage(user.user_id);
           if (profileData && profileData.filename) {
             setProfileImageUrl(profileData.filename);
-            console.log('profileimage uri', profileImageUrl);
           }
         }
       } catch (error) {
@@ -87,8 +86,6 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
     setProfileMenu(false);
     handleLogout();
   };
-
-  console.log('profileImageUrl', profileImageUrl);
 
   return (
     <LinearGradient

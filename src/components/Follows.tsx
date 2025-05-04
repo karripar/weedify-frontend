@@ -1,5 +1,5 @@
 import {Follow} from 'hybrid-types/DBTypes';
-import {useEffect, useReducer, useRef, useState} from 'react';
+import {useEffect, useReducer, useRef} from 'react';
 import {useFollow} from '../hooks/apiHooks';
 import {StyleSheet, Text, View, Animated, Pressable} from 'react-native';
 import {HexColors} from '../utils/colors';

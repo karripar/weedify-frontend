@@ -173,11 +173,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
               setInputs({comment_text: `@${comment.username} `});
             }}
           >
-            <Text
-              style={styles.replyText}
-            >
-              ↳ Reply
-            </Text>
+            <Text style={styles.replyText}>↳ Reply</Text>
           </TouchableOpacity>
         )}
 
@@ -211,21 +207,23 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
           </View>
         )}
 
-        <View style={{width: '100%', flexDirection: 'row', justifyContent: 'space-between'}}>
+        <View
+          style={{
+            width: '100%',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
           <Text style={{color: HexColors['light-grey']}}>
             {comment.created_at
               ? formatDateToTimePassed(comment.created_at.toString())
               : 'Unknown date'}
           </Text>
           {user && user.user_level_id === 1 && (
-          <TouchableOpacity onPress={() => handleDelete(comment.comment_id)}>
-            <Text
-              style={styles.deleteText}
-            >
-              Delete
-            </Text>
-          </TouchableOpacity>
-        )}
+            <TouchableOpacity onPress={() => handleDelete(comment.comment_id)}>
+              <Text style={styles.deleteText}>Delete</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {comment.replies && comment.replies.length > 0 && (
@@ -265,17 +263,14 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
         <View style={styles.container}>
           <TextInput
             ref={inputRef}
-            testID='comment-input'
+            testID="comment-input"
             placeholder="Write a comment..."
             placeholderTextColor={HexColors['almost-white']}
             style={styles.commentInput}
             onChangeText={(text) => handleInputChange('comment_text', text)}
           />
-          <TouchableOpacity onPress={handleSubmit} style={styles.commentSubmit}>
-            <Text
-            testID='do-comment'
-              style={styles.commentButtonText}
-            >
+          <TouchableOpacity onPress={handleSubmit} style={styles.commentSubmit} testID="do-comment">
+            <Text style={styles.commentButtonText}>
               Comment
             </Text>
           </TouchableOpacity>
@@ -285,9 +280,7 @@ const Comments = ({item}: {item: RecipeWithOwner}) => {
       )}
 
       {comments.length > 0 && (
-        <View
-          style={styles.renderedComments}
-        >
+        <View style={styles.renderedComments}>
           {renderComments(comments as CommentWithReplies[])}
         </View>
       )}
@@ -355,7 +348,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     marginHorizontal: 10,
-    marginBottom: 20
+    marginBottom: 20,
   },
   loginToComment: {
     color: HexColors['dark-green'],
@@ -412,8 +405,8 @@ const styles = StyleSheet.create({
     color: HexColors['light-purple'],
     fontSize: 16,
     fontWeight: '400',
-    marginTop: 8
-  }
+    marginTop: 8,
+  },
 });
 
 export default Comments;
