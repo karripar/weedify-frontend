@@ -571,6 +571,7 @@ const Post = () => {
                 onChangeText={onChange}
                 value={value}
                 autoCapitalize="words"
+                maxLength={100}
                 errorMessage={errors.title?.message}
                 testID="title-input"
               />
@@ -813,6 +814,7 @@ const Post = () => {
                   errorMessage={errors.instructions?.message}
                   multiline={true}
                   numberOfLines={10}
+                  maxLength={4000}
                   textAlignVertical="top"
                   autoCapitalize="sentences"
                   testID="instructions-input"

@@ -36,6 +36,13 @@ const RegisterForm = ({
     password: string;
   }) => {
     try {
+      inputs.email = inputs.email.trim();
+      inputs.username = inputs.username.trim();
+      inputs.password = inputs.password.trim();
+      if (!inputs.username || !inputs.email || !inputs.password) {
+        Alert.alert('Please fill all fields');
+        return;
+      }
       const registerResult = await postRegister(inputs as RegisterCredentials);
       console.log('doRegister result', registerResult);
       Alert.alert('User created, you may now log in with your credentials.');

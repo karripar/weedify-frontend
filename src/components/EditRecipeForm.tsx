@@ -745,6 +745,7 @@ const EditRecipeForm = ({
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
+                        maxLength={4000}
                       />
                       <Text style={styles.counterText}>
                         {instructionsLength < 20
