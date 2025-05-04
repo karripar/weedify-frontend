@@ -38,6 +38,8 @@ const EditRecipeForm = ({
   // get the recipe data
   const recipe = route.params.item;
 
+  console.log('recipe in edit recipe', recipe);
+
   // set the diet type options
   const [dietTypeOptions, setDietTypeOptions] = useState<
     {key: string; value: string}[]
@@ -235,6 +237,10 @@ const EditRecipeForm = ({
           ? JSON.parse(recipe.ingredients)
           : [];
 
+      console.log('Recipe.ingredients', recipe.ingredients);
+      console.log('recipe.nutrition', recipe.nutrition);
+
+      console.log('recipeIngredients', recipeIngredients);
       // format the ingredients
       const formattedIngredients = recipeIngredients.map((ing: any) => ({
         name: ing.name,
@@ -248,6 +254,7 @@ const EditRecipeForm = ({
         fiber: ing.fiber,
         sugar: ing.sugar,
       }));
+      console.log('formatted fineli_id', formattedIngredients.fineli_id);
       setIngredients(formattedIngredients);
       updateRecipeNutrition(formattedIngredients);
 
@@ -307,12 +314,16 @@ const EditRecipeForm = ({
         newIngredient = {
           ...newIngredient,
           fineli_id: selectedIngredientData.id,
-          energy_kcal: selectedIngredientData.energyKcal * factor,
-          protein: selectedIngredientData.protein * factor,
-          fat: selectedIngredientData.fat * factor,
-          carbohydrate: selectedIngredientData.carbohydrate * factor,
-          fiber: selectedIngredientData.fiber * factor,
-          sugar: selectedIngredientData.sugar * factor,
+          energy_kcal: Number(
+            (selectedIngredientData.energyKcal * factor).toFixed(2),
+          ),
+          protein: Number((selectedIngredientData.protein * factor).toFixed(2)),
+          fat: Number((selectedIngredientData.fat * factor).toFixed(2)),
+          carbohydrate: Number(
+            (selectedIngredientData.carbohydrate * factor).toFixed(2),
+          ),
+          fiber: Number((selectedIngredientData.fiber * factor).toFixed(2)),
+          sugar: Number((selectedIngredientData.sugar * factor).toFixed(2)),
         };
       }
 

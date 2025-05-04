@@ -133,7 +133,7 @@ const Single = ({route}: any) => {
       // reload ratings and update user rating status
       loadRatings();
       setUserHasRated(false);
-      Alert.alert('Success', 'Your rating has been deleted');
+      Alert.alert('Success', 'Rating has been deleted');
     } catch (error) {
       console.error('Error deleting rating:', error);
       Alert.alert('Error', 'Failed to delete rating');
