@@ -6,6 +6,7 @@ import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {formatDateToTimePassed} from '../lib/functions';
 import {ArrowDown, ArrowUp} from 'lucide-react-native';
+import { useUserContext } from '../hooks/contextHooks';
 
 type RatingItem = {
   rating_id: number;
@@ -37,7 +38,7 @@ const RatingsDisplay = ({
     );
   }
   const [showRatings, setShowRatings] = useState(false);
-
+  const {user} = useUserContext();
   // calculate the recipe's average rating
   const totalRating = ratings.reduce((acc, item) => acc + item.rating, 0);
   const averageRating = totalRating / ratings.length;
@@ -82,7 +83,7 @@ const RatingsDisplay = ({
 
       {item.review && <Text style={styles.review}>{item.review}</Text>}
 
-      {currentUserId === item.user_id && onDeleteRating && (
+      {(currentUserId === item.user_id || user?.user_level_id === 1) && onDeleteRating && (
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDelete(item.rating_id)}

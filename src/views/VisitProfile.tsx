@@ -8,7 +8,6 @@ import {useRecipes, useUser} from '../hooks/apiHooks';
 import {HexColors} from '../utils/colors';
 import {ScrollView} from 'react-native';
 import RecipeListItem from '../components/RecipeListItem';
-import {useNavigation} from 'expo-router';
 import {Card} from '@rneui/base';
 
 const VisitedProfile = ({route, navigation}: any) => {
