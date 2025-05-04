@@ -166,6 +166,6 @@ Visualized json structure of comments with replies:
 ]
 ```
 
-## kuvankaappaukset mobiilikäyttöliittymästä
+## screenshots of the user interface
 
 [Weedify](screenshots)
