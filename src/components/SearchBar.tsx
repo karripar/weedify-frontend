@@ -31,6 +31,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
   const [showFilters, setShowFilters] = useState(false);
   const [followedUsersOnly, setFollowedUsersOnly] = useState(false);
   const [followedUsers, setFollowedUsers] = useState<any[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [availableDietTypes, setAvailableDietTypes] = useState<string[]>([]);
   const {getAllDietTypes} = useDietTypes();
@@ -187,6 +188,15 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
     followedUsersOnly,
     followedUsers,
   ]);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const token = await AsyncStorage.getItem('token');
+      setIsLoggedIn(!!token);
+    };
+
+    checkLoginStatus();
+  }, []);
 
   // Reset search filters
   const resetFilters = () => {
@@ -362,18 +372,22 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                 ))}
               </View>
 
-              <Text style={styles.filterLabel}>User Filter</Text>
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.filterOption,
-                    followedUsersOnly && styles.selectedOption,
-                  ]}
-                  onPress={() => setFollowedUsersOnly(!followedUsersOnly)}
-                >
-                  <Text>Followed Users Only</Text>
-                </TouchableOpacity>
-              </View>
+              {isLoggedIn && (
+                <>
+                  <Text style={styles.filterLabel}>User Filter</Text>
+                  <View style={styles.buttonGroup}>
+                    <TouchableOpacity
+                      style={[
+                        styles.filterOption,
+                        followedUsersOnly && styles.selectedOption,
+                      ]}
+                      onPress={() => setFollowedUsersOnly(!followedUsersOnly)}
+                    >
+                      <Text>Followed Users Only</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               <View style={styles.modalButtons}>
                 <Button
