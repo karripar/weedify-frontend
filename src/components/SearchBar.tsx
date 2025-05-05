@@ -14,6 +14,7 @@ import {HexColors} from '../utils/colors';
 import {RecipeWithOwnerExtended, DietTypeWithName} from '../types/LocalTypes';
 import {useDietTypes, useFollow} from '../hooks/apiHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUserContext } from '../hooks/contextHooks';
 
 interface SearchBarProps {
   recipeArray: RecipeWithOwnerExtended[];
@@ -31,8 +32,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
   const [showFilters, setShowFilters] = useState(false);
   const [followedUsersOnly, setFollowedUsersOnly] = useState(false);
   const [followedUsers, setFollowedUsers] = useState<any[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+  const {user} = useUserContext();
   const [availableDietTypes, setAvailableDietTypes] = useState<string[]>([]);
   const {getAllDietTypes} = useDietTypes();
   const {getFollowedUsers} = useFollow();
@@ -188,15 +188,6 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
     followedUsersOnly,
     followedUsers,
   ]);
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const token = await AsyncStorage.getItem('token');
-      setIsLoggedIn(!!token);
-    };
-
-    checkLoginStatus();
-  }, []);
 
   // Reset search filters
   const resetFilters = () => {
@@ -372,7 +363,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                 ))}
               </View>
 
-              {isLoggedIn && (
+              {user && (
                 <>
                   <Text style={styles.filterLabel}>User Filter</Text>
                   <View style={styles.buttonGroup}>
