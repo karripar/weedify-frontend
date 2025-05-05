@@ -43,7 +43,7 @@ const Single = ({route}: any) => {
   const {getUserWithProfileImage, getUserById} = useUser();
   const [showComments, setShowComments] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
-    process.env.EXPO_PUBLIC_UPLOADS + '/defaultprofileimage.png',
+    process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
   );
   // handle ratings and their display
   const [showRatingForm, setShowRatingForm] = useState(false);

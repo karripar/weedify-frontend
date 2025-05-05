@@ -19,7 +19,7 @@
     "date-fns": "^4.1.0",
     "deprecated-react-native-prop-types": "^5.0.0",
     "dotenv": "^16.5.0",
-    "expo": "^53.0.7",
+    "expo": "^53.0.0",
     "expo-file-system": "~18.1.9",
     "expo-font": "^13.0.4",
     "expo-image-picker": "~16.1.4",
