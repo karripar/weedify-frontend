@@ -16,11 +16,11 @@ import {useRecipes, useUser} from '../hooks/apiHooks';
 import RecipeListItem from '../components/RecipeListItem';
 import {Bell} from 'lucide-react-native';
 import Notifications from '../components/Notifications';
-import { useNotificationContext } from '../contexts/NotificationContext';
+import {useNotificationContext} from '../contexts/NotificationContext';
 
 const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
   const {user, handleLogout} = useUserContext();
-  const {getUserWithProfileImage} = useUser();
+  const {getUserWithProfileImage, deleteUser} = useUser();
   const {triggerUpdate} = useUpdateContext();
   const {recipeArray, loading} = useRecipes(user?.user_id);
   const [profileMenu, setProfileMenu] = useState(false);
@@ -73,8 +73,20 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Profile deleted');
+          onPress: async () => {
+            try {
+              await deleteUser();
+
+              await handleLogout();
+
+              Alert.alert('Success', 'Your profile has been deleted');
+            } catch (error) {
+              console.log('Failed to delete profile:', error);
+              Alert.alert(
+                'Error',
+                'Failed to delete account. Please try again.',
+              );
+            }
           },
         },
       ],
@@ -169,7 +181,10 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
               style={styles.image}
               containerStyle={styles.imageContainer}
               source={{
-                uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
+                uri: profileImageUrl
+                  ? profileImageUrl
+                  : process.env.EXPO_PUBLIC_UPLOADS_DIR +
+                    '/default/defaultprofileimage.png',
               }}
             />
             <Text style={{marginHorizontal: 20, fontSize: 20}}>
@@ -208,7 +223,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
                 paddingVertical: 2,
                 position: 'absolute',
                 right: -3,
-                top: -8
+                top: -8,
               }}
             >
               <Text
@@ -225,7 +240,8 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
         </TouchableOpacity>
         <Notifications
           visible={notificationsVisible}
-          onClose={() => setNotificationsVisible(false)}/>
+          onClose={() => setNotificationsVisible(false)}
+        />
         <Text
           style={{
             fontSize: 20,

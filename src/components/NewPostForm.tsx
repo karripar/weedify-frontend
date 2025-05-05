@@ -156,13 +156,14 @@ const Post = () => {
 
   // data for the units
   const data = [
+    {key: 'mg', value: 'mg'},
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
     {key: 'ml', value: 'ml'},
+    {key: 'dl', value: 'dl'},
     {key: 'l', value: 'l'},
-    {key: 'tl', value: 'tl'},
-    {key: 'rkl', value: 'rkl'},
-    {key: 'kpl', value: 'kpl'},
+    {key: 'tsp', value: 'tsp'},
+    {key: 'tbsp', value: 'tbsp'},
     {key: 'pcs', value: 'pcs'},
   ];
 
@@ -444,7 +445,6 @@ const Post = () => {
 
   // select image for the post
   const pickImage = async () => {
-    // testing the image upload with a mock image (maestro doesn't allow picking media from devices gallery...)
 
     // the image picker for the app
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -682,7 +682,7 @@ const Post = () => {
                         type: 'ionicon',
                         size: 16,
                         color: HexColors['dark-grey'],
-                        style: {paddingLeft: 10},
+                        style: {paddingLeft: 5},
                       }}
                       onPress={() => {
                         const newIngredientsList = ingredientsList.filter(
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   card: {
-    marginTop: 0,
+    marginTop: 5,
     borderRadius: 10,
     marginBottom: 10,
   },

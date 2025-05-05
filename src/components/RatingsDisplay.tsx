@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Alert} from 'react-native';
 import {Text, Card, Divider} from '@rneui/base';
-import {AirbnbRating} from 'react-native-ratings';
 import {HexColors} from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {formatDateToTimePassed} from '../lib/functions';
 import {ArrowDown, ArrowUp} from 'lucide-react-native';
 import {useUserContext} from '../hooks/contextHooks';
+import {StarRatingDisplay} from 'react-native-star-rating-widget';
 
 type RatingItem = {
   rating_id: number;
@@ -71,13 +71,10 @@ const RatingsDisplay = ({
       </View>
 
       <View style={styles.ratingStars}>
-        <AirbnbRating
-          count={5}
-          size={16}
-          showRating={false}
-          isDisabled={true}
-          defaultRating={item.rating}
-          selectedColor={HexColors['medium-green']}
+        <StarRatingDisplay
+          rating={item.rating}
+          color={HexColors['medium-green']}
+          starSize={24}
         />
       </View>
 
@@ -101,15 +98,8 @@ const RatingsDisplay = ({
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
         <View style={styles.ratingAverage}>
-          <AirbnbRating
-            count={5}
-            defaultRating={averageRating}
-            size={24}
-            showRating={false}
-            isDisabled={true}
-            selectedColor={HexColors['medium-green']}
-          />
-          <View>
+          <StarRatingDisplay rating={averageRating}></StarRatingDisplay>
+          <View style={{marginLeft: 10}}>
             <Text style={{color: HexColors['dark-green'], fontWeight: 'bold'}}>
               {averageRating.toFixed(1)} / 5
             </Text>
@@ -199,7 +189,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     justifyContent: 'space-between',
-    marginHorizontal: 30,
   },
   username: {
     fontFamily: 'InriaSans-Bold',
@@ -211,8 +200,7 @@ const styles = StyleSheet.create({
     color: HexColors['dark-grey'],
   },
   ratingStars: {
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    marginVertical: 10,
   },
   review: {
     fontFamily: 'InriaSans-Regular',
@@ -220,6 +208,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: HexColors['dark-grey'],
     marginTop: 5,
+    marginHorizontal: 10
   },
   deleteButton: {
     flexDirection: 'row',

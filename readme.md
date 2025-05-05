@@ -62,7 +62,7 @@
 - Expo Linear Gradient: For gradient backgrounds
 - React Native Vector Icons: Icon library
 - Custom Components: Specialized components for recipes, comments, login etc.
-- Airbnb starrating: Used to add and display ratings
+- Star rating widget: Used to add and display ratings
 - Multiselect and selector: Selecting diettypes and units.
 
 ### Form handling & validation
@@ -92,6 +92,7 @@
 - **[React Native documentation](https://reactnative.dev/)**
 - **[Expo documentation](https://docs.expo.dev/)**
 - **[Native packages](https://www.npmjs.com/)**
+- **[Star rating](https://www.npmjs.com/package/react-native-star-rating-widget)**
 - **[Selector](https://www.npmjs.com/package/react-native-dropdown-select-list)**
 - **[Multi selector](https://www.npmjs.com/package/react-native-element-dropdown)**
 - **[How-test-with-maestro](https://www.youtube.com/watch?v=QGOAQVSxpDE)**
@@ -106,7 +107,7 @@
 1. Clone the repository using `git clone https://github.com/karripar/weedify-frontend.git` in your terminal.
 
 2. Install the required packages: <br>
-   Make sure you have node.js installed and run: <br>
+   Make sure you have node.js installed and run: <br>r
    `npm install` (may need `--legacy-peer-deps` to resolve dependency issues) to install all the necessary packages.
 
 3. Set Environment Variables Create a .env file with the following variables:
@@ -118,7 +119,7 @@
 
 4. Start the Development Server
 
-`npx expo start`
+`npm start`
 
 ---
 

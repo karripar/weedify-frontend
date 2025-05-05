@@ -254,7 +254,7 @@ const EditProfileForm = ({
         try {
           await changePassword(inputs.current_password, inputs.new_password);
         } catch (error) {
-          console.error('Password change error:', error);
+          console.log('Password change error:', error);
         }
       }
 
@@ -580,7 +580,10 @@ const EditProfileForm = ({
                         </TouchableOpacity>
                       }
                       value={value}
-                      onChangeText={onChange}
+                      onChangeText={(input) => {
+                        onChange(input);
+                        trigger('new_password');
+                      }}
                       autoCapitalize="none"
                       errorMessage={errors.new_password?.message}
                       testID="new-password"

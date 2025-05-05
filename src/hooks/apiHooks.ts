@@ -4,6 +4,7 @@ import {
   LoginResponse,
   MessageResponse,
   UploadResponse,
+  UserDeleteResponse,
   UserResponse,
 } from 'hybrid-types/MessageTypes';
 import {
@@ -274,8 +275,33 @@ const useUser = () => {
         options,
       );
     } catch (error) {
-      console.error('Error changing password:', error);
-      throw error;
+      console.log('Error changing password:', error);
+    }
+  };
+
+  // delete user
+  const deleteUser = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      console.log('no token found');
+      return;
+    }
+
+    const options = {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + token,
+      },
+    };
+
+    try {
+      return await fetchData<UserDeleteResponse>(
+        process.env.EXPO_PUBLIC_AUTH_API + '/users',
+        options,
+      );
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw new Error((error as Error).message);
     }
   };
 
@@ -315,6 +341,7 @@ const useUser = () => {
     getUserDietaryRestrictions,
     updateUser,
     changePassword,
+    deleteUser,
     getUsernameAvailable,
     getEmailAvailable,
     getUserById,

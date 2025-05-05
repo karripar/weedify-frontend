@@ -111,13 +111,14 @@ const EditRecipeForm = ({
 
   // data for the unit selector
   const unitData = [
+    {key: 'mg', value: 'mg'},
     {key: 'g', value: 'g'},
     {key: 'kg', value: 'kg'},
     {key: 'ml', value: 'ml'},
+    {key: 'dl', value: 'dl'},
     {key: 'l', value: 'l'},
-    {key: 'tl', value: 'tl'},
-    {key: 'rkl', value: 'rkl'},
-    {key: 'kpl', value: 'kpl'},
+    {key: 'tsp', value: 'tsp'},
+    {key: 'tbsp', value: 'tbsp'},
     {key: 'pcs', value: 'pcs'},
   ];
 

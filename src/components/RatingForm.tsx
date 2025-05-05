@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import {View, StyleSheet, Modal, TextInput, Alert} from 'react-native';
 import {Button, Text} from '@rneui/base';
-import {AirbnbRating} from 'react-native-ratings';
 import {HexColors} from '../utils/colors';
+import StarRating from 'react-native-star-rating-widget';
 
 type RatingFormProps = {
   visible: boolean;
@@ -52,13 +52,7 @@ const RatingForm = ({
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>Rate this recipe</Text>
-          <AirbnbRating
-            count={5}
-            defaultRating={0}
-            size={30}
-            showRating={false}
-            onFinishRating={(value) => setRating(value)}
-          />
+          <StarRating rating={rating} onChange={setRating} enableHalfStar={false}/>
 
           <Text style={styles.reviewLabel}>Review (optional):</Text>
           <TextInput
