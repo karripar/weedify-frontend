@@ -18,7 +18,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {UserWithDietaryInfo} from 'hybrid-types/DBTypes';
-import MultiSelect from 'react-native-multiple-select';
+import {MultiSelect} from 'react-native-element-dropdown';
 
 type UpdateInputs = {
   username: string;
@@ -459,12 +459,10 @@ const EditProfileForm = ({
                 </Text>
                 <View style={{flex: 5}}>
                   <MultiSelect
-                    items={dietTypeOptions}
-                    uniqueKey="value"
-                    displayKey="value"
-                    onSelectedItemsChange={(items) => {
+                    data={dietTypeOptions}
+                    onChange={(item) => {
                       // 5 is the limit for diet restrictions
-                      if (items.length > 5) {
+                      if (item.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
                           'You can select a maximum of 5 dietary restrictions.',
@@ -472,35 +470,13 @@ const EditProfileForm = ({
                         );
                         return;
                       }
-                      setSelectedDiets(items);
+                      setSelectedDiets(item);
                     }}
-                    selectedItems={selectedDiets}
-                    selectText="Select dietary destrictions"
-                    searchInputPlaceholderText="Search diets..."
-                    tagRemoveIconColor={HexColors['grey']}
-                    tagTextColor={HexColors['dark-green']}
-                    tagBorderColor={HexColors['light-green']}
-                    selectedItemTextColor={HexColors['light-green']}
-                    selectedItemIconColor={HexColors['light-green']}
-                    itemTextColor={HexColors['dark-grey']}
-                    styleRowList={{
-                      paddingVertical: 5,
-                    }}
-                    styleItemsContainer={{
-                      paddingVertical: 10,
-                    }}
-                    searchInputStyle={{
-                      color: HexColors['dark-grey'],
-                      marginBottom: 20,
-                      marginTop: 10,
-                    }}
-                    styleMainWrapper={{
-                      marginHorizontal: 10,
-                      overflow: 'hidden',
-                      borderRadius: 10,
-                    }}
-                    submitButtonColor={HexColors['light-green']}
-                    submitButtonText="Add"
+                    value={selectedDiets}
+                    labelField="value"
+                    valueField="value"
+                    placeholder="Select dietary destrictions"
+                    searchPlaceholder="Search diets..."
                   />
                 </View>
                 <Text

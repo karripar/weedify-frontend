@@ -8,27 +8,28 @@
 
 ## Key features and functionality
 
-### User profile and community
+### User management
 
-- User profiles: Create and customize personal profile with a profile picture and bio information.
+- User profiles: Create and customize personal profile with a profile picture and bio information. Username, email and password can also be updated.
 - Dietary preferences: Users can set their dietary restrictions/preferences.
-- Recipe management: Post, edit, and delete your own recipes.
 - Social interactions: Follow other users and view their recipes, comment and rate other user's recipes.
 - Notifications: Receive notifications of new followers, likes, ratings or comments on your posts.
 
 ### Recipe sharing
 
+- Recipe management: Post, edit, and delete your own recipes.
 - Recipe creation: Add recipes with title, image/video, ingredients, instructions, dietary information, estimated cooking time, portions and difficulty level.
 - Ingredients management: Detailed ingredient lists with measurements, units and nutrition informaion.
 - Dietary info: Tag recipes with appropriate dietary categories (vegan, gluten-free, etc.).
 
 ### Discovery and interaction
 
-- Main feed: Browse recipes from other users in a scrollable feed, view single recipes.
+- Main feed: Browse recipes from other users in a scrollable feed, view detailed recipe information.
 - Rating system: Rate recipes and view average ratings.
 - Comments: Discuss or ask questions about recipes through a comment system with reply functionality.
 - Favorites: Save your favorite recipes for quick access.
-- Like: Like recipes.
+- Like: Like/unlike recipes.
+- Follow: follow/unfollow other users.
 
 ### Search and filtering
 
@@ -39,34 +40,36 @@
 
 ### Security and user Control
 
-- Authentication: Secure login and registration system.
+- Authentication: Secure registration system and login with JWT authentication.
 - Profile Management: Update personal information and preferences.
 - Content Moderation: Users can manage their content. Admin can manage all content.
 
 ---
 
-## Technical requirements
+## Technical requirements and references
 
 ### Frontend
 
-- React Native: Cross-platform mobile application framework
+- React Native: Mobile application framework
 - Expo: Development toolchain for React Native
-- React Navigation: Navigation library for screen management
+- React Navigation: Navigation library
 - Context API: For state management across components
+- Zustand - State management
 
 ### UI components
 
-- React Native Elements (@rneui): UI component library
+- React Native Elements: UI component library
 - Expo Linear Gradient: For gradient backgrounds
 - React Native Vector Icons: Icon library
 - Custom Components: Specialized components for recipes, comments, login etc.
 - Airbnb starrating: Used to add and display ratings
+- Multiselect and selector: Selecting diettypes and units.
 
 ### Form handling & validation
 
 - React Hook Form: For managing form state and validation
 - Custom validation logic for recipes, user profiles, and comments
-- Input control patterns for different data types (numeric, text, etc.)
+- Input control for different data types (numeric, text, etc.)
 
 ### Media Processing
 
@@ -83,6 +86,16 @@
 ### Testing
 
 - Maestro: UI testing framework for automated test scenarios
+
+### References
+
+- **[React Native documentation](https://reactnative.dev/)**
+- **[Expo documentation](https://docs.expo.dev/)**
+- **[Native packages](https://www.npmjs.com/)**
+- **[Selector](https://www.npmjs.com/package/react-native-dropdown-select-list)**
+- **[Multi selector](https://www.npmjs.com/package/react-native-multiple-select)**
+- **[How-test-with-maestro](https://www.youtube.com/watch?v=QGOAQVSxpDE)**
+-
 
 ---
 
@@ -115,15 +128,19 @@
 
 `maestro test ./maestro/<test-file>.yaml`
 
-## Available test scenarios:
+## Available tests:
 
-- Login/Registration
-- Recipe posting and editing
-- Adding favorites
-- User profile updates
-- Commenting on recipes
-- Like and unlike a recipe
-- Rate a recipe and delete your rating
+- User registration: register.yaml
+- User login: login.yaml
+- Posting recipes: postrecipe_success.yaml
+- Adding comments: docomment.yaml
+- Editing recipes: editrecipe.yaml
+- Managing favorites: addfavorite.yaml
+- User profile updates: user-update.yaml
+- Like/unlike features: likerecipe.yaml
+- Recipe ratings: raterecipe.yaml
+
+**[Testcases](https://github.com/karripar/weedify-frontend/tree/main/maestro/screenshots)**
 
 ## Related Repositories: <br>
 
@@ -164,6 +181,11 @@ Visualized json structure of comments with replies:
 ]
 ```
 
-## screenshots of the user interface
+## Screenshots of the user interface
 
 [Weedify](screenshots)
+
+## Wireframes on Figma
+
+**[Prototype](https://www.figma.com/design/iAuuXnq3lfXxhCwRMI3c14/Weedify?node-id=23-2&t=AnTcnKbJIfVoM1Gm-1)**
+
