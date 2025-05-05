@@ -36,6 +36,7 @@ type RecipeListItemProps = {
 };
 
 const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
+  console.log('RecipeListItem', item);
   // profile image loading logic
   const {getUserWithProfileImage} = useUser();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
@@ -331,12 +332,23 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.recipeImage}
           source={{
-            uri: item.media_type.includes('image')
-              ? item.filename
-              : item.media_type.includes('video') && item.screenshots?.[0]
-                ? item.screenshots[0]
-                : process.env.EXPO_PUBLIC_UPLOADS_DIR +
-                  '/defaultrecipeimage.png',
+            uri: (() => {
+              if (item.media_type.includes('image')) {
+                console.log('image', item.filename);
+                return (
+                  item.filename ||
+                  process.env.EXPO_PUBLIC_UPLOADS_DIR +
+                    '/defaultrecipeimage.png'
+                );
+              }
+              if (item.media_type.includes('video') && item.screenshots) {
+                console.log('video screenshot', item.screenshots[0]);
+                return item.screenshots[0];
+              }
+              return (
+                process.env.EXPO_PUBLIC_UPLOADS_DIR + '/defaultrecipeimage.png'
+              );
+            })(),
           }}
         />
       </TouchableOpacity>
