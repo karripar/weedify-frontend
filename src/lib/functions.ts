@@ -15,6 +15,7 @@ const fetchData = async <T>(
     console.log('errorJson', errorJson);
     if (errorJson.message) {
       throw new Error(errorJson.message);
+
     }
     throw new Error(`Error ${response.status} occured`);
   }
