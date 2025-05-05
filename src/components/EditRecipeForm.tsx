@@ -10,12 +10,12 @@ import {
 import React, {useEffect, useState, useRef} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Input, ListItem, Icon} from '@rneui/base';
-import MultiSelect from 'react-native-multiple-select';
 import {useDietTypes, useRecipes, useIngredients} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Controller, useForm} from 'react-hook-form';
+import MultiSelect from 'react-native-multiple-select';
 import {LinearGradient} from 'expo-linear-gradient';
 import {SelectList} from 'react-native-dropdown-select-list';
 import {EditRecipeInputs} from '../types/LocalTypes';
@@ -656,6 +656,7 @@ const EditRecipeForm = ({
 
                 <Text style={styles.text}>Dietary info</Text>
                 <View style={{marginHorizontal: 10, marginBottom: 20}}>
+
                   <MultiSelect
                     items={dietTypeOptions}
                     uniqueKey="value"
@@ -728,6 +729,7 @@ const EditRecipeForm = ({
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
+                        maxLength={4000}
                       />
                       <Text style={styles.counterText}>
                         {instructionsLength < 20
