@@ -75,8 +75,8 @@ const RatingsDisplay = ({
           count={5}
           size={16}
           showRating={false}
-          defaultRating={item.rating}
           isDisabled={true}
+          defaultRating={item.rating}
           selectedColor={HexColors['medium-green']}
         />
       </View>

@@ -428,7 +428,9 @@ const Post = () => {
       Alert.alert('Upload successful', postResponse.message);
       navigation.navigate('Home');
     } catch (error) {
+      if (process.env.EXPO_PUBLIC_NODE_ENV === 'development') {
       console.error('Recipe post error:', error);
+      };
       Alert.alert('Upload failed', (error as Error).message || 'Unknown error');
     }
   };
