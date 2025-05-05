@@ -12,7 +12,8 @@ import {Button} from '@rneui/base';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {HexColors} from '../utils/colors';
 import {RecipeWithOwnerExtended, DietTypeWithName} from '../types/LocalTypes';
-import {useDietTypes} from '../hooks/apiHooks';
+import {useDietTypes, useFollow} from '../hooks/apiHooks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SearchBarProps {
   recipeArray: RecipeWithOwnerExtended[];
@@ -28,9 +29,12 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
   const [dietTypeFilter, setDietTypeFilter] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [followedUsersOnly, setFollowedUsersOnly] = useState(false);
+  const [followedUsers, setFollowedUsers] = useState<any[]>([]);
 
   const [availableDietTypes, setAvailableDietTypes] = useState<string[]>([]);
   const {getAllDietTypes} = useDietTypes();
+  const {getFollowedUsers} = useFollow();
 
   const prevFilterRef = React.useRef('');
 
@@ -51,6 +55,23 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
 
     fetchDietTypes();
   }, []);
+
+  // Fetch followed users when needed
+  useEffect(() => {
+    const fetchFollowedUsers = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token && followedUsersOnly) {
+          const followed = await getFollowedUsers(token);
+          setFollowedUsers(followed);
+        }
+      } catch (error) {
+        console.error('Error fetching followed users:', error);
+      }
+    };
+
+    fetchFollowedUsers();
+  }, [followedUsersOnly]);
 
   useEffect(() => {
     if (!recipeArray) return;
@@ -113,6 +134,13 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       });
     }
 
+    // Filter by followed users
+    if (followedUsersOnly && followedUsers.length > 0) {
+      filtered = filtered.filter((recipe) =>
+        followedUsers.some((follow) => follow.followed_id === recipe.user_id),
+      );
+    }
+
     // Sort by creation date or likes
     filtered.sort((a, b) => {
       if (sortOrder === 'oldest' || sortOrder === 'newest') {
@@ -139,7 +167,8 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       searchText.trim() !== '' ||
       cookingTimeFilter !== 'all' ||
       dietTypeFilter.length > 0 ||
-      sortOrder !== 'newest';
+      sortOrder !== 'newest' ||
+      followedUsersOnly;
 
     // TÄÄ RIVI ESTÄÄ IKUISEN LOOPIN
     const currentFilterString = JSON.stringify(
@@ -149,7 +178,15 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       prevFilterRef.current = currentFilterString;
       onFilterChange(filtered, hasActiveFilters);
     }
-  }, [recipeArray, searchText, cookingTimeFilter, dietTypeFilter, sortOrder]);
+  }, [
+    recipeArray,
+    searchText,
+    cookingTimeFilter,
+    dietTypeFilter,
+    sortOrder,
+    followedUsersOnly,
+    followedUsers,
+  ]);
 
   // Reset search filters
   const resetFilters = () => {
@@ -157,6 +194,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
     setCookingTimeFilter('all');
     setDietTypeFilter([]);
     setSortOrder('newest');
+    setFollowedUsersOnly(false);
   };
 
   return (
@@ -187,9 +225,13 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <ScrollView showsVerticalScrollIndicator={true}>
+            <ScrollView
+              contentContainerStyle={styles.scrollViewContent}
+              showsVerticalScrollIndicator={true}
+            >
               <Text style={styles.modalTitle}>Filter Recipes</Text>
 
+              {/* Cooking Time section - unchanged */}
               <Text style={styles.filterLabel}>Cooking Time</Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -230,6 +272,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                 </TouchableOpacity>
               </View>
 
+              {/* Sort Order section - unchanged */}
               <Text style={styles.filterLabel}>Sort Order</Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -271,6 +314,7 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                 </TouchableOpacity>
               </View>
 
+              {/* Difficulty Level section - unchanged */}
               <Text style={styles.filterLabel}>Difficulty Level</Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
@@ -293,8 +337,9 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                 </TouchableOpacity>
               </View>
 
+              {/* Diet section - remove nested ScrollView */}
               <Text style={styles.filterLabel}>Diets</Text>
-              <ScrollView style={styles.dietContainer}>
+              <View style={styles.buttonGroup}>
                 {availableDietTypes.map((diet) => (
                   <TouchableOpacity
                     key={diet}
@@ -315,7 +360,20 @@ const SearchBar: React.FC<SearchBarProps> = ({recipeArray, onFilterChange}) => {
                     <Text>{diet}</Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
+
+              <Text style={styles.filterLabel}>User Filter</Text>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    followedUsersOnly && styles.selectedOption,
+                  ]}
+                  onPress={() => setFollowedUsersOnly(!followedUsersOnly)}
+                >
+                  <Text>Followed Users Only</Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={styles.modalButtons}>
                 <Button
@@ -415,9 +473,6 @@ const styles = StyleSheet.create({
     backgroundColor: HexColors['light-green'],
     borderColor: HexColors['dark-green'],
   },
-  dietContainer: {
-    maxHeight: 200,
-  },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -426,7 +481,11 @@ const styles = StyleSheet.create({
   modalButton: {
     borderRadius: 20,
     paddingHorizontal: 30,
-    margin: 10
+    margin: 10,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
 });
 

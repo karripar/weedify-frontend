@@ -18,8 +18,7 @@ interface IngredientSearchProps {
 interface IngredientItem {
   id: number;
   name: {
-    fi: string;
-    en?: string;
+    en: string;
   };
   energyKcal: number;
   protein: number;
@@ -119,7 +118,7 @@ const IngredientSearch = ({onSelectIngredient}: IngredientSearchProps) => {
                 onPress={() => handleSelectIngredient(item)}
                 testID={`ingredient-item-${item.id}`}
               >
-                <Text style={styles.itemName}>{item.name.fi}</Text>
+                <Text style={styles.itemName}>{item.name.en}</Text>
                 <Text style={styles.itemNutrition}>
                   {item.energyKcal.toFixed(1)} kcal | {item.protein.toFixed(1)}g
                   protein

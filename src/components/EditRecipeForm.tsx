@@ -10,7 +10,7 @@ import {
 import React, {useEffect, useState, useRef} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Input, ListItem, Icon} from '@rneui/base';
-import MultiSelect from 'react-native-multiple-select';
+import {MultiSelect} from 'react-native-element-dropdown';
 import {useDietTypes, useRecipes, useIngredients} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
@@ -21,6 +21,11 @@ import {SelectList} from 'react-native-dropdown-select-list';
 import {EditRecipeInputs} from '../types/LocalTypes';
 import NutritionInfo from '../components/NutritionInfo';
 import debounce from 'lodash/debounce';
+
+const ensureMinNutritionValue = (value: number): number => {
+  // Ensure the value is at least 0.01
+  return value > 0 ? Number(value.toFixed(2)) : 0.01;
+};
 
 const EditRecipeForm = ({
   navigation,
@@ -154,7 +159,7 @@ const EditRecipeForm = ({
 
   const selectIngredient = (ingredient: any) => {
     setSelectedIngredientData(ingredient);
-    setCurrentIngredient(ingredient.name.fi);
+    setCurrentIngredient(ingredient.name.en);
     setIngredientSearchResults([]);
   };
 
@@ -307,16 +312,18 @@ const EditRecipeForm = ({
         newIngredient = {
           ...newIngredient,
           fineli_id: selectedIngredientData.id,
-          energy_kcal: Number(
-            (selectedIngredientData.energyKcal * factor).toFixed(2),
+          energy_kcal: ensureMinNutritionValue(
+            selectedIngredientData.energyKcal * factor,
           ),
-          protein: Number((selectedIngredientData.protein * factor).toFixed(2)),
-          fat: Number((selectedIngredientData.fat * factor).toFixed(2)),
-          carbohydrate: Number(
-            (selectedIngredientData.carbohydrate * factor).toFixed(2),
+          protein: ensureMinNutritionValue(
+            selectedIngredientData.protein * factor,
           ),
-          fiber: Number((selectedIngredientData.fiber * factor).toFixed(2)),
-          sugar: Number((selectedIngredientData.sugar * factor).toFixed(2)),
+          fat: ensureMinNutritionValue(selectedIngredientData.fat * factor),
+          carbohydrate: ensureMinNutritionValue(
+            selectedIngredientData.carbohydrate * factor,
+          ),
+          fiber: ensureMinNutritionValue(selectedIngredientData.fiber * factor),
+          sugar: ensureMinNutritionValue(selectedIngredientData.sugar * factor),
         };
       }
 
@@ -364,12 +371,24 @@ const EditRecipeForm = ({
 
       // Add nutrition information for the entire recipe
       updateData.nutrition = {
-        energy_kcal: recipeTotals.energy / Number(inputs.portions || 1),
-        protein: recipeTotals.protein / Number(inputs.portions || 1),
-        fat: recipeTotals.fat / Number(inputs.portions || 1),
-        carbohydrate: recipeTotals.carbohydrate / Number(inputs.portions || 1),
-        fiber: recipeTotals.fiber / Number(inputs.portions || 1),
-        sugar: recipeTotals.sugar / Number(inputs.portions || 1),
+        energy_kcal: ensureMinNutritionValue(
+          recipeTotals.energy / Number(inputs.portions || 1),
+        ),
+        protein: ensureMinNutritionValue(
+          recipeTotals.protein / Number(inputs.portions || 1),
+        ),
+        fat: ensureMinNutritionValue(
+          recipeTotals.fat / Number(inputs.portions || 1),
+        ),
+        carbohydrate: ensureMinNutritionValue(
+          recipeTotals.carbohydrate / Number(inputs.portions || 1),
+        ),
+        fiber: ensureMinNutritionValue(
+          recipeTotals.fiber / Number(inputs.portions || 1),
+        ),
+        sugar: ensureMinNutritionValue(
+          recipeTotals.sugar / Number(inputs.portions || 1),
+        ),
       };
 
       updateData.ingredients = ingredients.map((ing) => {
@@ -409,6 +428,8 @@ const EditRecipeForm = ({
       }
 
       const response = await updateRecipe(token, recipe.recipe_id, updateData);
+
+      console.log(updateData.ingredients);
 
       if (response) {
         Alert.alert('Success', 'Recipe updated successfully');
@@ -497,7 +518,7 @@ const EditRecipeForm = ({
                           onPress={() => selectIngredient(ingredient)}
                         >
                           <Text style={styles.itemName}>
-                            {ingredient.name.fi}
+                            {ingredient.name.en}
                           </Text>
                           <Text style={styles.itemNutrition}>
                             {ingredient.energyKcal.toFixed(1)} kcal |{' '}
@@ -527,7 +548,7 @@ const EditRecipeForm = ({
                     </View>
                     <View style={styles.selectedIngredientContent}>
                       <Text style={styles.selectedIngredientName}>
-                        {selectedIngredientData.name.fi}
+                        {selectedIngredientData.name.en}
                       </Text>
                       <Text style={styles.selectedIngredientDetails}>
                         {selectedIngredientData.energyKcal.toFixed(1)} kcal /
@@ -657,43 +678,33 @@ const EditRecipeForm = ({
                 <Text style={styles.text}>Dietary info</Text>
                 <View style={{marginHorizontal: 10, marginBottom: 20}}>
                   <MultiSelect
-                    items={dietTypeOptions}
-                    uniqueKey="value"
-                    displayKey="value"
-                    onSelectedItemsChange={(items) => {
-                      // 5 is the limit for diet types
+                    data={dietTypeOptions}
+                    onChange={(items: string[]) => {
+                      // 5 is the limit for diet restrictions
                       if (items.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
-                          'You can select a maximum of 5 special diets.',
+                          'You can select a maximum of 5 dietary restrictions.',
                           [{text: 'OK'}],
                         );
                         return;
                       }
                       setSelectedDiets(items);
                     }}
-                    selectedItems={selectedDiets}
-                    selectText="Select special diets"
-                    searchInputPlaceholderText="Search diets..."
-                    tagRemoveIconColor={HexColors['grey']}
-                    tagTextColor={HexColors['dark-green']}
-                    tagBorderColor={HexColors['light-green']}
-                    selectedItemTextColor={HexColors['light-green']}
-                    selectedItemIconColor={HexColors['light-green']}
-                    itemTextColor={HexColors['dark-grey']}
-                    styleRowList={{paddingVertical: 5}}
-                    styleItemsContainer={{paddingVertical: 10}}
-                    searchInputStyle={{
-                      color: HexColors['dark-grey'],
-                      marginBottom: 20,
-                      marginTop: 10,
+                    value={selectedDiets}
+                    labelField="value"
+                    valueField="value"
+                    placeholder="Special diets"
+                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
+                    searchPlaceholder="Search diets..."
+                    selectedStyle={{
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: HexColors['medium-green'],
+                      paddingHorizontal: 10,
                     }}
-                    styleMainWrapper={{
-                      overflow: 'hidden',
-                      borderRadius: 10,
-                    }}
-                    submitButtonColor={HexColors['light-green']}
-                    submitButtonText="Add"
+                    containerStyle={{borderRadius: 10}}
+                    selectedTextStyle={{color: HexColors['darker-green']}}
                   />
                 </View>
 
@@ -728,6 +739,7 @@ const EditRecipeForm = ({
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
+                        maxLength={4000}
                       />
                       <Text style={styles.counterText}>
                         {instructionsLength < 20

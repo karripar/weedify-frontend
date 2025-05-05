@@ -27,8 +27,8 @@ import {HexColors} from '../utils/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 import NutritionInfo from './NutritionInfo';
-import MultiSelect from 'react-native-multiple-select';
 import debounce from 'lodash/debounce';
+import {MultiSelect} from 'react-native-element-dropdown';
 
 // this is for testing
 declare global {
@@ -54,8 +54,8 @@ type PostInputs = {
 interface IngredientItem {
   id: number;
   name: {
+    en: string;
     fi: string;
-    en?: string;
   };
   energyKcal: number;
   protein: number;
@@ -259,7 +259,7 @@ const Post = () => {
 
       const nutritionData = {
         fineli_id: selectedIngredientData.id,
-        name: selectedIngredientData.name.fi,
+        name: selectedIngredientData.name.en || selectedIngredientData.name.fi,
         amount: parseFloat(amount),
         unit: selectedUnit,
         energy_kcal: selectedIngredientData.energyKcal * factor,
@@ -345,6 +345,12 @@ const Post = () => {
     }
   };
 
+  // Add this helper function from NewPostForm
+  const ensureMinNutritionValue = (value: number): number => {
+    // Ensure the value is at least 0.01
+    return value > 0 ? Number(value.toFixed(2)) : 0.01;
+  };
+
   // post a new recipe with media
   const doUpload = async (inputs: PostInputs) => {
     // check that all the fields are filled before uploading
@@ -397,12 +403,12 @@ const Post = () => {
         amount: Number(ingredient.amount),
         unit: ingredient.unit,
         fineli_id: ingredient.fineli_id,
-        energy_kcal: Number((ingredient.energy_kcal || 0.01).toFixed(2)),
-        protein: Number((ingredient.protein || 0.01).toFixed(2)),
-        fat: Number((ingredient.fat || 0.01).toFixed(2)),
-        carbohydrate: Number((ingredient.carbohydrate || 0.01).toFixed(2)),
-        fiber: Number((ingredient.fiber || 0.01).toFixed(2)),
-        sugar: Number((ingredient.sugar || 0.01).toFixed(2)),
+        energy_kcal: ensureMinNutritionValue(ingredient.energy_kcal || 0),
+        protein: ensureMinNutritionValue(ingredient.protein || 0),
+        fat: ensureMinNutritionValue(ingredient.fat || 0),
+        carbohydrate: ensureMinNutritionValue(ingredient.carbohydrate || 0),
+        fiber: ensureMinNutritionValue(ingredient.fiber || 0),
+        sugar: ensureMinNutritionValue(ingredient.sugar || 0),
       })),
     };
 
@@ -430,7 +436,7 @@ const Post = () => {
   // Handle selecting ingredient from search results
   const selectIngredient = (ingredient: any) => {
     setSelectedIngredientData(ingredient);
-    setCurrentIngredient(ingredient.name.fi);
+    setCurrentIngredient(ingredient.name.en || ingredient.name.fi);
     setIngredientSearchResults([]);
   };
 
@@ -556,7 +562,7 @@ const Post = () => {
                           onPress={() => selectIngredient(ingredient)}
                         >
                           <Text style={styles.itemName}>
-                            {ingredient.name.fi}
+                            {ingredient.name.en || ingredient.name.fi}
                           </Text>
                           <Text style={styles.itemNutrition}>
                             {ingredient.energyKcal.toFixed(1)} kcal |{' '}
@@ -586,7 +592,13 @@ const Post = () => {
                     </View>
                     <View style={styles.selectedIngredientContent}>
                       <Text style={styles.selectedIngredientName}>
-                        {selectedIngredientData.name.fi}
+                        {selectedIngredientData.name.en ||
+                          selectedIngredientData.name.fi}
+                        {selectedIngredientData.name.en &&
+                          selectedIngredientData.name.fi &&
+                          selectedIngredientData.name.en !==
+                            selectedIngredientData.name.fi &&
+                          ` (${selectedIngredientData.name.fi})`}
                       </Text>
                       <Text style={styles.selectedIngredientDetails}>
                         {selectedIngredientData.energyKcal.toFixed(1)} kcal /
@@ -668,6 +680,7 @@ const Post = () => {
                         type: 'ionicon',
                         size: 16,
                         color: HexColors['dark-grey'],
+                        style: {paddingLeft: 10},
                       }}
                       onPress={() => {
                         const newIngredientsList = ingredientsList.filter(
@@ -684,51 +697,42 @@ const Post = () => {
                     />
                   ))}
                 </View>
-                <Text style={[styles.text, {marginTop: 20}]}>
-                  Select special diets
-                </Text>
+                <Text style={[styles.text, {marginTop: 20}]}>Dietary info</Text>
                 <View
                   style={{marginHorizontal: 10, marginBottom: 20}}
                   testID="diet-input"
                 >
                   <MultiSelect
-                    items={dietTypeOptions}
-                    uniqueKey="value"
-                    displayKey="value"
-                    onSelectedItemsChange={(items) => {
-                      // 5 is the limit for diet types
+                    data={dietTypeOptions}
+                    onChange={(items: string[]) => {
+                      // 5 is the limit for diet restrictions
                       if (items.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
-                          'You can select a maximum of 5 special diets.',
+                          'You can select a maximum of 5 dietary restrictions.',
                           [{text: 'OK'}],
                         );
                         return;
                       }
                       setSelectedDiets(items);
                     }}
-                    selectedItems={selectedDiets}
-                    selectText="Select special diets"
-                    searchInputPlaceholderText="Search diets..."
-                    tagRemoveIconColor={HexColors['grey']}
-                    tagTextColor={HexColors['dark-green']}
-                    tagBorderColor={HexColors['light-green']}
-                    selectedItemTextColor={HexColors['light-green']}
-                    selectedItemIconColor={HexColors['light-green']}
-                    itemTextColor={HexColors['dark-grey']}
-                    styleRowList={{paddingVertical: 5}}
-                    styleItemsContainer={{paddingVertical: 10}}
-                    searchInputStyle={{
-                      color: HexColors['dark-grey'],
-                      marginBottom: 20,
-                      marginTop: 10,
+                    value={selectedDiets}
+                    labelField="value"
+                    valueField="value"
+                    placeholder="Special diets"
+                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
+                    searchPlaceholder="Search diets..."
+                    selectedStyle={{
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: HexColors['medium-green'],
+                      paddingHorizontal: 10,
                     }}
-                    styleMainWrapper={{
-                      overflow: 'hidden',
-                      borderRadius: 10,
+                    itemContainerStyle={{
+                      borderRadius: 8,
                     }}
-                    submitButtonColor={HexColors['light-green']}
-                    submitButtonText="Add"
+                    containerStyle={{borderRadius: 10}}
+                    selectedTextStyle={{color: HexColors['darker-green']}}
                   />
                 </View>
                 <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
@@ -737,8 +741,8 @@ const Post = () => {
                   rules={{
                     required: true,
                     maxLength: {
-                      value: 1000,
-                      message: 'maximum 1000 characters',
+                      value: 4000,
+                      message: 'maximum 4000 characters',
                     },
                     minLength: {value: 20, message: 'minimum 20 characters'},
                   }}
@@ -756,6 +760,7 @@ const Post = () => {
                         errorMessage={errors.instructions?.message}
                         multiline={true}
                         numberOfLines={10}
+                        maxLength={4000}
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
@@ -763,7 +768,7 @@ const Post = () => {
                       <Text style={styles.counterText}>
                         {instructionsLength < 20
                           ? `${instructionsLength}/20 (${20 - instructionsLength} more needed)`
-                          : `${instructionsLength}/1000`}
+                          : `${instructionsLength}/4000`}
                       </Text>
                     </>
                   )}
@@ -1059,20 +1064,24 @@ const styles = StyleSheet.create({
   ingredientContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: 10,
     marginBottom: 10,
+    maxWidth: '95%',
+    flex: 1,
   },
   chipButton: {
     backgroundColor: HexColors['light-grey'],
-    marginRight: 10,
     marginVertical: 5,
     // Android shadow
     elevation: 4,
+    marginHorizontal: 10,
+    borderRadius: 30,
+    padding: 10,
   },
   chipTitle: {
     color: HexColors['dark-grey'],
     fontSize: 12,
-    paddingLeft: 10,
+    maxWidth: '95%',
+    paddingHorizontal: 5,
   },
   chipContainer: {
     borderRadius: 20,
