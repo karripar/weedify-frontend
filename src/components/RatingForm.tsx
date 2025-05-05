@@ -53,7 +53,6 @@ const RatingForm = ({
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>Rate this recipe</Text>
           <AirbnbRating
-            testID="star 5"
             count={5}
             defaultRating={0}
             size={30}

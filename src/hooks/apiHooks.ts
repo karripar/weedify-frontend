@@ -253,7 +253,8 @@ const useUser = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        return new Error('User not logged in');
+        console.log('No token found.');
+        return;
       }
 
       const options = {
@@ -662,7 +663,7 @@ const useLikes = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        throw new Error('User not logged in');
+        console.log('User not logged in');
       }
 
       const options = {
@@ -692,7 +693,7 @@ const useLikes = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        throw new Error('User not logged in');
+        console.log('User not logged in');
       }
 
       const options = {
@@ -887,7 +888,8 @@ const useFavorites = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        throw new Error('User not logged in');
+        console.log('User not logged in');
+        return;
       }
 
       const options = {
@@ -917,7 +919,8 @@ const useFavorites = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        throw new Error('User not logged in');
+        console.log('User not logged in');
+        return;
       }
 
       const options = {

@@ -10,7 +10,7 @@ import {
 import React, {useState, useEffect} from 'react';
 import {HexColors} from '../utils/colors';
 import {LinearGradient} from 'expo-linear-gradient';
-import {NavigationProp, ParamListBase} from '@react-navigation/native';
+import {NavigationProp} from '@react-navigation/native';
 import {useRecipes} from '../hooks/apiHooks';
 import {useUpdateContext} from '../hooks/contextHooks';
 import RecipeListItem from '../components/RecipeListItem';
@@ -99,7 +99,7 @@ const Home = ({navigation}: {navigation: NavigationProp<NavigatorType>}) => {
         <FlatList
           data={isFiltering ? filteredRecipes : recipesWithLikes}
           renderItem={({item}) => (
-            <RecipeListItem item={item} navigation={navigation} />
+            <RecipeListItem key={item.recipe_id} item={item} navigation={navigation} />
           )}
           onRefresh={triggerUpdate}
           refreshing={loading}
