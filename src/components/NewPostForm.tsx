@@ -500,28 +500,29 @@ const Post = () => {
                   />
                 )}
 
-                <Text style={styles.text}>Title</Text>
-                <Controller
-                  control={control}
-                  rules={{
-                    required: {value: true, message: 'is required'},
-                    maxLength: {value: 25, message: 'maximum 25 characters'},
-                    minLength: {value: 3, message: 'minimum 3 characters'},
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      style={styles.input}
-                      inputContainerStyle={styles.inputContainer}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      autoCapitalize="words"
-                      errorMessage={errors.title?.message}
-                      testID="title-input"
-                    />
-                  )}
-                  name="title"
-                />
+          <Text style={styles.text}>Title</Text>
+          <Controller
+            control={control}
+            rules={{
+              required: {value: true, message: 'is required'},
+              maxLength: {value: 25, message: 'maximum 25 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                autoCapitalize="words"
+                maxLength={100}
+                errorMessage={errors.title?.message}
+                testID="title-input"
+              />
+            )}
+            name="title"
+          />
 
                 <Text style={styles.text}>Ingredients</Text>
                 <Input
@@ -668,6 +669,7 @@ const Post = () => {
                         type: 'ionicon',
                         size: 16,
                         color: HexColors['dark-grey'],
+                        style: {paddingLeft: 10}
                       }}
                       onPress={() => {
                         const newIngredientsList = ingredientsList.filter(
@@ -728,8 +730,8 @@ const Post = () => {
                   rules={{
                     required: true,
                     maxLength: {
-                      value: 1000,
-                      message: 'maximum 1000 characters',
+                      value: 4000,
+                      message: 'maximum 4000 characters',
                     },
                     minLength: {value: 20, message: 'minimum 20 characters'},
                   }}
@@ -747,6 +749,7 @@ const Post = () => {
                         errorMessage={errors.instructions?.message}
                         multiline={true}
                         numberOfLines={10}
+                        maxLength={4000}
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
@@ -754,7 +757,7 @@ const Post = () => {
                       <Text style={styles.counterText}>
                         {instructionsLength < 20
                           ? `${instructionsLength}/20 (${20 - instructionsLength} more needed)`
-                          : `${instructionsLength}/1000`}
+                          : `${instructionsLength}/4000`}
                       </Text>
                     </>
                   )}
@@ -1051,7 +1054,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 10,
-    maxWidth: '95%'
+    maxWidth: '95%',
+    flex: 1
   },
   chipButton: {
     backgroundColor: HexColors['light-grey'],
@@ -1060,10 +1064,13 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginHorizontal: 10,
     borderRadius: 30,
+    padding: 10
   },
   chipTitle: {
     color: HexColors['dark-grey'],
     fontSize: 12,
+    maxWidth: '95%',
+    paddingHorizontal: 5
   },
   chipContainer: {
     borderRadius: 20,

@@ -3,7 +3,7 @@ import {useUserContext} from '../hooks/contextHooks';
 import {Button, Card, Text} from '@rneui/base';
 import {Input} from '@rneui/themed';
 import {HexColors} from '../utils/colors';
-import {StyleSheet, TouchableOpacity} from 'react-native';
+import {Alert, StyleSheet, TouchableOpacity} from 'react-native';
 import {Credentials} from 'hybrid-types/DBTypes';
 import {useState} from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -28,6 +28,12 @@ const LoginForm = () => {
   });
 
   const doLogin = async (inputs: Credentials) => {
+    inputs.email = inputs.email.trim();
+    inputs.password = inputs.password.trim();
+    if (!inputs.email || !inputs.password) {
+      Alert.alert('Please fill all fields');
+      return;
+    }
     handleLogin(inputs);
   };
 

@@ -410,7 +410,7 @@ const EditRecipeForm = ({
 
       const response = await updateRecipe(token, recipe.recipe_id, updateData);
 
-      console.log(updateData.ingredients)
+      console.log(updateData.ingredients);
 
       if (response) {
         Alert.alert('Success', 'Recipe updated successfully');
@@ -720,6 +720,7 @@ const EditRecipeForm = ({
                         textAlignVertical="top"
                         autoCapitalize="sentences"
                         testID="instructions-input"
+                        maxLength={4000}
                       />
                       <Text style={styles.counterText}>
                         {instructionsLength < 20
