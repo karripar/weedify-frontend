@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-  FlatList,
+  ScrollView,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {HexColors} from '../utils/colors';
@@ -317,303 +317,289 @@ const EditProfileForm = ({
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      <FlatList
-        data={[
-          {
-            component: (
-              <>
-                <Image
-                  containerStyle={{margin: 'auto'}}
-                  source={
-                    image?.assets && image.assets[0]
-                      ? {uri: image.assets[0].uri}
-                      : {
-                          uri:
-                            profileImageUrl ||
-                            `${process.env.EXPO_PUBLIC_UPLOADS}/uploadimage.png`,
-                        }
+      <ScrollView automaticallyAdjustKeyboardInsets={true}>
+        <Card containerStyle={styles.card}>
+          <Image
+            containerStyle={{margin: 'auto'}}
+            source={
+              image?.assets && image.assets[0]
+                ? {uri: image.assets[0].uri}
+                : {
+                    uri:
+                      profileImageUrl ||
+                      `${process.env.EXPO_PUBLIC_UPLOADS}/uploadimage.png`,
                   }
-                  style={[
-                    styles.image,
-                    {
-                      objectFit: 'cover',
-                      margin: 'auto',
-                    },
-                  ]}
-                  onPress={pickImage}
-                />
-                <Text style={styles.text}>Username</Text>
+            }
+            style={[
+              styles.image,
+              {
+                objectFit: 'cover',
+                margin: 'auto',
+              },
+            ]}
+            onPress={pickImage}
+          />
+          <Text style={styles.text}>Username</Text>
 
-                <Controller
-                  control={control}
-                  rules={{
-                    maxLength: {value: 20, message: 'maximum 20 characters'},
-                    minLength: {value: 3, message: 'minimum 3 characters'},
-                    validate: async (value) => {
-                      if (!value || value.length < 3) {
-                        return 'minimum 3 characters';
-                      }
-                      // the current user's username wont be checked
-                      if (user && value === user.username) {
-                        return true;
-                      }
-                      try {
-                        const {available} = await getUsernameAvailable(value);
-                        return available ? true : 'username not available';
-                      } catch (error) {
-                        console.error((error as Error).message);
-                      }
-                    },
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      style={styles.input}
-                      inputContainerStyle={styles.inputContainer}
-                      onBlur={onBlur}
-                      onChangeText={(input) => {
-                        onChange(input);
-                        if (input.length >= 3) {
-                          trigger('username');
-                        }
-                      }}
-                      value={value}
-                      autoCapitalize="none"
-                      errorMessage={errors.username?.message}
-                      testID="username-input"
-                    />
-                  )}
-                  name="username"
-                />
+          <Controller
+            control={control}
+            rules={{
+              maxLength: {value: 20, message: 'maximum 20 characters'},
+              minLength: {value: 3, message: 'minimum 3 characters'},
+              validate: async (value) => {
+                if (!value || value.length < 3) {
+                  return 'minimum 3 characters';
+                }
+                // the current user's username wont be checked
+                if (user && value === user.username) {
+                  return true;
+                }
+                try {
+                  const {available} = await getUsernameAvailable(value);
+                  return available ? true : 'username not available';
+                } catch (error) {
+                  console.error((error as Error).message);
+                }
+              },
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={(input) => {
+                  onChange(input);
+                  if (input.length >= 3) {
+                    trigger('username');
+                  }
+                }}
+                value={value}
+                autoCapitalize="none"
+                errorMessage={errors.username?.message}
+                testID="username-input"
+              />
+            )}
+            name="username"
+          />
 
-                <Text style={styles.text}>Email</Text>
-                <Controller
-                  control={control}
-                  rules={{
-                    pattern: {
-                      value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                      message: 'not a valid email',
-                    },
-                    minLength: {value: 3, message: 'minimum length is 3'},
-                    maxLength: 50,
-                    validate: async (value) => {
-                      if (!value || value.length < 3) {
-                        return 'minimum 3 characters';
-                      }
-                      // the current user's email wont be checked
-                      if (user && value === user.email) {
-                        return true;
-                      }
-                      try {
-                        const {available} = await getEmailAvailable(value);
-                        return available ? true : 'email not available';
-                      } catch (error) {
-                        console.error((error as Error).message);
-                      }
-                    },
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      style={styles.input}
-                      inputContainerStyle={styles.inputContainer}
-                      onBlur={onBlur}
-                      onChangeText={(input) => {
-                        onChange(input);
-                        if (input.length >= 3) {
-                          trigger('email');
-                        }
-                      }}
-                      value={value}
-                      autoCapitalize="none"
-                      errorMessage={errors.email?.message}
-                      testID="email-input"
-                    />
-                  )}
-                  name="email"
-                />
+          <Text style={styles.text}>Email</Text>
+          <Controller
+            control={control}
+            rules={{
+              pattern: {
+                value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                message: 'not a valid email',
+              },
+              minLength: {value: 3, message: 'minimum length is 3'},
+              maxLength: 50,
+              validate: async (value) => {
+                if (!value || value.length < 3) {
+                  return 'minimum 3 characters';
+                }
+                // the current user's email wont be checked
+                if (user && value === user.email) {
+                  return true;
+                }
+                try {
+                  const {available} = await getEmailAvailable(value);
+                  return available ? true : 'email not available';
+                } catch (error) {
+                  console.error((error as Error).message);
+                }
+              },
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={(input) => {
+                  onChange(input);
+                  if (input.length >= 3) {
+                    trigger('email');
+                  }
+                }}
+                value={value}
+                autoCapitalize="none"
+                errorMessage={errors.email?.message}
+                testID="email-input"
+              />
+            )}
+            name="email"
+          />
 
-                <Text style={styles.text}>Bio</Text>
-                <Controller
-                  control={control}
-                  rules={{
-                    maxLength: {value: 200, message: 'maximum 200 characters'},
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      style={[styles.input, styles.instructionsInput]}
-                      inputContainerStyle={styles.inputContainer}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      errorMessage={errors.bio?.message}
-                      multiline={true}
-                      numberOfLines={6}
-                      textAlignVertical="top"
-                      testID="bio-input"
-                    />
-                  )}
-                  name="bio"
-                />
+          <Text style={styles.text}>Bio</Text>
+          <Controller
+            control={control}
+            rules={{
+              maxLength: {value: 200, message: 'maximum 200 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={[styles.input, styles.instructionsInput]}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                errorMessage={errors.bio?.message}
+                multiline={true}
+                numberOfLines={6}
+                textAlignVertical="top"
+                testID="bio-input"
+              />
+            )}
+            name="bio"
+          />
 
-                <Text style={[styles.text, {marginTop: 20}]}>
-                  Select diet restrictions
-                </Text>
-                <View style={{flex: 5, marginHorizontal: 10}}>
-                  <MultiSelect
-                    data={dietTypeOptions}
-                    onChange={(items: string[]) => {
-                      // 5 is the limit for diet restrictions
-                      if (items.length > 5) {
-                        Alert.alert(
-                          'Selection limit reached',
-                          'You can select a maximum of 5 dietary restrictions.',
-                          [{text: 'OK'}],
-                        );
-                        return;
+          <Text style={[styles.text, {marginTop: 20}]}>
+            Select diet restrictions
+          </Text>
+          <View style={{flex: 5, marginHorizontal: 10}}>
+            <MultiSelect
+              data={dietTypeOptions}
+              onChange={(items: string[]) => {
+                // 5 is the limit for diet restrictions
+                if (items.length > 5) {
+                  Alert.alert(
+                    'Selection limit reached',
+                    'You can select a maximum of 5 dietary restrictions.',
+                    [{text: 'OK'}],
+                  );
+                  return;
+                }
+                setSelectedDiets(items);
+              }}
+              value={selectedDiets}
+              labelField="value"
+              valueField="value"
+              placeholder="Diet restrictions"
+              placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
+              searchPlaceholder="Search diets..."
+              selectedStyle={{
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: HexColors['medium-green'],
+                paddingHorizontal: 10,
+              }}
+              itemContainerStyle={{
+                borderRadius: 8,
+                marginVertical: 2,
+                marginHorizontal: 4,
+              }}
+              itemTextStyle={{
+                color: HexColors['darker-green'],
+              }}
+              containerStyle={{borderRadius: 10}}
+              selectedTextStyle={{color: HexColors['darker-green']}}
+            />
+          </View>
+          <Text
+            style={{
+              margin: 5,
+              marginTop: 30,
+              marginVertical: 20,
+              fontSize: 20,
+              color: HexColors['medium-green'],
+            }}
+          >
+            Change Password
+          </Text>
+          <Text
+            style={{
+              marginHorizontal: 10,
+              fontWeight: '200',
+              marginBottom: 10,
+            }}
+          >
+            Fill in your current and new password to change your password
+          </Text>
+          <Text style={styles.text}>Current password</Text>
+          <Controller
+            control={control}
+            rules={{
+              minLength: {value: 8, message: 'minimum 8 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                secureTextEntry={isCurrentPasswordVisible}
+                value={value}
+                onChangeText={onChange}
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                rightIcon={
+                  <TouchableOpacity onPress={toggleCurrentPasswordVisibility}>
+                    <Ionicons
+                      name={
+                        isCurrentPasswordVisible
+                          ? 'eye-outline'
+                          : 'eye-off-outline'
                       }
-                      setSelectedDiets(items);
-                    }}
-                    value={selectedDiets}
-                    labelField="value"
-                    valueField="value"
-                    placeholder="Diet restrictions"
-                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
-                    searchPlaceholder="Search diets..."
-                    selectedStyle={{
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: HexColors['medium-green'],
-                      paddingHorizontal: 10,
-                    }}
-                    itemContainerStyle={{
-                      borderRadius: 8,
-                      marginVertical: 2,
-                      marginHorizontal: 4,
-                    }}
-                    itemTextStyle={{
-                      color: HexColors['darker-green'],
-                    }}
-                    containerStyle={{borderRadius: 10}}
-                    selectedTextStyle={{color: HexColors['darker-green']}}
-                  />
-                </View>
-                <Text
-                  style={{
-                    margin: 5,
-                    marginTop: 30,
-                    marginVertical: 20,
-                    fontSize: 20,
-                    color: HexColors['medium-green'],
-                  }}
-                >
-                  Change Password
-                </Text>
-                <Text
-                  style={{
-                    marginHorizontal: 10,
-                    fontWeight: '200',
-                    marginBottom: 10,
-                  }}
-                >
-                  Fill in your current and new password to change your password
-                </Text>
-                <Text style={styles.text}>Current password</Text>
-                <Controller
-                  control={control}
-                  rules={{
-                    minLength: {value: 8, message: 'minimum 8 characters'},
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      secureTextEntry={isCurrentPasswordVisible}
-                      value={value}
-                      onChangeText={onChange}
-                      style={styles.input}
-                      inputContainerStyle={styles.inputContainer}
-                      rightIcon={
-                        <TouchableOpacity
-                          onPress={toggleCurrentPasswordVisibility}
-                        >
-                          <Ionicons
-                            name={
-                              isCurrentPasswordVisible
-                                ? 'eye-outline'
-                                : 'eye-off-outline'
-                            }
-                            size={25}
-                            style={{paddingHorizontal: 10}}
-                            color={HexColors['dark-grey']}
-                          />
-                        </TouchableOpacity>
-                      }
-                      onBlur={onBlur}
-                      errorMessage={errors.current_password?.message}
-                      autoCapitalize="none"
-                      testID="current-password"
+                      size={25}
+                      style={{paddingHorizontal: 10}}
+                      color={HexColors['dark-grey']}
                     />
-                  )}
-                  name="current_password"
-                />
-                <Text style={styles.text}>New password</Text>
-                <Controller
-                  control={control}
-                  rules={{
-                    minLength: {value: 8, message: 'minimum 8 characters'},
-                  }}
-                  render={({field: {onChange, onBlur, value}}) => (
-                    <Input
-                      style={styles.input}
-                      inputContainerStyle={styles.inputContainer}
-                      onBlur={onBlur}
-                      secureTextEntry={isNewPasswordVisible}
-                      rightIcon={
-                        <TouchableOpacity onPress={toggleNewPasswordVisibility}>
-                          <Ionicons
-                            name={
-                              isNewPasswordVisible
-                                ? 'eye-outline'
-                                : 'eye-off-outline'
-                            }
-                            size={25}
-                            style={{paddingHorizontal: 10}}
-                            color={HexColors['dark-grey']}
-                          ></Ionicons>
-                        </TouchableOpacity>
+                  </TouchableOpacity>
+                }
+                onBlur={onBlur}
+                errorMessage={errors.current_password?.message}
+                autoCapitalize="none"
+                testID="current-password"
+              />
+            )}
+            name="current_password"
+          />
+          <Text style={styles.text}>New password</Text>
+          <Controller
+            control={control}
+            rules={{
+              minLength: {value: 8, message: 'minimum 8 characters'},
+            }}
+            render={({field: {onChange, onBlur, value}}) => (
+              <Input
+                style={styles.input}
+                inputContainerStyle={styles.inputContainer}
+                onBlur={onBlur}
+                secureTextEntry={isNewPasswordVisible}
+                rightIcon={
+                  <TouchableOpacity onPress={toggleNewPasswordVisibility}>
+                    <Ionicons
+                      name={
+                        isNewPasswordVisible ? 'eye-outline' : 'eye-off-outline'
                       }
-                      value={value}
-                      onChangeText={(input) => {
-                        onChange(input);
-                        trigger('new_password');
-                      }}
-                      autoCapitalize="none"
-                      errorMessage={errors.new_password?.message}
-                      testID="new-password"
-                    />
-                  )}
-                  name="new_password"
-                />
+                      size={25}
+                      style={{paddingHorizontal: 10}}
+                      color={HexColors['dark-grey']}
+                    ></Ionicons>
+                  </TouchableOpacity>
+                }
+                value={value}
+                onChangeText={(input) => {
+                  onChange(input);
+                  trigger('new_password');
+                }}
+                autoCapitalize="none"
+                errorMessage={errors.new_password?.message}
+                testID="new-password"
+              />
+            )}
+            name="new_password"
+          />
 
-                <Button
-                  title="Save"
-                  buttonStyle={[
-                    styles.button,
-                    {backgroundColor: HexColors['medium-green'], marginTop: 20},
-                  ]}
-                  titleStyle={styles.buttonTitle}
-                  containerStyle={styles.buttonContainer}
-                  onPress={handleSubmit(doEditProfile)}
-                  loading={loading}
-                  disabled={!isValid || loading}
-                  testID="save-button"
-                />
-              </>
-            ),
-          },
-        ]}
-        keyExtractor={(_, index) => `key-${index}`}
-        renderItem={({item}) => (
-          <Card containerStyle={styles.card}>{item.component}</Card>
-        )}
-      ></FlatList>
+          <Button
+            title="Save"
+            buttonStyle={[
+              styles.button,
+              {backgroundColor: HexColors['medium-green'], marginTop: 20},
+            ]}
+            titleStyle={styles.buttonTitle}
+            containerStyle={styles.buttonContainer}
+            onPress={handleSubmit(doEditProfile)}
+            loading={loading}
+            disabled={!isValid || loading}
+            testID="save-button"
+          />
+        </Card>
+      </ScrollView>
     </LinearGradient>
   );
 };

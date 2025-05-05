@@ -174,7 +174,10 @@ const Single = ({route}: any) => {
       end={{x: 0, y: 1}}
       locations={[0, 0.4, 1]}
     >
-      <ScrollView contentContainerStyle={{flexGrow: 1}}>
+      <ScrollView
+        contentContainerStyle={{flexGrow: 1}}
+        automaticallyAdjustKeyboardInsets={true}
+      >
         <Card containerStyle={styles.card}>
           <View
             style={{flexDirection: 'row', alignItems: 'center', padding: 20}}
@@ -280,15 +283,16 @@ const Single = ({route}: any) => {
                 flexDirection: 'column',
                 marginLeft: 20,
                 gap: 1,
-                flexWrap: 'wrap',
                 flex: 1,
-                paddingRight: 20
+                paddingRight: 20,
               }}
             >
-              <Text style={[styles.sectionTitle, {marginLeft: 5}]}>
+              <Text
+                style={[styles.sectionTitle, {marginLeft: 5, marginBottom: 5}]}
+              >
                 Ingredients
               </Text>
-              <View style={{marginLeft: 5}}>
+              <View style={{marginLeft: 5, width: '100%'}}>
                 {item.ingredients &&
                   item.ingredients.map((ingredient, index) => (
                     <Text key={index} style={styles.ingredientText}>
@@ -388,7 +392,7 @@ const Single = ({route}: any) => {
                 title={
                   userHasRated ? "You've rated this recipe" : 'Rate this recipe'
                 }
-                testID='add-rating-button'
+                testID="add-rating-button"
                 buttonStyle={styles.rateButton}
                 disabled={userHasRated}
                 onPress={() => setShowRatingForm(true)}

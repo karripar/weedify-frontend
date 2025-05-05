@@ -77,7 +77,7 @@ const Profile = ({navigation}: {navigation: NavigationProp<ParamListBase>}) => {
             try {
               await deleteUser();
 
-              await handleLogout();
+              handleLogout();
 
               Alert.alert('Success', 'Your profile has been deleted');
             } catch (error) {
