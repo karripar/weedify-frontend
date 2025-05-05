@@ -257,7 +257,10 @@ const RecipeListItem = ({item, navigation}: RecipeListItemProps) => {
         <Image
           style={styles.userImage}
           source={{
-            uri: profileImageUrl ? profileImageUrl : process.env.EXPO_PUBLIC_UPLOADS_DIR + '/default/defaultprofileimage.png',
+            uri: profileImageUrl
+              ? profileImageUrl
+              : process.env.EXPO_PUBLIC_UPLOADS_DIR +
+                '/default/defaultprofileimage.png',
           }}
 
         />
