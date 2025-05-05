@@ -455,14 +455,14 @@ const EditProfileForm = ({
                 />
 
                 <Text style={[styles.text, {marginTop: 20}]}>
-                  Diet restrictions
+                  Select diet restrictions
                 </Text>
-                <View style={{flex: 5}}>
+                <View style={{flex: 5, marginHorizontal: 10}}>
                   <MultiSelect
                     data={dietTypeOptions}
-                    onChange={(item) => {
+                    onChange={(items: string[]) => {
                       // 5 is the limit for diet restrictions
-                      if (item.length > 5) {
+                      if (items.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
                           'You can select a maximum of 5 dietary restrictions.',
@@ -470,13 +470,30 @@ const EditProfileForm = ({
                         );
                         return;
                       }
-                      setSelectedDiets(item);
+                      setSelectedDiets(items);
                     }}
                     value={selectedDiets}
                     labelField="value"
                     valueField="value"
-                    placeholder="Select dietary destrictions"
+                    placeholder="Diet restrictions"
+                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
                     searchPlaceholder="Search diets..."
+                    selectedStyle={{
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: HexColors['medium-green'],
+                      paddingHorizontal: 10,
+                    }}
+                    itemContainerStyle={{
+                      borderRadius: 8,
+                      marginVertical: 2,
+                      marginHorizontal: 4,
+                    }}
+                    itemTextStyle={{
+                      color: HexColors['darker-green'],
+                    }}
+                    containerStyle={{borderRadius: 10}}
+                    selectedTextStyle={{color: HexColors['darker-green']}}
                   />
                 </View>
                 <Text

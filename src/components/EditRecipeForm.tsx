@@ -10,7 +10,7 @@ import {
 import React, {useEffect, useState, useRef} from 'react';
 import {HexColors} from '../utils/colors';
 import {Button, Card, Input, ListItem, Icon} from '@rneui/base';
-import MultiSelect from 'react-native-multiple-select';
+import {MultiSelect} from 'react-native-element-dropdown';
 import {useDietTypes, useRecipes, useIngredients} from '../hooks/apiHooks';
 import {NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useUpdateContext, useUserContext} from '../hooks/contextHooks';
@@ -410,6 +410,8 @@ const EditRecipeForm = ({
 
       const response = await updateRecipe(token, recipe.recipe_id, updateData);
 
+      console.log(updateData.ingredients)
+
       if (response) {
         Alert.alert('Success', 'Recipe updated successfully');
         triggerUpdate();
@@ -657,43 +659,33 @@ const EditRecipeForm = ({
                 <Text style={styles.text}>Dietary info</Text>
                 <View style={{marginHorizontal: 10, marginBottom: 20}}>
                   <MultiSelect
-                    items={dietTypeOptions}
-                    uniqueKey="value"
-                    displayKey="value"
-                    onSelectedItemsChange={(items) => {
-                      // 5 is the limit for diet types
+                    data={dietTypeOptions}
+                    onChange={(items: string[]) => {
+                      // 5 is the limit for diet restrictions
                       if (items.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
-                          'You can select a maximum of 5 special diets.',
+                          'You can select a maximum of 5 dietary restrictions.',
                           [{text: 'OK'}],
                         );
                         return;
                       }
                       setSelectedDiets(items);
                     }}
-                    selectedItems={selectedDiets}
-                    selectText="Select special diets"
-                    searchInputPlaceholderText="Search diets..."
-                    tagRemoveIconColor={HexColors['grey']}
-                    tagTextColor={HexColors['dark-green']}
-                    tagBorderColor={HexColors['light-green']}
-                    selectedItemTextColor={HexColors['light-green']}
-                    selectedItemIconColor={HexColors['light-green']}
-                    itemTextColor={HexColors['dark-grey']}
-                    styleRowList={{paddingVertical: 5}}
-                    styleItemsContainer={{paddingVertical: 10}}
-                    searchInputStyle={{
-                      color: HexColors['dark-grey'],
-                      marginBottom: 20,
-                      marginTop: 10,
+                    value={selectedDiets}
+                    labelField="value"
+                    valueField="value"
+                    placeholder="Special diets"
+                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
+                    searchPlaceholder="Search diets..."
+                    selectedStyle={{
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: HexColors['medium-green'],
+                      paddingHorizontal: 10,
                     }}
-                    styleMainWrapper={{
-                      overflow: 'hidden',
-                      borderRadius: 10,
-                    }}
-                    submitButtonColor={HexColors['light-green']}
-                    submitButtonText="Add"
+                    containerStyle={{borderRadius: 10}}
+                    selectedTextStyle={{color: HexColors['darker-green']}}
                   />
                 </View>
 

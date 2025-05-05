@@ -18,7 +18,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       try {
         const token = await AsyncStorage.getItem('token');
         if (!token) {
-          console.error('No token found');
+          console.log('No token found');
           return;
         }
         const notifications = await getAllNotificationsForUser(token);

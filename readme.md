@@ -93,7 +93,7 @@
 - **[Expo documentation](https://docs.expo.dev/)**
 - **[Native packages](https://www.npmjs.com/)**
 - **[Selector](https://www.npmjs.com/package/react-native-dropdown-select-list)**
-- **[Multi selector](https://www.npmjs.com/package/react-native-multiple-select)**
+- **[Multi selector](https://www.npmjs.com/package/react-native-element-dropdown)**
 - **[How-test-with-maestro](https://www.youtube.com/watch?v=QGOAQVSxpDE)**
 -
 

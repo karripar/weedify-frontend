@@ -27,8 +27,8 @@ import {HexColors} from '../utils/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
 import {LinearGradient} from 'expo-linear-gradient';
 import NutritionInfo from './NutritionInfo';
-import MultiSelect from 'react-native-multiple-select';
 import debounce from 'lodash/debounce';
+import {MultiSelect} from 'react-native-element-dropdown';
 
 // this is for testing
 declare global {
@@ -684,51 +684,42 @@ const Post = () => {
                     />
                   ))}
                 </View>
-                <Text style={[styles.text, {marginTop: 20}]}>
-                  Select special diets
-                </Text>
+                <Text style={[styles.text, {marginTop: 20}]}>Dietary info</Text>
                 <View
                   style={{marginHorizontal: 10, marginBottom: 20}}
                   testID="diet-input"
                 >
                   <MultiSelect
-                    items={dietTypeOptions}
-                    uniqueKey="value"
-                    displayKey="value"
-                    onSelectedItemsChange={(items) => {
-                      // 5 is the limit for diet types
+                    data={dietTypeOptions}
+                    onChange={(items: string[]) => {
+                      // 5 is the limit for diet restrictions
                       if (items.length > 5) {
                         Alert.alert(
                           'Selection limit reached',
-                          'You can select a maximum of 5 special diets.',
+                          'You can select a maximum of 5 dietary restrictions.',
                           [{text: 'OK'}],
                         );
                         return;
                       }
                       setSelectedDiets(items);
                     }}
-                    selectedItems={selectedDiets}
-                    selectText="Select special diets"
-                    searchInputPlaceholderText="Search diets..."
-                    tagRemoveIconColor={HexColors['grey']}
-                    tagTextColor={HexColors['dark-green']}
-                    tagBorderColor={HexColors['light-green']}
-                    selectedItemTextColor={HexColors['light-green']}
-                    selectedItemIconColor={HexColors['light-green']}
-                    itemTextColor={HexColors['dark-grey']}
-                    styleRowList={{paddingVertical: 5}}
-                    styleItemsContainer={{paddingVertical: 10}}
-                    searchInputStyle={{
-                      color: HexColors['dark-grey'],
-                      marginBottom: 20,
-                      marginTop: 10,
+                    value={selectedDiets}
+                    labelField="value"
+                    valueField="value"
+                    placeholder="Special diets"
+                    placeholderStyle={{marginBottom: 10, fontWeight: '300'}}
+                    searchPlaceholder="Search diets..."
+                    selectedStyle={{
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: HexColors['medium-green'],
+                      paddingHorizontal: 10,
                     }}
-                    styleMainWrapper={{
-                      overflow: 'hidden',
-                      borderRadius: 10,
+                    itemContainerStyle={{
+                      borderRadius: 8,
                     }}
-                    submitButtonColor={HexColors['light-green']}
-                    submitButtonText="Add"
+                    containerStyle={{borderRadius: 10}}
+                    selectedTextStyle={{color: HexColors['darker-green']}}
                   />
                 </View>
                 <Text style={[styles.text, {marginTop: 20}]}>Instructions</Text>
@@ -1059,20 +1050,20 @@ const styles = StyleSheet.create({
   ingredientContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: 10,
     marginBottom: 10,
+    maxWidth: '95%'
   },
   chipButton: {
     backgroundColor: HexColors['light-grey'],
-    marginRight: 10,
     marginVertical: 5,
     // Android shadow
     elevation: 4,
+    marginHorizontal: 10,
+    borderRadius: 30,
   },
   chipTitle: {
     color: HexColors['dark-grey'],
     fontSize: 12,
-    paddingLeft: 10,
   },
   chipContainer: {
     borderRadius: 20,
